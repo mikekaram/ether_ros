@@ -1,0 +1,5 @@
+<launch>
+<rosparam file="$(find ighm_ros)/config/slaves.yaml" command="load"/>
+<node pkg="ighm_ros" type="ighm_ros" name="ighm_comm" output="screen">
+ </node> 
+</launch> 

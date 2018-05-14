@@ -1,0 +1,9 @@
+
+
+ethercat_slaves :
+    vendor_id: 0x00000A12
+    fore_leg : 
+        alias : 0
+        position: 0
+        product_code: 0x00000000
+        assign_activate: 0x0300

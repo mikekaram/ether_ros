@@ -5,5 +5,5 @@ ethercat_slaves :
     fore_leg : 
         alias : 0
         position: 0
-        product_code: 0x00000000
-        assign_activate: 0x0300
+        product_code: 0x00a986fd
+        assign_activate: 0x0700

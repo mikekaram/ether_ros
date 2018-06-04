@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
+#include "ecrt.h"
 #include "utilities.hpp"
 
 
@@ -29,56 +30,42 @@ int safe_atoi(const char *s, int *val)
 		return -1;
 }
 
-void modify_output_bit (uint8_t * data_ptr, uint8_t index, unsigned int value)
+void modify_output_bit (uint8_t * data_ptr, uint8_t index, uint8_t subindex, uint8_t value)
 {
-
-    // printf("Blue LED index is: %d\n",index);
-    if(value){
-        SetBit(data_ptr,index);
-        index++;
-        SetBit(data_ptr,index);
-    }
-    else{
-        ClearBit(data_ptr,index);
-        index++;
-        ClearBit(data_ptr,index);
-    }
-    // printf("Red LED index is: %d\n",index);
-
+    uint8_t * new_data_ptr =  & data_ptr[index];
+    value?SetBit(new_data_ptr,subindex):ClearBit(new_data_ptr,subindex);
 }
-uint16_t process_input_uint16(uint8_t * data_ptr, uint8_t index)
+void modify_output_sint16 (uint8_t * data_ptr, uint8_t index, int16_t value)
 {
-    // uint8 * data_ptr;
+    EC_WRITE_S16((int16_t *)(data_ptr + index), value);
+}
+uint16_t process_input_uint16(uint8_t * data_ptr, uint8_t index, uint8_t subindex)
+{
     uint16_t return_value = 0x0000;
-    // data_ptr = ec_slave[slave_no].inputs;
-    /* Move pointer to correct module index*/
-    // data_ptr += module_index * 2;
-    return_value = data_ptr[index+1];
-    return_value = return_value << 8;
-    return_value |= data_ptr[index];
-//    return_value = ((data_ptr[index]>>8)&0xFFFF) | (data_ptr[index+1]<<8&0xFFFF);
-//    printf("Return Value is: %d\n",return_value);
-    return return_value;
+    uint8_t new_data_ptr[2];
+    new_data_ptr[0] = data_ptr[index];
+    new_data_ptr[1] = data_ptr[subindex];
+    return_value = EC_READ_U16(new_data_ptr);
+    return return_value; 
 }
-int32_t process_input_int32(uint8_t * data_ptr, uint8_t index, uint8_t subindex)
+int16_t process_input_sint16(uint8_t * data_ptr, uint8_t index, uint8_t subindex)
+{
+    int16_t return_value = 0x0000;
+    uint8_t new_data_ptr[2];
+    new_data_ptr[0] = data_ptr[index];
+    new_data_ptr[1] = data_ptr[subindex];
+    return_value = EC_READ_S16(new_data_ptr);
+    return return_value; 
+}
+int32_t process_input_sint32(uint8_t * data_ptr, uint8_t index, uint8_t subindex)
 {
     int32_t return_value = 0x00000000;
-    uint16_t * ptr_16 = (uint16_t *)data_ptr;
-    uint32_t first_val = 0x00000000;
-    first_val |= ptr_16[subindex];
-    first_val = first_val << 16;
-    first_val |= ptr_16[index];
-    // // return_value = (int32_t) ntohl((uint32_t) first_val);
-    return_value = first_val;
-    printf("Index is: %d and subindex is: %d\n",index,subindex);
-    // uint16_t first_val = 0x0000,second_val=0x0000;
-    // first_val = ntohs(ptr_16[index]);
-    // second_val = ntohs(ptr_16[subindex]);
-    // return_value = second_val;
-    // return_value <<= 16;
-    // return_value |= first_val;
-//    return_value = ((data_ptr[index]>>8)&0xFFFF) | (data_ptr[index+1]<<8&0xFFFF);
-//    printf("Return Value is: %d\n",return_value);
+    uint8_t new_data_ptr[4];
+    new_data_ptr[0] = data_ptr[index];
+    new_data_ptr[1] = data_ptr[index+1];
+    new_data_ptr[2] = data_ptr[subindex];
+    new_data_ptr[3] = data_ptr[subindex+1];
+    return_value = EC_READ_S32(new_data_ptr);
     return return_value;
 }
 

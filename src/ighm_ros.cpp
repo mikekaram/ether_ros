@@ -50,10 +50,20 @@
 /****************************************************************************/
 
 double ttotal = 0;
-uint8_t BLUE_LED_index = 4;
-uint8_t knee_angle_index = 3;
-uint8_t hip_angle_index = 0;
-uint8_t measurement_index = 64;
+static uint8_t BLUE_LED_index = 4;
+static uint8_t knee_angle_index = 6;
+static uint8_t hip_angle_index = 0;
+static uint8_t measurement_index = 64;
+static  uint8_t state_machine_id = 0;
+static  uint8_t state_machine_subid = 0;
+static  uint8_t x_cntr_traj_id = 24;
+static  uint8_t y_cntr_traj_id = 26;
+static  uint8_t a_ellipse_id = 28;
+static  uint8_t b_ellipse_id = 30;
+static  uint8_t traj_freq_id = 32;
+static  uint8_t phase_deg_id = 34;
+static  uint8_t flatness_param_id = 36;
+
 static pthread_t cyclic_thread;
 int run = 1;
 
@@ -82,6 +92,8 @@ static uint8_t *domain1_pd = NULL;
 static int pdo_out;
 static int pdo_in;
 static int off_counter_out;
+
+
 
 static unsigned int counter = 0;
 static unsigned int blink = 0;
@@ -222,13 +234,13 @@ void *ec_thread(void *arg)
 		ecrt_domain_process(domain1);
         // noise = process_input_uint16(domain1_pd + off_counter_in,0);
 
-        // hip_angle = process_input_int32(domain1_pd + pdo_in,hip_angle_index, pdo_in_end+1);
-        // knee_angle = process_input_int32(domain1_pd + pdo_in,knee_angle_index,  pdo_in_end+0);
-        // printf("I: %d , %d \n", hip_angle,knee_angle);
-        // printf("I:");
-        // for(int j = pdo_in ; j < 38; j++)
-        //     printf(" %2.2x", *(domain1_pd + j));
-        // printf("\n");
+        hip_angle = process_input_sint16(domain1_pd + pdo_in,hip_angle_index, hip_angle_index+1);
+        knee_angle = process_input_sint16(domain1_pd + pdo_in,knee_angle_index, knee_angle_index+1);
+        printf("I: %d , %d \n", hip_angle,knee_angle);
+        printf("IO:");
+        for(int j = 0 ; j < 60; j++)
+            printf(" %2.2x", *(domain1_pd + j));
+        printf("\n");
 		// check process data state (optional)
 		// check_domain_state();
 
@@ -268,11 +280,20 @@ void *ec_thread(void *arg)
 
 		// write process data
 		// modify_output_bit(domain1_pd + pdo_out, BLUE_LED_index,blink);
-        modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
-        // printf("O:");
-        // for(int j = 0 ; j < 24; j++)
-        //     printf(" %2.2x", *(domain1_pd + j));
-        // printf("\n");
+        // modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
+        // modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
+        modify_output_sint16(domain1_pd+pdo_out,x_cntr_traj_id, 0);
+        modify_output_sint16(domain1_pd+pdo_out,y_cntr_traj_id, 590);
+        modify_output_sint16(domain1_pd+pdo_out,a_ellipse_id, 0);
+        modify_output_sint16(domain1_pd+pdo_out,b_ellipse_id, 3);
+        modify_output_sint16(domain1_pd+pdo_out,traj_freq_id, 100);
+        modify_output_sint16(domain1_pd+pdo_out,phase_deg_id, 0);
+        modify_output_sint16(domain1_pd+pdo_out,flatness_param_id, 0);
+        modify_output_bit(domain1_pd+pdo_out, state_machine_id, state_machine_subid, 1);
+        printf("O:");
+        for(int j = 0 ; j < 38; j++)
+            printf(" %2.2x", *(domain1_pd + j));
+        printf("\n");
 
 		// write application time to master
 		clock_gettime(CLOCK_TO_USE, &current_time);
@@ -419,7 +440,7 @@ int main(int argc, char **argv)
 	// }
 
 	pdo_in = ecrt_slave_config_reg_pdo_entry(sc,
-			0x6000, 1, domain1, NULL);
+			0x6010, 1, domain1, NULL);
 	if (pdo_in < 0){
         ROS_FATAL("Failed to configure pdo in.\n");
         exit(1);

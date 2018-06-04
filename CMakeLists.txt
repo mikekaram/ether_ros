@@ -54,11 +54,13 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  ModifyOutputBit.srv
+  ModifyOutputSInt16.srv
+  ModifyOutputUInt16.srv
+  ModifyOutputSInt32.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -138,7 +140,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 
 ## If we want to define MACROS this is the cmake way to do it:
-add_definitions(-DFREQUENCY=10 -DRUN_TIME=300)
+add_definitions(-DFREQUENCY=1000 -DRUN_TIME=300)
 add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp ${utilities})
 
 ## Rename C++ executable without prefix

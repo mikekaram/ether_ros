@@ -236,9 +236,9 @@ void *ec_thread(void *arg)
 
         hip_angle = process_input_sint16(domain1_pd + pdo_in,hip_angle_index, hip_angle_index+1);
         knee_angle = process_input_sint16(domain1_pd + pdo_in,knee_angle_index, knee_angle_index+1);
-        printf("I: %d , %d \n", hip_angle,knee_angle);
-        printf("IO:");
-        for(int j = 0 ; j < 60; j++)
+        printf("Angles: %d , %d \n", hip_angle,knee_angle);
+        printf("I:");
+        for(int j = pdo_in ; j < 60; j++)
             printf(" %2.2x", *(domain1_pd + j));
         printf("\n");
 		// check process data state (optional)
@@ -279,19 +279,19 @@ void *ec_thread(void *arg)
 		}
 
 		// write process data
-		// modify_output_bit(domain1_pd + pdo_out, BLUE_LED_index,blink);
+		modify_output_bit(domain1_pd + pdo_out, 0, BLUE_LED_index,blink);
         // modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
         // modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
-        modify_output_sint16(domain1_pd+pdo_out,x_cntr_traj_id, 0);
-        modify_output_sint16(domain1_pd+pdo_out,y_cntr_traj_id, 590);
-        modify_output_sint16(domain1_pd+pdo_out,a_ellipse_id, 0);
-        modify_output_sint16(domain1_pd+pdo_out,b_ellipse_id, 3);
-        modify_output_sint16(domain1_pd+pdo_out,traj_freq_id, 100);
-        modify_output_sint16(domain1_pd+pdo_out,phase_deg_id, 0);
-        modify_output_sint16(domain1_pd+pdo_out,flatness_param_id, 0);
+        modify_output_sint16(domain1_pd + pdo_out,x_cntr_traj_id, 0);
+        modify_output_sint16(domain1_pd + pdo_out,y_cntr_traj_id, 590);
+        modify_output_sint16(domain1_pd + pdo_out,a_ellipse_id, 0);
+        modify_output_sint16(domain1_pd + pdo_out,b_ellipse_id, 3);
+        modify_output_sint16(domain1_pd + pdo_out,traj_freq_id, 100);
+        modify_output_sint16(domain1_pd + pdo_out,phase_deg_id, 0);
+        modify_output_sint16(domain1_pd + pdo_out,flatness_param_id, 0);
         modify_output_bit(domain1_pd+pdo_out, state_machine_id, state_machine_subid, 1);
         printf("O:");
-        for(int j = 0 ; j < 38; j++)
+        for(int j = pdo_out ; j < 38; j++)
             printf(" %2.2x", *(domain1_pd + j));
         printf("\n");
 

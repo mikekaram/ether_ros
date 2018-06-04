@@ -1,6 +1,6 @@
 
 /*
- * utilities.c
+ * utilities.cpp
  * 
  * A library with useful functions
  * for communication and handling process data, using EtherCAT
@@ -9,10 +9,8 @@
 
 #include <unistd.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <sys/types.h>
 #include <string.h>
-#include <stdlib.h>
 #include "ecrt.h"
 #include "utilities.hpp"
 
@@ -33,7 +31,7 @@ int safe_atoi(const char *s, int *val)
 void modify_output_bit (uint8_t * data_ptr, uint8_t index, uint8_t subindex, uint8_t value)
 {
     uint8_t * new_data_ptr =  & data_ptr[index];
-    value?SetBit(new_data_ptr,subindex):ClearBit(new_data_ptr,subindex);
+    EC_WRITE_BIT(new_data_ptr, subindex, value);
 }
 void modify_output_sint16 (uint8_t * data_ptr, uint8_t index, int16_t value)
 {

@@ -1,10 +1,10 @@
 
 /*
  * utilities.cpp
- * 
+ *
  * A library with useful functions
  * for communication and handling process data, using EtherCAT
- * 
+ *
  */
 
 #include <unistd.h>
@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include "ecrt.h"
-#include "utilities.hpp"
+#include "utilities.h"
 
 
 int safe_atoi(const char *s, int *val)
@@ -28,15 +28,6 @@ int safe_atoi(const char *s, int *val)
 		return -1;
 }
 
-void modify_output_bit (uint8_t * data_ptr, uint8_t index, uint8_t subindex, uint8_t value)
-{
-    uint8_t * new_data_ptr =  & data_ptr[index];
-    EC_WRITE_BIT(new_data_ptr, subindex, value);
-}
-void modify_output_sint16 (uint8_t * data_ptr, uint8_t index, int16_t value)
-{
-    EC_WRITE_S16((int16_t *)(data_ptr + index), value);
-}
 uint16_t process_input_uint16(uint8_t * data_ptr, uint8_t index, uint8_t subindex)
 {
     uint16_t return_value = 0x0000;
@@ -44,7 +35,7 @@ uint16_t process_input_uint16(uint8_t * data_ptr, uint8_t index, uint8_t subinde
     new_data_ptr[0] = data_ptr[index];
     new_data_ptr[1] = data_ptr[subindex];
     return_value = EC_READ_U16(new_data_ptr);
-    return return_value; 
+    return return_value;
 }
 int16_t process_input_sint16(uint8_t * data_ptr, uint8_t index, uint8_t subindex)
 {
@@ -53,7 +44,7 @@ int16_t process_input_sint16(uint8_t * data_ptr, uint8_t index, uint8_t subindex
     new_data_ptr[0] = data_ptr[index];
     new_data_ptr[1] = data_ptr[subindex];
     return_value = EC_READ_S16(new_data_ptr);
-    return return_value; 
+    return return_value;
 }
 int32_t process_input_sint32(uint8_t * data_ptr, uint8_t index, uint8_t subindex)
 {

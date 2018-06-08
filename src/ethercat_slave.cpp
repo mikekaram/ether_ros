@@ -1,15 +1,16 @@
 
+#include <iostream>
 
 class EthercatSlave{
 
-
-public: 
-
-    EthercatSlave(std:string name){
-
-    }
+private:
 
 
+public:
 
-}
+    EthercatSlave();
+
+
+
+};
 

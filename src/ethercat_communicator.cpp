@@ -24,6 +24,7 @@ static uint8_t phase_deg_id = 34;
 static uint8_t flatness_param_id = 36;
 
 int cleanup_pop_arg_;
+size_t num_process_data;
 
 /*****************************************************************************/
 
@@ -91,17 +92,17 @@ void check_master_state(void)
 EthercatCommunicator::EthercatCommunicator()
 {
 
-    communicator_thread_ = NULL;
+    has_running_thread_ = false;
     cleanup_pop_arg_ = 0;
 }
 
 bool EthercatCommunicator::has_running_thread()
 {
 
-    if (communicator_thread_ == NULL)
-        return false;
-    else
+    if (has_running_thread_)
         return true;
+    else
+        return false;
 }
 void EthercatCommunicator::init()
 {
@@ -148,17 +149,39 @@ void EthercatCommunicator::init()
         handle_error_en(ret, "pthread_attr_getschedpolicy");
     }
     ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
+
+    /******************************
+        Application domain data
+    ******************************/
+   num_process_data = ecrt_domain_size(domain1);
+   ROS_INFO("Number of process data bytes: %lu\n",num_process_data);
+   process_data_buf_ = (uint8_t *)malloc(num_process_data*sizeof(uint8_t));
+
 }
 
 void EthercatCommunicator::start()
 {
     int ret;
-    ret = pthread_create(communicator_thread_, &current_thattr_, &EthercatCommunicator::run, NULL);
+
+    ROS_INFO("Activating master...\n");
+    if (ecrt_master_activate(master))
+    {
+        ROS_FATAL("Failed to activate master.\n");
+        exit(1);
+    }
+    domain1_pd = NULL;
+    if (!(domain1_pd = ecrt_domain_data(domain1)))
+    {
+        ROS_FATAL("Failed to set domain data.\n");
+        exit(1);
+    }
+    ret = pthread_create(&communicator_thread_, &current_thattr_, &EthercatCommunicator::run, NULL);
     if (ret != 0)
     {
         handle_error_en(ret, "pthread_create");
     }
     ROS_INFO("Starting cyclic thread.\n");
+    has_running_thread_ = true;
 }
 void EthercatCommunicator::cleanup_handler(void *arg)
 {
@@ -234,19 +257,21 @@ void *EthercatCommunicator::run(void *arg)
 
         // receive process data
         ecrt_master_receive(master);
+        pthread_spin_lock(&lock);
         ecrt_domain_process(domain1);
-        for(int j=0;j<NUM_SLAVES;j++)
+        pthread_spin_unlock(&lock);
+        for (int j = 0; j < NUM_SLAVES; j++)
         {
             hip_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), hip_angle_index, hip_angle_index + 1);
             knee_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), knee_angle_index, knee_angle_index + 1);
-            printf("Angles: %d , %d \n", hip_angle[j], knee_angle[j]);
-            printf("I:");
-            for (int k = ethercat_slaves[j].slave.get_pdo_in(); k < 60; k++)
-                printf(" %2.2x", *(domain1_pd + k));
-            printf("\n");
+            ROS_INFO("Angles: %d , %d \n", hip_angle[j], knee_angle[j]);
         }
+        printf("I:");
+        for (size_t k = ethercat_slaves[0].slave.get_pdo_in(); k < num_process_data; k++)
+                printf(" %2.2x", *(domain1_pd + k));
+        printf("\n");
         // check process data state (optional)
-        // check_domain_state();
+        check_domain1_state();
 
         if (counter)
         {
@@ -261,7 +286,7 @@ void *EthercatCommunicator::run(void *arg)
 #endif
             i++;
             // check for master state (optional)
-            // check_master_state();
+            check_master_state();
 
 #if MEASURE_TIMING == 1
             // output timing stats
@@ -279,7 +304,7 @@ void *EthercatCommunicator::run(void *arg)
             latency_max_ns[i] = 0;
             latency_min_ns[i] = 0xffffffff;
 #endif
-            blink = !blink;
+            // blink = !blink;
 
             // calculate new process data
         }
@@ -317,9 +342,9 @@ void *EthercatCommunicator::run(void *arg)
         ecrt_master_sync_slave_clocks(master);
 
         // send process data
-        pthread_spin_lock(lock);
+        pthread_spin_lock(&lock);
         ecrt_domain_queue(domain1);
-        pthread_spin_unlock(lock);
+        pthread_spin_unlock(&lock);
         ecrt_master_send(master);
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &cancel_state); //set the cancel state to ENABLE
         if (ret != 0)
@@ -373,18 +398,21 @@ void EthercatCommunicator::stop()
     void *res;
 
     ROS_INFO("stop(): sending cancellation request\n");
-    ret = pthread_cancel(*communicator_thread_);
+    ret = pthread_cancel(communicator_thread_);
     if (ret != 0)
         handle_error_en(ret, "pthread_cancel");
 
     /* Join with thread to see what its exit status was */
 
-    ret = pthread_join(*communicator_thread_, &res);
+    ret = pthread_join(communicator_thread_, &res);
     if (ret != 0)
         handle_error_en(ret, "pthread_join");
 
     if (res == PTHREAD_CANCELED)
+    {
         ROS_INFO("stop(): communicator thread  was canceled\n");
+        has_running_thread_ = false;
+    }
     else
         ROS_INFO("stop(): communicator thread wasn't canceled (shouldn't happen!)\n");
 }

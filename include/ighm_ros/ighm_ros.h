@@ -67,9 +67,7 @@ extern ec_master_t *master;
 extern ec_master_state_t master_state;
 extern ec_domain_t *domain1;
 extern ec_domain_state_t domain1_state;
-extern ros::NodeHandle n;
-extern pthread_spinlock_t *lock;
-
-int main(int argc, char **argv);
+// extern ros::NodeHandle n;
+extern pthread_spinlock_t lock;
 
 #endif /* IGHM_ROS_LIB_H */

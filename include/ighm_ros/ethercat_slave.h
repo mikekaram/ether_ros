@@ -4,6 +4,7 @@
 
 #include <string>
 #include "ecrt.h"
+#include "ros/ros.h"
 
 class EthercatSlave
 {
@@ -21,7 +22,7 @@ class EthercatSlave
     int pdo_out;
 
   public:
-    void initialize(std::string slave);
+    void initialize(std::string slave, ros::NodeHandle& n);
     int get_pdo_out();
     int get_pdo_in();
 };

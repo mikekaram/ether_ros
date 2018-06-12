@@ -8,9 +8,9 @@ ec_master_t *master;
 ec_master_state_t master_state;
 ec_domain_t *domain1;
 ec_domain_state_t domain1_state;
-ros::NodeHandle n;
+// ros::NodeHandle n;
 slave_struct ethercat_slaves[NUM_SLAVES];
-pthread_spinlock_t *lock;
+pthread_spinlock_t lock;
 /****************************************************************************/
 // EtherCAT
 // extern ec_master_t *master = NULL;
@@ -52,12 +52,13 @@ int main(int argc, char **argv)
         ROS_FATAL("mlockall failed");
         exit(1);
     }
-
-    ret = pthread_spin_init(lock, PTHREAD_PROCESS_SHARED); // It really doesn't matter for our application what pshared value we use
-    if (!ret)
+    
+    ret = pthread_spin_init(&lock, PTHREAD_PROCESS_SHARED); // It doesn't matter for our application what pshared value we use
+    if (ret != 0)
     {
         handle_error_en(ret, "pthread_spin_lock_init");
     }
+
     master = ecrt_request_master(0);
     if (!master)
     {
@@ -70,41 +71,32 @@ int main(int argc, char **argv)
         ROS_FATAL("Failed to create domain.\n");
         exit(1);
     }
+
     for (int i = 0; i < NUM_SLAVES; i++)
     {
         ethercat_slaves[i].id = i;
         ethercat_slaves[i].slave_name = slave_names[i];
-        ethercat_slaves[i].slave.initialize(ethercat_slaves[i].slave_name);
+        ethercat_slaves[i].slave.initialize(ethercat_slaves[i].slave_name, n);
     }
+  
     // Create configuration for bus coupler
 
     /************************************************
         Launch the ROS services
     *************************************************/
 
-    ros::ServiceServer service = n.advertiseService("modify_output_bit", modify_output_bit);
+    ros::ServiceServer modify_output_bit_service = n.advertiseService("modify_output_bit", modify_output_bit);
     ROS_INFO("Ready to modify output bit.");
-    service = n.advertiseService("modify_output_uint16", modify_output_uint16);
+    ros::ServiceServer modify_output_uint16_service = n.advertiseService("modify_output_uint16", modify_output_uint16);
     ROS_INFO("Ready to modify output uint16.");
-    service = n.advertiseService("modify_output_sint16", modify_output_sint16);
+    ros::ServiceServer modify_output_sint16_service = n.advertiseService("modify_output_sint16", modify_output_sint16);
     ROS_INFO("Ready to modify output sint16.");
-    service = n.advertiseService("modify_output_sint32", modify_output_sint32);
+    ros::ServiceServer modify_output_sint32_service  = n.advertiseService("modify_output_sint32", modify_output_sint32);
     ROS_INFO("Ready to modify output sint32.");
-    service = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
+    ros::ServiceServer ethercat_communicatord_service  = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
 
-    ROS_INFO("Activating master...\n");
-    if (ecrt_master_activate(master))
-    {
-        ROS_FATAL("Failed to activate master.\n");
-        exit(1);
-    }
-    domain1_pd = NULL;
-    if (!(domain1_pd = ecrt_domain_data(domain1)))
-    {
-        ROS_FATAL("Failed to set domain data.\n");
-        exit(1);
-    }
+
 
     // ************************************************
     /* Open log file */

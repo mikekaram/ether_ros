@@ -1,5 +1,5 @@
 uint8 index
-bool subindex
+uint8 subindex
 bool value
 ---
 string success

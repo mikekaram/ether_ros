@@ -3,7 +3,7 @@
 #include "ethercat_slave.h"
 #include "ighm_ros.h"
 
-void EthercatSlave::initialize(std::string slave)
+void EthercatSlave::initialize(std::string slave, ros::NodeHandle& n)
 {
 
     slave_id = slave;

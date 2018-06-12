@@ -1,11 +1,30 @@
 #include "ethercat_communicator.h"
 #include "ighm_ros.h"
+#include "utilities.h"
+#include "ethercat_slave.h"
 
 static unsigned int counter = 0;
 static unsigned int blink = 0;
 static unsigned int sync_ref_counter = 0;
 const struct timespec cycletime = {0, PERIOD_NS};
 char new_string[100];
+
+static uint8_t BLUE_LED_index = 4;
+static uint8_t knee_angle_index = 6;
+static uint8_t hip_angle_index = 0;
+static uint8_t measurement_index = 64;
+static uint8_t state_machine_id = 0;
+static uint8_t state_machine_subid = 0;
+static uint8_t x_cntr_traj_id = 24;
+static uint8_t y_cntr_traj_id = 26;
+static uint8_t a_ellipse_id = 28;
+static uint8_t b_ellipse_id = 30;
+static uint8_t traj_freq_id = 32;
+static uint8_t phase_deg_id = 34;
+static uint8_t flatness_param_id = 36;
+
+int cleanup_pop_arg_;
+
 /*****************************************************************************/
 
 #if MEASURE_TIMING == 1
@@ -53,7 +72,6 @@ void check_domain1_state(void)
     domain1_state = ds;
 }
 
-
 void check_master_state(void)
 {
     ec_master_state_t ms;
@@ -70,109 +88,118 @@ void check_master_state(void)
     master_state = ms;
 }
 
-
-void EthercatCommunicator::EthercatCommunicator(){
+EthercatCommunicator::EthercatCommunicator()
+{
 
     communicator_thread_ = NULL;
+    cleanup_pop_arg_ = 0;
 }
 
-std::bool has_running_thread::EthercatCommunicator(){
+bool EthercatCommunicator::has_running_thread()
+{
 
     if (communicator_thread_ == NULL)
         return false;
-    else return true;
+    else
+        return true;
 }
-void init::EthercatCommunicator(){
+void EthercatCommunicator::init()
+{
 
     const struct sched_param sched_param_ = {.sched_priority = 80};
     struct sched_param act_param = {};
     int act_policy;
     int ret;
 
-    if (pthread_attr_init(&current_thattr_)){
+    if (pthread_attr_init(&current_thattr_))
+    {
         ROS_FATAL("Attribute init\n");
         exit(1);
     }
-    if (pthread_attr_setdetachstate(&current_thattr_, PTHREAD_CREATE_JOINABLE)){
+    if (pthread_attr_setdetachstate(&current_thattr_, PTHREAD_CREATE_JOINABLE))
+    {
         ROS_FATAL("Attribute set detach state\n");
         exit(1);
     }
-    if (pthread_attr_setinheritsched(&current_thattr_, PTHREAD_EXPLICIT_SCHED)){
+    if (pthread_attr_setinheritsched(&current_thattr_, PTHREAD_EXPLICIT_SCHED))
+    {
         ROS_FATAL("Attribute set inherit schedule\n");
         exit(1);
     }
-    if (pthread_attr_setschedpolicy(&current_thattr_, SCHED_FIFO)){
+    if (pthread_attr_setschedpolicy(&current_thattr_, SCHED_FIFO))
+    {
         ROS_FATAL("Attribute set schedule policy\n");
         exit(1);
     }
     // Get the values we just set, to make sure that they are set
     ret = pthread_attr_setschedparam(&current_thattr_, &sched_param_);
-    if (ret != 0){
+    if (ret != 0)
+    {
         handle_error_en(ret, "pthread_attr_setschedparam");
     }
     ret = pthread_attr_getschedparam(&current_thattr_, &act_param);
-    if (ret != 0){
+    if (ret != 0)
+    {
         handle_error_en(ret, "pthread_attr_getschedparam");
     }
     ret = pthread_attr_getschedpolicy(&current_thattr_, &act_policy);
-    if (ret != 0){
+    if (ret != 0)
+    {
         handle_error_en(ret, "pthread_attr_getschedpolicy");
     }
     ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
 }
 
-void start::EthercatCommunicator(){
+void EthercatCommunicator::start()
+{
     int ret;
-    ret = pthread_create(communicator_thread_, &current_thattr_, &EthercatCommunicator.run(), NULL);
-    if (ret != 0){
+    ret = pthread_create(communicator_thread_, &current_thattr_, &EthercatCommunicator::run, NULL);
+    if (ret != 0)
+    {
         handle_error_en(ret, "pthread_create");
     }
     ROS_INFO("Starting cyclic thread.\n");
 }
-static void cleanup_handler::EthercatCommunicator(void *arg) {
+void EthercatCommunicator::cleanup_handler(void *arg)
+{
     ROS_INFO("Called clean-up handler\n");
 }
-void run::EthercatCommunicator(void arg*){
+void *EthercatCommunicator::run(void *arg)
+{
 
-    pthread_cleanup_push(EthercatCommunicator.cleanup_handler, NULL);
-    #ifdef MEASURE_TIMING
-        struct timespec start_time, end_time, last_start_time = {};
-    #endif
+    pthread_cleanup_push(EthercatCommunicator::cleanup_handler, NULL);
+#ifdef MEASURE_TIMING
+    struct timespec start_time, end_time, last_start_time = {};
+#endif
 
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
-    uint16_t noise;
-    uint8_t pdo_in_end = 5;
-    int32_t hip_angle, knee_angle;
+    int16_t hip_angle[NUM_SLAVES], knee_angle[NUM_SLAVES];
 
     int ret;
+    int cancel_state;
     int i = 0;
 
     // get current time
     clock_gettime(CLOCK_TO_USE, &wakeup_time);
     clock_gettime(CLOCK_TO_USE, &break_time);
     break_time = timespec_add(break_time, offset_time);
-    do{
-        pthread_testcancel(); // check if there is a request for cancel
+    do
+    {
+        pthread_testcancel();                                                // check if there is a request for cancel
         ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cancel_state); //set the cancel state to DISABLE
-        if (ret != 0) {
+        if (ret != 0)
+        {
             handle_error_en(ret, "pthread_setcancelstate");
         }
         wakeup_time = timespec_add(wakeup_time, cycletime);
         clock_nanosleep(CLOCK_TO_USE, TIMER_ABSTIME, &wakeup_time, NULL);
-    #ifdef MEASURE_TIMING
+#ifdef MEASURE_TIMING
         clock_gettime(CLOCK_TO_USE, &start_time);
-        #if MEASURE_TIMING == 1
+#if MEASURE_TIMING == 1
         latency_ns = DIFF_NS(wakeup_time, start_time);
         period_ns = DIFF_NS(last_start_time, start_time);
         exec_ns = DIFF_NS(last_start_time, end_time);
-        #elif MEASURE_TIMING == 2
-        latency_ns[i] = DIFF_NS(wakeup_time, start_time);
-        period_ns[i] = DIFF_NS(last_start_time, start_time);
-        exec_ns[i] = DIFF_NS(last_start_time, end_time);
-    #endif
-        last_start_time = start_time;
 
-    #if MEASURE_TIMING == 1
         if (latency_ns > latency_max_ns[i])
         {
             latency_max_ns[i] = latency_ns;
@@ -197,19 +224,27 @@ void run::EthercatCommunicator(void arg*){
         {
             exec_min_ns[i] = exec_ns;
         }
-    #endif
+#elif MEASURE_TIMING == 2
+        latency_ns[i] = DIFF_NS(wakeup_time, start_time);
+        period_ns[i] = DIFF_NS(last_start_time, start_time);
+        exec_ns[i] = DIFF_NS(last_start_time, end_time);
+#endif
+        last_start_time = start_time;
+#endif
+
         // receive process data
         ecrt_master_receive(master);
         ecrt_domain_process(domain1);
-        // noise = process_input_uint16(domain1_pd + off_counter_in,0);
-
-        hip_angle = process_input_sint16(domain1_pd + pdo_in, hip_angle_index, hip_angle_index + 1);
-        knee_angle = process_input_sint16(domain1_pd + pdo_in, knee_angle_index, knee_angle_index + 1);
-        printf("Angles: %d , %d \n", hip_angle, knee_angle);
-        printf("I:");
-        for (int j = pdo_in; j < 60; j++)
-            printf(" %2.2x", *(domain1_pd + j));
-        printf("\n");
+        for(int j=0;j<NUM_SLAVES;j++)
+        {
+            hip_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), hip_angle_index, hip_angle_index + 1);
+            knee_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), knee_angle_index, knee_angle_index + 1);
+            printf("Angles: %d , %d \n", hip_angle[j], knee_angle[j]);
+            printf("I:");
+            for (int k = ethercat_slaves[j].slave.get_pdo_in(); k < 60; k++)
+                printf(" %2.2x", *(domain1_pd + k));
+            printf("\n");
+        }
         // check process data state (optional)
         // check_domain_state();
 
@@ -219,16 +254,16 @@ void run::EthercatCommunicator(void arg*){
         }
         else
         { // do this at 10 Hz
-    #if MEASURE_TIMING == 1
+#if MEASURE_TIMING == 1
             counter = FREQUENCY / SAMPLING_FREQ;
-    #elif MEASURE_TIMING == 2
+#elif MEASURE_TIMING == 2
             counter = 0;
-    #endif
+#endif
             i++;
             // check for master state (optional)
             // check_master_state();
 
-    #if MEASURE_TIMING == 1
+#if MEASURE_TIMING == 1
             // output timing stats
             // printf("period     %10u ... %10u\n",
             //         period_min_ns, period_max_ns);
@@ -243,26 +278,26 @@ void run::EthercatCommunicator(void arg*){
             exec_min_ns[i] = 0xffffffff;
             latency_max_ns[i] = 0;
             latency_min_ns[i] = 0xffffffff;
-    #endif
+#endif
             blink = !blink;
 
             // calculate new process data
         }
 
         // write process data
-        modify_output_bit(domain1_pd + pdo_out, 0, BLUE_LED_index, blink);
+        // modify_output_bit(domain1_pd + pdo_out, 0, BLUE_LED_index, blink);
         // modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
         // modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
-        modify_output_sint16(domain1_pd + pdo_out, x_cntr_traj_id, 0);
-        modify_output_sint16(domain1_pd + pdo_out, y_cntr_traj_id, 590);
-        modify_output_sint16(domain1_pd + pdo_out, a_ellipse_id, 0);
-        modify_output_sint16(domain1_pd + pdo_out, b_ellipse_id, 3);
-        modify_output_sint16(domain1_pd + pdo_out, traj_freq_id, 100);
-        modify_output_sint16(domain1_pd + pdo_out, phase_deg_id, 0);
-        modify_output_sint16(domain1_pd + pdo_out, flatness_param_id, 0);
-        modify_output_bit(domain1_pd + pdo_out, state_machine_id, state_machine_subid, 1);
+        // modify_output_sint16(domain1_pd + pdo_out, x_cntr_traj_id, 0);
+        // modify_output_sint16(domain1_pd + pdo_out, y_cntr_traj_id, 590);
+        // modify_output_sint16(domain1_pd + pdo_out, a_ellipse_id, 0);
+        // modify_output_sint16(domain1_pd + pdo_out, b_ellipse_id, 3);
+        // modify_output_sint16(domain1_pd + pdo_out, traj_freq_id, 100);
+        // modify_output_sint16(domain1_pd + pdo_out, phase_deg_id, 0);
+        // modify_output_sint16(domain1_pd + pdo_out, flatness_param_id, 0);
+        // modify_output_bit(domain1_pd + pdo_out, state_machine_id, state_machine_subid, 1);
         printf("O:");
-        for (int j = pdo_out; j < 38; j++)
+        for (int j = 0; j < 38; j++)
             printf(" %2.2x", *(domain1_pd + j));
         printf("\n");
 
@@ -282,55 +317,57 @@ void run::EthercatCommunicator(void arg*){
         ecrt_master_sync_slave_clocks(master);
 
         // send process data
+        pthread_spin_lock(lock);
         ecrt_domain_queue(domain1);
+        pthread_spin_unlock(lock);
         ecrt_master_send(master);
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &cancel_state); //set the cancel state to ENABLE
-        if (ret != 0){
+        if (ret != 0)
+        {
             handle_error_en(ret, "pthread_setcancelstate");
         }
 #ifdef MEASURE_TIMING
         clock_gettime(CLOCK_TO_USE, &end_time);
-    #endif
+#endif
         clock_gettime(CLOCK_TO_USE, &current_time);
-    }
-    while (DIFF_NS(current_time, break_time) > 0);
+    } while (DIFF_NS(current_time, break_time) > 0);
 
-        // write the statistics to file
-    #if MEASURE_TIMING == 1
+    // write the statistics to file
+#if MEASURE_TIMING == 1
     for (i = 0; i < RUN_TIME * SAMPLING_FREQ; i++)
     {
         snprintf(new_string, 100, "%10u , %10u , 10u , %10u , 10u , %10u\n",
-                    period_min_ns[i], period_max_ns[i], exec_min_ns[i], exec_max_ns[i],
-                    latency_min_ns[i], latency_max_ns[i]);
+                 period_min_ns[i], period_max_ns[i], exec_min_ns[i], exec_max_ns[i],
+                 latency_min_ns[i], latency_max_ns[i]);
         fprintf(file, "%s", string_file);
     }
-    #elif MEASURE_TIMING == 2
+#elif MEASURE_TIMING == 2
     for (i = 0; i < RUN_TIME * FREQUENCY; i++)
     {
         if (i % 10000 == 0)
             ROS_INFO("Current line written is: %d\n", i);
         snprintf(new_string, sizeof(new_string), "%10u , %10u , %10u\n",
-                    period_ns[i], exec_ns[i], latency_ns[i]);
+                 period_ns[i], exec_ns[i], latency_ns[i]);
         if ((uint32_t)insist_write(log_fd, new_string, strlen(new_string)) != strlen(new_string))
         {
             ROS_FATAL("ec_thread: insist_write");
             exit(1);
         }
     }
-    #endif
-    #ifdef MEASURE_TIMING
+#endif
+#ifdef MEASURE_TIMING
     if (close(log_fd))
     {
         ROS_ERROR("ec_thread: close log fd");
         exit(1);
     }
-    #endif
-    pthread_cleanup_pop(cleanup_pop_arg);
+#endif
+    pthread_cleanup_pop(cleanup_pop_arg_);
     exit(0);
 }
 
-
-void stop::EthercatCommunicator(){
+void EthercatCommunicator::stop()
+{
 
     int ret;
     void *res;
@@ -351,4 +388,3 @@ void stop::EthercatCommunicator(){
     else
         ROS_INFO("stop(): communicator thread wasn't canceled (shouldn't happen!)\n");
 }
-

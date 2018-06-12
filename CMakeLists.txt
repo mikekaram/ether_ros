@@ -120,6 +120,7 @@ set(etherlab_lib /opt/etherlab/lib/libethercat.so)
 set(utilities src/utilities.cpp)
 set(ethercat_communicator src/ethercat_communicator.cpp)
 set(services src/services.cpp)
+set(ethercat_slave src/ethercat_slave.cpp)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
@@ -144,7 +145,7 @@ include_directories(
 
 ## If we want to define MACROS this is the cmake way to do it:
 add_definitions(-DFREQUENCY=1000 -DRUN_TIME=300)
-add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp ${utilities} ${ethercat_communicator} ${services})
+add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp ${utilities} ${ethercat_communicator} ${services} ${ethercat_slave})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

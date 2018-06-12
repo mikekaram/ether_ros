@@ -24,18 +24,9 @@
 #include <pthread.h>
 #include <stddef.h>
 #include "ecrt.h"
+#include "ethercat_slave.h"
 
-
-extern uint8_t *domain1_pd;
-extern int pdo_out;
-extern int pdo_in;
-extern int log_fd;
-extern ec_master_t *master;
-extern ec_master_state_t master_state = {};
-extern ec_domain_t *domain1 = NULL;
-extern ec_domain_state_t domain1_state = {};
 // Application parameters
-// #define FREQUENCY 3500 //define frequency in Hz
 #define CLOCK_TO_USE CLOCK_MONOTONIC
 // #define MEASURE_TIMING 2
 // #define RUN_TIME 60 // run time in seconds
@@ -61,5 +52,24 @@ extern ec_domain_state_t domain1_state = {};
     } while (0)
 
 /****************************************************************************/
+
+typedef struct slave_struct
+{
+    std::string slave_name;
+    int id;
+    EthercatSlave slave;
+} slave_struct;
+
+extern slave_struct ethercat_slaves[NUM_SLAVES];
+extern uint8_t *domain1_pd;
+extern int log_fd;
+extern ec_master_t *master;
+extern ec_master_state_t master_state;
+extern ec_domain_t *domain1;
+extern ec_domain_state_t domain1_state;
+extern ros::NodeHandle n;
+extern pthread_spinlock_t *lock;
+
+int main(int argc, char **argv);
 
 #endif /* IGHM_ROS_LIB_H */

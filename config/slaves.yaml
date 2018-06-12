@@ -1,9 +1,11 @@
 
 
 ethercat_slaves :
-    vendor_id: 0x00000A12
-    fore_leg : 
+    front_left_leg :
+        vendor_id: 0x00000A12
         alias : 0
         position: 0
         product_code: 0x00a986fd
         assign_activate: 0x0700
+        input_port: 0x6010
+        output_port: 0x7000

@@ -14,10 +14,10 @@ private:
   pthread_attr_t current_thattr_;
   bool has_running_thread_;
   struct sched_param sched_param_;
-  uint8_t * process_data_buf_;
   pthread_t communicator_thread_;
   static void *run(void *arg);
   static void cleanup_handler(void *arg);
+  static void copy_data_to_domain_buf();
 
 public:
   EthercatCommunicator();

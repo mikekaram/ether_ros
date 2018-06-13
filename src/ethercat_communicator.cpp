@@ -2,9 +2,10 @@
 #include "ighm_ros.h"
 #include "utilities.h"
 #include "ethercat_slave.h"
+#include <string.h>
 
 static unsigned int counter = 0;
-static unsigned int blink = 0;
+// static unsigned int blink = 0;
 static unsigned int sync_ref_counter = 0;
 const struct timespec cycletime = {0, PERIOD_NS};
 char new_string[100];
@@ -24,7 +25,6 @@ static uint8_t phase_deg_id = 34;
 static uint8_t flatness_param_id = 36;
 
 int cleanup_pop_arg_;
-size_t num_process_data;
 
 /*****************************************************************************/
 
@@ -149,14 +149,6 @@ void EthercatCommunicator::init()
         handle_error_en(ret, "pthread_attr_getschedpolicy");
     }
     ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
-
-    /******************************
-        Application domain data
-    ******************************/
-   num_process_data = ecrt_domain_size(domain1);
-   ROS_INFO("Number of process data bytes: %lu\n",num_process_data);
-   process_data_buf_ = (uint8_t *)malloc(num_process_data*sizeof(uint8_t));
-
 }
 
 void EthercatCommunicator::start()
@@ -257,9 +249,8 @@ void *EthercatCommunicator::run(void *arg)
 
         // receive process data
         ecrt_master_receive(master);
-        pthread_spin_lock(&lock);
         ecrt_domain_process(domain1);
-        pthread_spin_unlock(&lock);
+
         for (int j = 0; j < NUM_SLAVES; j++)
         {
             hip_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), hip_angle_index, hip_angle_index + 1);
@@ -268,7 +259,7 @@ void *EthercatCommunicator::run(void *arg)
         }
         printf("I:");
         for (size_t k = ethercat_slaves[0].slave.get_pdo_in(); k < num_process_data; k++)
-                printf(" %2.2x", *(domain1_pd + k));
+            printf(" %2.2x", *(domain1_pd + k));
         printf("\n");
         // check process data state (optional)
         check_domain1_state();
@@ -321,6 +312,7 @@ void *EthercatCommunicator::run(void *arg)
         // modify_output_sint16(domain1_pd + pdo_out, phase_deg_id, 0);
         // modify_output_sint16(domain1_pd + pdo_out, flatness_param_id, 0);
         // modify_output_bit(domain1_pd + pdo_out, state_machine_id, state_machine_subid, 1);
+
         printf("O:");
         for (int j = 0; j < 38; j++)
             printf(" %2.2x", *(domain1_pd + j));
@@ -341,10 +333,9 @@ void *EthercatCommunicator::run(void *arg)
         }
         ecrt_master_sync_slave_clocks(master);
 
+        EthercatCommunicator::copy_data_to_domain_buf(); //move the data from process_data_buf to domain1_pd buf carefuly
         // send process data
-        pthread_spin_lock(&lock);
         ecrt_domain_queue(domain1);
-        pthread_spin_unlock(&lock);
         ecrt_master_send(master);
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &cancel_state); //set the cancel state to ENABLE
         if (ret != 0)
@@ -415,4 +406,16 @@ void EthercatCommunicator::stop()
     }
     else
         ROS_INFO("stop(): communicator thread wasn't canceled (shouldn't happen!)\n");
+}
+
+void EthercatCommunicator::copy_data_to_domain_buf()
+{
+    pthread_spin_lock(&lock);
+    for (int i = 0; i < NUM_SLAVES; i++)
+    {
+        memcpy((domain1_pd + ethercat_slaves[i].slave.get_pdo_out()),
+               (process_data_buf + ethercat_slaves[i].slave.get_pdo_out()),
+               (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
+    }
+    pthread_spin_unlock(&lock);
 }

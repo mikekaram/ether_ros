@@ -3,12 +3,13 @@
 #include "ighm_ros.h"
 
 uint8_t *domain1_pd;
+uint8_t *process_data_buf;
+size_t num_process_data;
 int log_fd;
 ec_master_t *master;
 ec_master_state_t master_state;
 ec_domain_t *domain1;
 ec_domain_state_t domain1_state;
-// ros::NodeHandle n;
 slave_struct ethercat_slaves[NUM_SLAVES];
 pthread_spinlock_t lock;
 /****************************************************************************/
@@ -52,7 +53,7 @@ int main(int argc, char **argv)
         ROS_FATAL("mlockall failed");
         exit(1);
     }
-    
+
     ret = pthread_spin_init(&lock, PTHREAD_PROCESS_SHARED); // It doesn't matter for our application what pshared value we use
     if (ret != 0)
     {
@@ -78,7 +79,7 @@ int main(int argc, char **argv)
         ethercat_slaves[i].slave_name = slave_names[i];
         ethercat_slaves[i].slave.initialize(ethercat_slaves[i].slave_name, n);
     }
-  
+
     // Create configuration for bus coupler
 
     /************************************************
@@ -96,7 +97,12 @@ int main(int argc, char **argv)
     ros::ServiceServer ethercat_communicatord_service  = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
 
-
+    /******************************************
+        Application domain data
+    *******************************************/
+    num_process_data = ecrt_domain_size(domain1);
+    ROS_INFO("Number of process data bytes: %lu\n", num_process_data);
+    process_data_buf = (uint8_t *)malloc(num_process_data * sizeof(uint8_t));
 
     // ************************************************
     /* Open log file */

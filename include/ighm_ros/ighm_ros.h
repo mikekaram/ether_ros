@@ -62,12 +62,13 @@ typedef struct slave_struct
 
 extern slave_struct ethercat_slaves[NUM_SLAVES];
 extern uint8_t *domain1_pd;
+extern uint8_t * process_data_buf;
+extern size_t num_process_data;
 extern int log_fd;
 extern ec_master_t *master;
 extern ec_master_state_t master_state;
 extern ec_domain_t *domain1;
 extern ec_domain_state_t domain1_state;
-// extern ros::NodeHandle n;
 extern pthread_spinlock_t lock;
 
 #endif /* IGHM_ROS_LIB_H */

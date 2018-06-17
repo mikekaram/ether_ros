@@ -25,6 +25,7 @@ static uint8_t phase_deg_id = 34;
 static uint8_t flatness_param_id = 36;
 
 int cleanup_pop_arg_;
+bool EthercatCommunicator::running_thread_ = false;
 
 /*****************************************************************************/
 
@@ -91,19 +92,16 @@ void check_master_state(void)
 
 EthercatCommunicator::EthercatCommunicator()
 {
-
-    has_running_thread_ = false;
     cleanup_pop_arg_ = 0;
 }
 
+
 bool EthercatCommunicator::has_running_thread()
 {
-
-    if (has_running_thread_)
-        return true;
-    else
-        return false;
+    return running_thread_;
 }
+
+
 void EthercatCommunicator::init()
 {
 
@@ -167,18 +165,21 @@ void EthercatCommunicator::start()
         ROS_FATAL("Failed to set domain data.\n");
         exit(1);
     }
+    running_thread_ = true;
     ret = pthread_create(&communicator_thread_, &current_thattr_, &EthercatCommunicator::run, NULL);
     if (ret != 0)
     {
         handle_error_en(ret, "pthread_create");
     }
     ROS_INFO("Starting cyclic thread.\n");
-    has_running_thread_ = true;
 }
+
 void EthercatCommunicator::cleanup_handler(void *arg)
 {
     ROS_INFO("Called clean-up handler\n");
 }
+
+
 void *EthercatCommunicator::run(void *arg)
 {
 
@@ -191,17 +192,19 @@ void *EthercatCommunicator::run(void *arg)
     int16_t hip_angle[NUM_SLAVES], knee_angle[NUM_SLAVES];
 
     int ret;
-    int cancel_state;
     int i = 0;
+    
 
     // get current time
     clock_gettime(CLOCK_TO_USE, &wakeup_time);
     clock_gettime(CLOCK_TO_USE, &break_time);
     break_time = timespec_add(break_time, offset_time);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL); //PTHREAD_CANCEL_DEFERRED is the default but nevertheless
+
     do
     {
-        pthread_testcancel();                                                // check if there is a request for cancel
-        ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cancel_state); //set the cancel state to DISABLE
+        pthread_testcancel();                                        // check if there is a request for cancel
+        ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); //set the cancel state to DISABLE
         if (ret != 0)
         {
             handle_error_en(ret, "pthread_setcancelstate");
@@ -250,7 +253,6 @@ void *EthercatCommunicator::run(void *arg)
         // receive process data
         ecrt_master_receive(master);
         ecrt_domain_process(domain1);
-
         for (int j = 0; j < NUM_SLAVES; j++)
         {
             hip_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), hip_angle_index, hip_angle_index + 1);
@@ -337,7 +339,7 @@ void *EthercatCommunicator::run(void *arg)
         // send process data
         ecrt_domain_queue(domain1);
         ecrt_master_send(master);
-        int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &cancel_state); //set the cancel state to ENABLE
+        int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //set the cancel state to ENABLE
         if (ret != 0)
         {
             handle_error_en(ret, "pthread_setcancelstate");
@@ -379,6 +381,7 @@ void *EthercatCommunicator::run(void *arg)
     }
 #endif
     pthread_cleanup_pop(cleanup_pop_arg_);
+    running_thread_ = false;
     exit(0);
 }
 
@@ -402,7 +405,7 @@ void EthercatCommunicator::stop()
     if (res == PTHREAD_CANCELED)
     {
         ROS_INFO("stop(): communicator thread  was canceled\n");
-        has_running_thread_ = false;
+        running_thread_ = false;
     }
     else
         ROS_INFO("stop(): communicator thread wasn't canceled (shouldn't happen!)\n");

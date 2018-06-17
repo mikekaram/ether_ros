@@ -92,9 +92,9 @@ int main(int argc, char **argv)
     ROS_INFO("Ready to modify output uint16.");
     ros::ServiceServer modify_output_sint16_service = n.advertiseService("modify_output_sint16", modify_output_sint16);
     ROS_INFO("Ready to modify output sint16.");
-    ros::ServiceServer modify_output_sint32_service  = n.advertiseService("modify_output_sint32", modify_output_sint32);
+    ros::ServiceServer modify_output_sint32_service = n.advertiseService("modify_output_sint32", modify_output_sint32);
     ROS_INFO("Ready to modify output sint32.");
-    ros::ServiceServer ethercat_communicatord_service  = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
+    ros::ServiceServer ethercat_communicatord_service = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
 
     /******************************************
@@ -103,6 +103,7 @@ int main(int argc, char **argv)
     num_process_data = ecrt_domain_size(domain1);
     ROS_INFO("Number of process data bytes: %lu\n", num_process_data);
     process_data_buf = (uint8_t *)malloc(num_process_data * sizeof(uint8_t));
+    memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
 
     // ************************************************
     /* Open log file */
@@ -117,5 +118,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 #endif
+
     ros::spin();
 }

@@ -12,16 +12,18 @@ class EthercatCommunicator
 {
 private:
   pthread_attr_t current_thattr_;
-  bool has_running_thread_;
   struct sched_param sched_param_;
   pthread_t communicator_thread_;
+  static bool running_thread_;
   static void *run(void *arg);
   static void cleanup_handler(void *arg);
   static void copy_data_to_domain_buf();
+  // static void set_running_thread(bool value);
+  // static bool get_running_thread();
 
 public:
   EthercatCommunicator();
-  bool has_running_thread();
+  static bool has_running_thread();
   void init();
   void start();
   void stop();

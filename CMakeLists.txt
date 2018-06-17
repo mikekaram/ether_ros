@@ -144,7 +144,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 
 ## If we want to define MACROS this is the cmake way to do it:
-add_definitions(-DFREQUENCY=1000 -DRUN_TIME=300)
+add_definitions(-DFREQUENCY=100 -DRUN_TIME=300)
 add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp ${utilities} ${ethercat_communicator} ${services} ${ethercat_slave})
 
 ## Rename C++ executable without prefix

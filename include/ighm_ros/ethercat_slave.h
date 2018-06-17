@@ -9,17 +9,17 @@
 class EthercatSlave
 {
   private:
-    int vendor_id;
-    std::string slave_id;
-    int product_code;
-    int assign_activate;
-    int position;
-    int alias;
-    int input_port;
-    int output_port;
-    ec_slave_config_t *ighm_slave; //pointer to the basic slave struct in ighm
-    int pdo_in;
-    int pdo_out;
+    int vendor_id_;
+    std::string slave_id_;
+    int product_code_;
+    int assign_activate_;
+    int position_;
+    int alias_;
+    int input_port_;
+    int output_port_;
+    ec_slave_config_t *ighm_slave_; //pointer to the basic slave struct in ighm
+    int pdo_in_;
+    int pdo_out_;
 
   public:
     void initialize(std::string slave, ros::NodeHandle& n);

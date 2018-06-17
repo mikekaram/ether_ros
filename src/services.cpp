@@ -6,6 +6,25 @@
 
 EthercatCommunicator ec;
 
+//See more at: http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
+// trim string from start
+std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+{
+    str.erase(0, str.find_first_not_of(chars));
+    return str;
+}
+ 
+std::string& rtrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+{
+    str.erase(str.find_last_not_of(chars) + 1);
+    return str;
+}
+ 
+std::string& trim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+{
+    return ltrim(rtrim(str, chars), chars);
+}
+
 bool modify_output_bit(ighm_ros::ModifyOutputBit::Request &req,
                        ighm_ros::ModifyOutputBit::Response &res)
 {
@@ -57,17 +76,26 @@ bool ethercat_communicatord(ighm_ros::EthercatCommd::Request &req,
                             ighm_ros::EthercatCommd::Response &res)
 {
     bool s;
-    if (req.mode != "start")
+    req.mode = trim(req.mode);
+
+    if (req.mode == "start")
     {
         s = start_ethercat_communicator();
         res.success = s ? "true" : "false";
-        return s;
+        return true;
     }
-    else if (req.mode != "stop")
+    else if (req.mode == "stop")
     {
         s = stop_ethercat_communicator();
+
         res.success = s ? "true" : "false";
-        return s;
+        return true;
+    }
+    else if (req.mode == "thread")
+    {
+
+        res.success = ec.has_running_thread() ? "true" : "false";
+        return true;
     }
     else
         return false;

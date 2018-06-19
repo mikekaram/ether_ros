@@ -1,6 +1,7 @@
 #include "utilities.h"
 #include "services.h"
 #include "ighm_ros.h"
+#include "ethercat_communicator.h"
 
 uint8_t *domain1_pd;
 uint8_t *process_data_buf;
@@ -8,10 +9,13 @@ size_t num_process_data;
 int log_fd;
 ec_master_t *master;
 ec_master_state_t master_state;
+ec_master_info_t master_info;
 ec_domain_t *domain1;
 ec_domain_state_t domain1_state;
-slave_struct ethercat_slaves[NUM_SLAVES];
+slave_struct * ethercat_slaves;
 pthread_spinlock_t lock;
+EthercatCommunicator ethercat_comm;
+EthercatDataHandler ethercat_data_handler;
 /****************************************************************************/
 // EtherCAT
 // extern ec_master_t *master = NULL;
@@ -42,7 +46,7 @@ int main(int argc, char **argv)
 
     std::stringstream ss;
     std::string s;
-    std::string slave_names[NUM_SLAVES] = {"front_left_leg"}; //"front_right_leg" "back_right_leg" "back_left_leg"
+    std::string slave_names[4] = {"front_left_leg", "front_right_leg" , "back_right_leg" ,"back_left_leg"};
 
     ros::init(argc, argv, "ighm_ros");
 
@@ -66,22 +70,37 @@ int main(int argc, char **argv)
         ROS_FATAL("Failed to get master.\n");
         exit(1);
     }
+    ret = ecrt_master(master, & master_info);
+    if (ret != 0)
+    {
+        handle_error_en(ret, "ecrt_master_info");
+    }
     domain1 = ecrt_master_create_domain(master);
     if (!domain1)
     {
         ROS_FATAL("Failed to create domain.\n");
         exit(1);
     }
-
-    for (int i = 0; i < NUM_SLAVES; i++)
+    ROS_INFO("Number of slaves in bus: %u", master_info.slave_count);
+    ethercat_slaves = new slave_struct[master_info.slave_count];
+    for (int i = 0; i < master_info.slave_count; i++)
     {
         ethercat_slaves[i].id = i;
         ethercat_slaves[i].slave_name = slave_names[i];
-        ethercat_slaves[i].slave.initialize(ethercat_slaves[i].slave_name, n);
+        ethercat_slaves[i].slave.init(ethercat_slaves[i].slave_name, n);
     }
 
-    // Create configuration for bus coupler
+    /******************************************
+        Application domain data
+    *******************************************/
+    num_process_data = ecrt_domain_size(domain1);
+    ROS_INFO("Number of process data bytes: %lu\n", num_process_data);
+    process_data_buf = (uint8_t *)malloc(num_process_data * sizeof(uint8_t));
+    memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
 
+    //Initialize the Ethercat Communicator and the Ethercat Data Handler
+    ethercat_comm.init(n);
+    ethercat_data_handler.init(n);
     /************************************************
         Launch the ROS services
     *************************************************/
@@ -97,13 +116,6 @@ int main(int argc, char **argv)
     ros::ServiceServer ethercat_communicatord_service = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
 
-    /******************************************
-        Application domain data
-    *******************************************/
-    num_process_data = ecrt_domain_size(domain1);
-    ROS_INFO("Number of process data bytes: %lu\n", num_process_data);
-    process_data_buf = (uint8_t *)malloc(num_process_data * sizeof(uint8_t));
-    memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
 
     // ************************************************
     /* Open log file */

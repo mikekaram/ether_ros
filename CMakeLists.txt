@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.1)
 project(ighm_ros)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -50,7 +52,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  Num.msg
+  EthercatData.msg
+  EthercatRawData.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -117,10 +120,8 @@ catkin_package(
 ###########
 set(etherlab_include /opt/etherlab/include)
 set(etherlab_lib /opt/etherlab/lib/libethercat.so)
-set(utilities src/utilities.cpp)
-set(ethercat_communicator src/ethercat_communicator.cpp)
-set(services src/services.cpp)
-set(ethercat_slave src/ethercat_slave.cpp)
+set(SOURCES src/utilities.cpp src/ethercat_communicator.cpp src/services.cpp src/ethercat_slave.cpp src/ethercat_data_handler.cpp)
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
@@ -144,8 +145,8 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 
 ## If we want to define MACROS this is the cmake way to do it:
-add_definitions(-DFREQUENCY=100 -DRUN_TIME=300)
-add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp ${utilities} ${ethercat_communicator} ${services} ${ethercat_slave})
+add_definitions(-DFREQUENCY=100 -DRUN_TIME=300 -std=c++11)
+add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp ${SOURCES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

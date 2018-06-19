@@ -25,6 +25,8 @@
 #include <stddef.h>
 #include "ecrt.h"
 #include "ethercat_slave.h"
+#include "ethercat_communicator.h"
+#include "ethercat_data_handler.h"
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC
@@ -37,7 +39,6 @@
 
 #define NSEC_PER_SEC (1000000000L)
 #define PERIOD_NS (NSEC_PER_SEC / FREQUENCY)
-#define NUM_SLAVES 1
 #define DIFF_NS(A, B) (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + \
                        (B).tv_nsec - (A).tv_nsec)
 
@@ -60,15 +61,17 @@ typedef struct slave_struct
     EthercatSlave slave;
 } slave_struct;
 
-extern slave_struct ethercat_slaves[NUM_SLAVES];
+extern slave_struct * ethercat_slaves;
 extern uint8_t *domain1_pd;
 extern uint8_t * process_data_buf;
 extern size_t num_process_data;
 extern int log_fd;
 extern ec_master_t *master;
 extern ec_master_state_t master_state;
+extern ec_master_info_t master_info;
 extern ec_domain_t *domain1;
 extern ec_domain_state_t domain1_state;
 extern pthread_spinlock_t lock;
-
+extern EthercatCommunicator ethercat_comm;
+extern EthercatDataHandler ethercat_data_handler;
 #endif /* IGHM_ROS_LIB_H */

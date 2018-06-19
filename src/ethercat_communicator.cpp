@@ -3,6 +3,7 @@
 #include "utilities.h"
 #include "ethercat_slave.h"
 #include <string.h>
+#include "ighm_ros/EthercatRawData.h"
 
 static unsigned int counter = 0;
 // static unsigned int blink = 0;
@@ -10,22 +11,23 @@ static unsigned int sync_ref_counter = 0;
 const struct timespec cycletime = {0, PERIOD_NS};
 char new_string[100];
 
-static uint8_t BLUE_LED_index = 4;
-static uint8_t knee_angle_index = 6;
-static uint8_t hip_angle_index = 0;
-static uint8_t measurement_index = 64;
-static uint8_t state_machine_id = 0;
-static uint8_t state_machine_subid = 0;
-static uint8_t x_cntr_traj_id = 24;
-static uint8_t y_cntr_traj_id = 26;
-static uint8_t a_ellipse_id = 28;
-static uint8_t b_ellipse_id = 30;
-static uint8_t traj_freq_id = 32;
-static uint8_t phase_deg_id = 34;
-static uint8_t flatness_param_id = 36;
+// static uint8_t BLUE_LED_index = 4;
+// static uint8_t knee_angle_index = 6;
+// static uint8_t hip_angle_index = 0;
+// static uint8_t measurement_index = 64;
+// static uint8_t state_machine_id = 0;
+// static uint8_t state_machine_subid = 0;
+// static uint8_t x_cntr_traj_id = 24;
+// static uint8_t y_cntr_traj_id = 26;
+// static uint8_t a_ellipse_id = 28;
+// static uint8_t b_ellipse_id = 30;
+// static uint8_t traj_freq_id = 32;
+// static uint8_t phase_deg_id = 34;
+// static uint8_t flatness_param_id = 36;
 
-int cleanup_pop_arg_;
+int EthercatCommunicator::cleanup_pop_arg_ = 0;
 bool EthercatCommunicator::running_thread_ = false;
+ros::Publisher EthercatCommunicator::data_raw_pub_;
 
 /*****************************************************************************/
 
@@ -90,19 +92,12 @@ void check_master_state(void)
     master_state = ms;
 }
 
-EthercatCommunicator::EthercatCommunicator()
-{
-    cleanup_pop_arg_ = 0;
-}
-
-
 bool EthercatCommunicator::has_running_thread()
 {
     return running_thread_;
 }
 
-
-void EthercatCommunicator::init()
+void EthercatCommunicator::init(ros::NodeHandle &n)
 {
 
     const struct sched_param sched_param_ = {.sched_priority = 80};
@@ -147,6 +142,9 @@ void EthercatCommunicator::init()
         handle_error_en(ret, "pthread_attr_getschedpolicy");
     }
     ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
+
+    //Create  ROS publisher for the Ethercat RAW data
+    data_raw_pub_ = n.advertise<ighm_ros::EthercatRawData>("ethercat_data_raw", 1000);
 }
 
 void EthercatCommunicator::start()
@@ -179,21 +177,18 @@ void EthercatCommunicator::cleanup_handler(void *arg)
     ROS_INFO("Called clean-up handler\n");
 }
 
-
 void *EthercatCommunicator::run(void *arg)
 {
-
+    ros::Rate loop_rate(FREQUENCY);
     pthread_cleanup_push(EthercatCommunicator::cleanup_handler, NULL);
 #ifdef MEASURE_TIMING
     struct timespec start_time, end_time, last_start_time = {};
 #endif
 
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
-    int16_t hip_angle[NUM_SLAVES], knee_angle[NUM_SLAVES];
 
     int ret;
     int i = 0;
-    
 
     // get current time
     clock_gettime(CLOCK_TO_USE, &wakeup_time);
@@ -203,7 +198,7 @@ void *EthercatCommunicator::run(void *arg)
 
     do
     {
-        pthread_testcancel();                                        // check if there is a request for cancel
+        pthread_testcancel();                                       // check if there is a request for cancel
         ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); //set the cancel state to DISABLE
         if (ret != 0)
         {
@@ -253,16 +248,16 @@ void *EthercatCommunicator::run(void *arg)
         // receive process data
         ecrt_master_receive(master);
         ecrt_domain_process(domain1);
-        for (int j = 0; j < NUM_SLAVES; j++)
-        {
-            hip_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), hip_angle_index, hip_angle_index + 1);
-            knee_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), knee_angle_index, knee_angle_index + 1);
-            ROS_INFO("Angles: %d , %d \n", hip_angle[j], knee_angle[j]);
-        }
-        printf("I:");
-        for (size_t k = ethercat_slaves[0].slave.get_pdo_in(); k < num_process_data; k++)
-            printf(" %2.2x", *(domain1_pd + k));
-        printf("\n");
+        // for (int j = 0; j < NUM_SLAVES; j++)
+        // {
+        //     hip_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), hip_angle_index, hip_angle_index + 1);
+        //     knee_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), knee_angle_index, knee_angle_index + 1);
+        //     ROS_INFO("Angles: %d , %d \n", hip_angle[j], knee_angle[j]);
+        // }
+        // printf("I:");
+        // for (size_t k = ethercat_slaves[0].slave.get_pdo_in(); k < num_process_data; k++)
+        //     printf(" %2.2x", *(domain1_pd + k));
+        // printf("\n");
         // check process data state (optional)
         check_domain1_state();
 
@@ -336,6 +331,8 @@ void *EthercatCommunicator::run(void *arg)
         ecrt_master_sync_slave_clocks(master);
 
         EthercatCommunicator::copy_data_to_domain_buf(); //move the data from process_data_buf to domain1_pd buf carefuly
+        //send the raw data to the raw data topic
+        EthercatCommunicator::publish_raw_data();
         // send process data
         ecrt_domain_queue(domain1);
         ecrt_master_send(master);
@@ -414,11 +411,47 @@ void EthercatCommunicator::stop()
 void EthercatCommunicator::copy_data_to_domain_buf()
 {
     pthread_spin_lock(&lock);
-    for (int i = 0; i < NUM_SLAVES; i++)
+    for (int i = 0; i < master_info.slave_count; i++)
     {
         memcpy((domain1_pd + ethercat_slaves[i].slave.get_pdo_out()),
                (process_data_buf + ethercat_slaves[i].slave.get_pdo_out()),
                (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
     }
     pthread_spin_unlock(&lock);
+}
+
+void EthercatCommunicator::publish_raw_data()
+{
+    std::string input_data_raw = NULL, output_data_raw = NULL;
+    //Create input data raw string
+    for (int i = 0; i < master_info.slave_count; i++)
+    {
+        std::string str;
+        if (i == master_info.slave_count - 1)
+        {
+            str.assign((const char *)(domain1_pd + ethercat_slaves[i].slave.get_pdo_in()),
+                       num_process_data - ethercat_slaves[i].slave.get_pdo_in());
+        }
+        else
+        {
+            str.assign((const char *)(domain1_pd + ethercat_slaves[i].slave.get_pdo_in()),
+                       (size_t)(ethercat_slaves[i + 1].slave.get_pdo_out() - ethercat_slaves[i].slave.get_pdo_in()));
+        }
+        str = str + "\n";
+        input_data_raw += str;
+    }
+    //Create output data raw string
+    for (int i = 0; i < master_info.slave_count; i++)
+    {
+        std::string str;
+        str.assign((const char *)(domain1_pd + ethercat_slaves[i].slave.get_pdo_out()),
+                   (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
+        str = str + "\n";
+        output_data_raw += str;
+    }
+    //Send both strings to the topic
+    ighm_ros::EthercatRawData raw_data;
+    raw_data.input_data_raw = input_data_raw;
+    raw_data.output_data_raw = output_data_raw;
+    data_raw_pub_.publish(raw_data);
 }

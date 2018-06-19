@@ -30,32 +30,32 @@ int safe_atoi(const char *s, int *val)
         return -1;
 }
 
-uint16_t process_input_uint16(uint8_t *data_ptr, uint8_t index, uint8_t subindex)
+uint16_t process_input_uint16(uint8_t *data_ptr, uint8_t index)
 {
     uint16_t return_value = 0x0000;
     uint8_t new_data_ptr[2];
     new_data_ptr[0] = data_ptr[index];
-    new_data_ptr[1] = data_ptr[subindex];
+    new_data_ptr[1] = data_ptr[index + 1];
     return_value = EC_READ_U16(new_data_ptr);
     return return_value;
 }
-int16_t process_input_sint16(uint8_t *data_ptr, uint8_t index, uint8_t subindex)
+int16_t process_input_sint16(uint8_t *data_ptr, uint8_t index)
 {
     int16_t return_value = 0x0000;
     uint8_t new_data_ptr[2];
     new_data_ptr[0] = data_ptr[index];
-    new_data_ptr[1] = data_ptr[subindex];
+    new_data_ptr[1] = data_ptr[index + 1];
     return_value = EC_READ_S16(new_data_ptr);
     return return_value;
 }
-int32_t process_input_sint32(uint8_t *data_ptr, uint8_t index, uint8_t subindex)
+int32_t process_input_sint32(uint8_t *data_ptr, uint8_t index)
 {
     int32_t return_value = 0x00000000;
     uint8_t new_data_ptr[4];
     new_data_ptr[0] = data_ptr[index];
     new_data_ptr[1] = data_ptr[index + 1];
-    new_data_ptr[2] = data_ptr[subindex];
-    new_data_ptr[3] = data_ptr[subindex + 1];
+    new_data_ptr[2] = data_ptr[index + 2];
+    new_data_ptr[3] = data_ptr[index + 3];
     return_value = EC_READ_S32(new_data_ptr);
     return return_value;
 }

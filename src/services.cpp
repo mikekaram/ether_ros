@@ -4,23 +4,21 @@
 #include "ethercat_communicator.h"
 #include "ighm_ros.h"
 
-EthercatCommunicator ec;
-
 //See more at: http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
 // trim string from start
-std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+std::string &ltrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
 {
     str.erase(0, str.find_first_not_of(chars));
     return str;
 }
- 
-std::string& rtrim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+
+std::string &rtrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
 {
     str.erase(str.find_last_not_of(chars) + 1);
     return str;
 }
- 
-std::string& trim(std::string& str, const std::string& chars = "\t\n\v\f\r ")
+
+std::string &trim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
 {
     return ltrim(rtrim(str, chars), chars);
 }
@@ -94,7 +92,30 @@ bool ethercat_communicatord(ighm_ros::EthercatCommd::Request &req,
     else if (req.mode == "thread")
     {
 
-        res.success = ec.has_running_thread() ? "true" : "false";
+        res.success = ethercat_comm.has_running_thread() ? "true" : "false";
+        return true;
+    }
+    else if (req.mode == "restart")
+    {
+        if (!stop_ethercat_communicator())
+        {
+            res.success = "false";
+            return true;
+        }
+        if (!start_ethercat_communicator())
+        {
+            res.success = "false";
+            return true;
+        }
+        res.success = "true";
+        return true;
+    }
+    else if (req.mode == "clear")
+    {
+        pthread_spin_lock(&lock);
+        memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
+        pthread_spin_unlock(&lock);
+        res.success = "true";
         return true;
     }
     else
@@ -103,10 +124,9 @@ bool ethercat_communicatord(ighm_ros::EthercatCommd::Request &req,
 
 bool start_ethercat_communicator()
 {
-    if (!(bool)ec.has_running_thread())
+    if (!(bool)ethercat_comm.has_running_thread())
     {
-        ec.init();
-        ec.start();
+        ethercat_comm.start();
         return true;
     }
     else
@@ -115,9 +135,9 @@ bool start_ethercat_communicator()
 
 bool stop_ethercat_communicator()
 {
-    if ((bool)ec.has_running_thread())
+    if ((bool)ethercat_comm.has_running_thread())
     {
-        ec.stop();
+        ethercat_comm.stop();
         return true;
     }
     else

@@ -22,7 +22,7 @@ class EthercatSlave
     int pdo_out_;
 
   public:
-    void initialize(std::string slave, ros::NodeHandle& n);
+    void init(std::string slave, ros::NodeHandle& n);
     int get_pdo_out();
     int get_pdo_in();
 };

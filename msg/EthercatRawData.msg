@@ -1,2 +1,3 @@
 Header header
-string ethercat_data_raw
+string input_data_raw
+string output_data_raw

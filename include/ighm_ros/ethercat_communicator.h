@@ -4,8 +4,7 @@
 
 #include <iostream>
 #include <pthread.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include "ros/ros.h"
 void check_domain1_state(void);
 void check_master_state(void);
 class EthercatCommunicator
@@ -13,18 +12,18 @@ class EthercatCommunicator
 private:
   pthread_attr_t current_thattr_;
   struct sched_param sched_param_;
+  static int cleanup_pop_arg_;
   pthread_t communicator_thread_;
+  static ros::Publisher data_raw_pub_;
   static bool running_thread_;
   static void *run(void *arg);
   static void cleanup_handler(void *arg);
   static void copy_data_to_domain_buf();
-  // static void set_running_thread(bool value);
-  // static bool get_running_thread();
+  static void publish_raw_data();
 
 public:
-  EthercatCommunicator();
   static bool has_running_thread();
-  void init();
+  void init(ros::NodeHandle &n);
   void start();
   void stop();
 };

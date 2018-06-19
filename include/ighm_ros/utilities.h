@@ -9,11 +9,11 @@
 #include <stdlib.h>
 
 
-uint16_t process_input_uint16(uint8_t *data_ptr, uint8_t index, uint8_t subindex);
+uint16_t process_input_uint16(uint8_t *data_ptr, uint8_t index);
 
-int16_t process_input_sint16(uint8_t *data_ptr, uint8_t index, uint8_t subindex);
+int16_t process_input_sint16(uint8_t *data_ptr, uint8_t index);
 
-int32_t process_input_sint32(uint8_t *data_ptr, uint8_t index, uint8_t subindex);
+int32_t process_input_sint32(uint8_t *data_ptr, uint8_t index);
 
 ssize_t insist_write(int fd, const char *buf, size_t count);
 

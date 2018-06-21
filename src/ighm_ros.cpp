@@ -70,6 +70,7 @@ int main(int argc, char **argv)
         ROS_FATAL("Failed to get master.\n");
         exit(1);
     }
+    ROS_INFO("ok 1\n");
     ret = ecrt_master(master, & master_info);
     if (ret != 0)
     {

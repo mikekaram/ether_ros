@@ -1,23 +1,22 @@
 #include "ethercat_data_handler.h"
 #include "ighm_ros/EthercatData.h"
 #include "ighm_ros/EthercatRawData.h"
+#include "ethercat_slave.h"
 #include "utilities.h"
+#include "vector"
 #include "ighm_ros.h"
 #include <iostream>
 #include <string>
 
 void EthercatDataHandler::raw_data_callback(const ighm_ros::EthercatRawData::ConstPtr &ethercat_data_raw)
 {
-    // ros::Rate(FREQUENCY);
-    std::string input_data_raw = ethercat_data_raw->input_data_raw;
+    std::vector<uint8_t> input_data_raw = ethercat_data_raw->input_data_raw;
     uint8_t *data_ptr;
     size_t pos;
-    std::string delimiter = "\n";
     for (int i = 0; i < master_info.slave_count; i++)
     {
-        pos = input_data_raw.find(delimiter);
-        data_ptr = (uint8_t * )input_data_raw.substr(0, pos).c_str();
-        input_data_raw.erase(0, pos + delimiter.length());
+        pos = ethercat_slaves[i].slave.get_pdo_in();
+        data_ptr = (uint8_t * ) & input_data_raw[pos];
         ighm_ros::EthercatData ethercat_data;
         ethercat_data.hip_angle = process_input_sint16(data_ptr, 0);
         ethercat_data.desired_hip_angle = process_input_sint16(data_ptr, 2);

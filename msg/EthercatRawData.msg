@@ -1,3 +1,3 @@
 Header header
-string input_data_raw
-string output_data_raw
+uint8[] input_data_raw
+uint8[] output_data_raw

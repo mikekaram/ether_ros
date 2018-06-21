@@ -330,9 +330,12 @@ void *EthercatCommunicator::run(void *arg)
         }
         ecrt_master_sync_slave_clocks(master);
 
-        EthercatCommunicator::copy_data_to_domain_buf(); //move the data from process_data_buf to domain1_pd buf carefuly
+        //move the data from process_data_buf to domain1_pd buf carefuly
+        EthercatCommunicator::copy_data_to_domain_buf();
+
         //send the raw data to the raw data topic
         EthercatCommunicator::publish_raw_data();
+
         // send process data
         ecrt_domain_queue(domain1);
         ecrt_master_send(master);
@@ -422,33 +425,31 @@ void EthercatCommunicator::copy_data_to_domain_buf()
 
 void EthercatCommunicator::publish_raw_data()
 {
-    std::string input_data_raw = NULL, output_data_raw = NULL;
+    std::vector<uint8_t> input_data_raw, output_data_raw;
     //Create input data raw string
+    std::vector<uint8_t> input_vec, output_vec;
     for (int i = 0; i < master_info.slave_count; i++)
     {
-        std::string str;
-        if (i == master_info.slave_count - 1)
+        if (i == master_info.slave_count - 1) //check if there is the last slave, because pdo_in are after the pdo_out
         {
-            str.assign((const char *)(domain1_pd + ethercat_slaves[i].slave.get_pdo_in()),
-                       num_process_data - ethercat_slaves[i].slave.get_pdo_in());
+            input_vec.insert(std::end(input_vec), (unsigned char *) &domain1_pd[ethercat_slaves[i].slave.get_pdo_in()],
+                             (size_t)(num_process_data - ethercat_slaves[i].slave.get_pdo_in()));
         }
         else
         {
-            str.assign((const char *)(domain1_pd + ethercat_slaves[i].slave.get_pdo_in()),
-                       (size_t)(ethercat_slaves[i + 1].slave.get_pdo_out() - ethercat_slaves[i].slave.get_pdo_in()));
+            input_vec.insert(std::end(input_vec), (unsigned char *) domain1_pd + ethercat_slaves[i].slave.get_pdo_in(),
+                             (size_t)(ethercat_slaves[i + 1].slave.get_pdo_out() - ethercat_slaves[i].slave.get_pdo_in()));
         }
-        str = str + "\n";
-        input_data_raw += str;
     }
+    input_data_raw.insert(std::end(input_data_raw), std::begin(input_vec), std::end(input_vec));
     //Create output data raw string
     for (int i = 0; i < master_info.slave_count; i++)
     {
-        std::string str;
-        str.assign((const char *)(domain1_pd + ethercat_slaves[i].slave.get_pdo_out()),
-                   (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
-        str = str + "\n";
-        output_data_raw += str;
+        output_vec.insert(std::end(output_vec), (unsigned char *) domain1_pd + ethercat_slaves[i].slave.get_pdo_out(),
+                          (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
+                          
     }
+    output_data_raw.insert(std::end(output_data_raw), std::begin(output_vec), std::end(output_vec));
     //Send both strings to the topic
     ighm_ros::EthercatRawData raw_data;
     raw_data.input_data_raw = input_data_raw;

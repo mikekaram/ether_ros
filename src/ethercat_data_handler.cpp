@@ -15,7 +15,7 @@ void EthercatDataHandler::raw_data_callback(const ighm_ros::EthercatRawData::Con
     size_t pos;
     for (int i = 0; i < master_info.slave_count; i++)
     {
-        pos = ethercat_slaves[i].slave.get_pdo_in();
+        pos = i * num_process_data_in; //The size of every entry is num_process_data_in 
         data_ptr = (uint8_t * ) & input_data_raw[pos];
         ighm_ros::EthercatData ethercat_data;
         ethercat_data.hip_angle = process_input_sint16(data_ptr, 0);

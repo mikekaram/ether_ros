@@ -310,11 +310,6 @@ void *EthercatCommunicator::run(void *arg)
         // modify_output_sint16(domain1_pd + pdo_out, flatness_param_id, 0);
         // modify_output_bit(domain1_pd + pdo_out, state_machine_id, state_machine_subid, 1);
 
-        printf("O:");
-        for (int j = 0; j < 38; j++)
-            printf(" %2.2x", *(domain1_pd + j));
-        printf("\n");
-
         // write application time to master
         clock_gettime(CLOCK_TO_USE, &current_time);
         ecrt_master_application_time(master, TIMESPEC2NS(current_time));
@@ -432,24 +427,14 @@ void EthercatCommunicator::publish_raw_data()
     for (int i = 0; i < master_info.slave_count; i++)
     {
         raw_data_pointer = (unsigned char *)domain1_pd + ethercat_slaves[i].slave.get_pdo_in();
-        if (i == master_info.slave_count - 1) //check if there is the last slave, because pdo_in are after the pdo_out
-        {
-            input_vec.insert(std::end(input_vec), raw_data_pointer,
-                             raw_data_pointer + (size_t)(num_process_data - ethercat_slaves[i].slave.get_pdo_in()));
-        }
-        else
-        {
-            input_vec.insert(std::end(input_vec), raw_data_pointer,
-                             raw_data_pointer + (size_t)(ethercat_slaves[i + 1].slave.get_pdo_out() - ethercat_slaves[i].slave.get_pdo_in()));
-        }
+        input_vec.insert(std::end(input_vec), raw_data_pointer, raw_data_pointer + num_process_data_in);
     }
     input_data_raw.insert(std::end(input_data_raw), std::begin(input_vec), std::end(input_vec));
     //Create output data raw string
     for (int i = 0; i < master_info.slave_count; i++)
     {
         raw_data_pointer = (unsigned char *)domain1_pd + ethercat_slaves[i].slave.get_pdo_out();
-        output_vec.insert(std::end(output_vec), raw_data_pointer,
-                          raw_data_pointer + (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
+        output_vec.insert(std::end(output_vec), raw_data_pointer, raw_data_pointer + num_process_data_out);
     }
     output_data_raw.insert(std::end(output_data_raw), std::begin(output_vec), std::end(output_vec));
     //Send both strings to the topic

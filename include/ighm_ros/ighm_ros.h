@@ -65,6 +65,8 @@ extern slave_struct * ethercat_slaves;
 extern uint8_t *domain1_pd;
 extern uint8_t * process_data_buf;
 extern size_t num_process_data;
+extern size_t num_process_data_in;
+extern size_t num_process_data_out;
 extern int log_fd;
 extern ec_master_t *master;
 extern ec_master_state_t master_state;

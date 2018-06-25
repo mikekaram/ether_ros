@@ -6,13 +6,15 @@
 uint8_t *domain1_pd;
 uint8_t *process_data_buf;
 size_t num_process_data;
+size_t num_process_data_in;
+size_t num_process_data_out;
 int log_fd;
 ec_master_t *master;
 ec_master_state_t master_state;
 ec_master_info_t master_info;
 ec_domain_t *domain1;
 ec_domain_state_t domain1_state;
-slave_struct * ethercat_slaves;
+slave_struct *ethercat_slaves;
 pthread_spinlock_t lock;
 EthercatCommunicator ethercat_comm;
 EthercatDataHandler ethercat_data_handler;
@@ -46,7 +48,7 @@ int main(int argc, char **argv)
 
     std::stringstream ss;
     std::string s;
-    std::string slave_names[4] = {"front_left_leg", "front_right_leg" , "back_right_leg" ,"back_left_leg"};
+    std::string slave_names[4] = {"front_left_leg", "front_right_leg", "back_right_leg", "back_left_leg"};
 
     ros::init(argc, argv, "ighm_ros");
 
@@ -70,8 +72,8 @@ int main(int argc, char **argv)
         ROS_FATAL("Failed to get master.\n");
         exit(1);
     }
-    ROS_INFO("ok 1\n");
-    ret = ecrt_master(master, & master_info);
+
+    ret = ecrt_master(master, &master_info);
     if (ret != 0)
     {
         handle_error_en(ret, "ecrt_master_info");
@@ -95,7 +97,11 @@ int main(int argc, char **argv)
         Application domain data
     *******************************************/
     num_process_data = ecrt_domain_size(domain1);
-    ROS_INFO("Number of process data bytes: %lu\n", num_process_data);
+    ROS_INFO("Number of total process data bytes: %lu\n", num_process_data);
+    num_process_data_in = num_process_data - ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_in();
+    ROS_INFO("Number of process data input bytes for every slave: %lu\n", num_process_data_in);
+    num_process_data_out = ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_in() - ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_out();
+    ROS_INFO("Number of process data output bytes for every slave: %lu\n", num_process_data_out);
     process_data_buf = (uint8_t *)malloc(num_process_data * sizeof(uint8_t));
     memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
 
@@ -116,7 +122,6 @@ int main(int argc, char **argv)
     ROS_INFO("Ready to modify output sint32.");
     ros::ServiceServer ethercat_communicatord_service = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
-
 
     // ************************************************
     /* Open log file */

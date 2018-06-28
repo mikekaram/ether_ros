@@ -1,3 +1,4 @@
+uint8 slave
 uint8 index
 int16 value
 ---

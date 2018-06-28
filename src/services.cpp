@@ -27,7 +27,7 @@ bool modify_output_bit(ighm_ros::ModifyOutputBit::Request &req,
                        ighm_ros::ModifyOutputBit::Response &res)
 {
     uint8_t *data_ptr = process_data_buf;
-    uint8_t *new_data_ptr = (data_ptr + req.index);
+    uint8_t *new_data_ptr = (data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
     pthread_spin_lock(&lock);
     EC_WRITE_BIT(new_data_ptr, req.subindex, req.value);
     pthread_spin_unlock(&lock);
@@ -39,9 +39,9 @@ bool modify_output_uint16(ighm_ros::ModifyOutputUInt16::Request &req,
                           ighm_ros::ModifyOutputUInt16::Response &res)
 {
     uint8_t *data_ptr = process_data_buf;
-    uint8_t *new_data_ptr = (data_ptr + req.index);
+    uint16_t *new_data_ptr = (uint16_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
     pthread_spin_lock(&lock);
-    EC_WRITE_U16((uint16_t *)(data_ptr + req.index), req.value);
+    EC_WRITE_U16(new_data_ptr, req.value);
     pthread_spin_unlock(&lock);
     res.success = "true";
     return true;
@@ -51,9 +51,9 @@ bool modify_output_sint16(ighm_ros::ModifyOutputSInt16::Request &req,
                           ighm_ros::ModifyOutputSInt16::Response &res)
 {
     uint8_t *data_ptr = process_data_buf;
-    uint8_t *new_data_ptr = (data_ptr + req.index);
+    int16_t *new_data_ptr = (int16_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
     pthread_spin_lock(&lock);
-    EC_WRITE_S16((int16_t *)(data_ptr + req.index), req.value);
+    EC_WRITE_S16(new_data_ptr, req.value);
     pthread_spin_unlock(&lock);
     res.success = "true";
     return true;
@@ -63,9 +63,9 @@ bool modify_output_sint32(ighm_ros::ModifyOutputSInt32::Request &req,
                           ighm_ros::ModifyOutputSInt32::Response &res)
 {
     uint8_t *data_ptr = process_data_buf;
-    uint8_t *new_data_ptr = (data_ptr + req.index);
+    int32_t *new_data_ptr = (int32_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
     pthread_spin_lock(&lock);
-    EC_WRITE_S32((int32_t *)(data_ptr + req.index), req.value);
+    EC_WRITE_S32(new_data_ptr, req.value);
     pthread_spin_unlock(&lock);
     res.success = "true";
     return true;

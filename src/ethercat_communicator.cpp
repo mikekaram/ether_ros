@@ -164,6 +164,9 @@ void EthercatCommunicator::start()
         exit(1);
     }
     running_thread_ = true;
+
+    memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
+    
     ret = pthread_create(&communicator_thread_, &current_thattr_, &EthercatCommunicator::run, NULL);
     if (ret != 0)
     {

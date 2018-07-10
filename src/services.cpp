@@ -113,7 +113,7 @@ bool ethercat_communicatord(ighm_ros::EthercatCommd::Request &req,
     else if (req.mode == "clear")
     {
         pthread_spin_lock(&lock);
-        memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
+        memset(process_data_buf, 0, total_process_data); // fill the buffer with zeros
         pthread_spin_unlock(&lock);
         res.success = "true";
         return true;

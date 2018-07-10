@@ -8,6 +8,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+bool process_input_bit(uint8_t *data_ptr, uint8_t index, uint8_t subindex);
+
+uint8_t process_input_uint8(uint8_t *data_ptr, uint8_t index);
+
+int8_t process_input_sint8(uint8_t *data_ptr, uint8_t index);
 
 uint16_t process_input_uint16(uint8_t *data_ptr, uint8_t index);
 

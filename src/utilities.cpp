@@ -30,6 +30,33 @@ int safe_atoi(const char *s, int *val)
         return -1;
 }
 
+bool process_input_bit(uint8_t *data_ptr, uint8_t index, uint8_t subindex)
+{
+    bool return_value = false;
+    uint8_t new_data_ptr;
+    new_data_ptr = data_ptr[index];
+    return_value = EC_READ_BIT(new_data_ptr, subindex);
+    return return_value;
+}
+
+int8_t process_input_sint8(uint8_t *data_ptr, uint8_t index)
+{
+    int8_t return_value = 0x00;
+    uint8_t new_data_ptr;
+    new_data_ptr = data_ptr[index];
+    return_value = EC_READ_S8(new_data_ptr);
+    return return_value;
+}
+
+uint8_t process_input_uint8(uint8_t *data_ptr, uint8_t index)
+{
+    uint8_t return_value = 0x00;
+    uint8_t new_data_ptr;
+    new_data_ptr = data_ptr[index];
+    return_value = EC_READ_U8(new_data_ptr);
+    return return_value;
+}
+
 uint16_t process_input_uint16(uint8_t *data_ptr, uint8_t index)
 {
     uint16_t return_value = 0x0000;

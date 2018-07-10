@@ -5,7 +5,7 @@
 
 uint8_t *domain1_pd;
 uint8_t *process_data_buf;
-size_t num_process_data;
+size_t total_process_data;
 size_t num_process_data_in;
 size_t num_process_data_out;
 int log_fd;
@@ -17,7 +17,8 @@ ec_domain_state_t domain1_state;
 slave_struct *ethercat_slaves;
 pthread_spinlock_t lock;
 EthercatCommunicator ethercat_comm;
-EthercatDataHandler ethercat_data_handler;
+EthercatInputDataHandler ethercat_input_data_handler;
+EthercatOutputDataHandler ethercat_output_data_handler;
 /****************************************************************************/
 // EtherCAT
 // extern ec_master_t *master = NULL;
@@ -96,18 +97,19 @@ int main(int argc, char **argv)
     /******************************************
         Application domain data
     *******************************************/
-    num_process_data = ecrt_domain_size(domain1);
-    ROS_INFO("Number of total process data bytes: %lu\n", num_process_data);
-    num_process_data_in = num_process_data - ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_in();
+    total_process_data = ecrt_domain_size(domain1);
+    ROS_INFO("Number of total process data bytes: %lu\n", total_process_data);
+    num_process_data_in = total_process_data - ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_in();
     ROS_INFO("Number of process data input bytes for every slave: %lu\n", num_process_data_in);
     num_process_data_out = ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_in() - ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_out();
     ROS_INFO("Number of process data output bytes for every slave: %lu\n", num_process_data_out);
-    process_data_buf = (uint8_t *)malloc(num_process_data * sizeof(uint8_t));
-    memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
+    process_data_buf = (uint8_t *)malloc(total_process_data * sizeof(uint8_t));
+    memset(process_data_buf, 0, total_process_data); // fill the buffer with zeros
 
-    //Initialize the Ethercat Communicator and the Ethercat Data Handler
+    //Initialize the Ethercat Communicator and the Ethercat Data Handlers
     ethercat_comm.init(n);
-    ethercat_data_handler.init(n);
+    ethercat_input_data_handler.init(n);
+    ethercat_output_data_handler.init(n);
     /************************************************
         Launch the ROS services
     *************************************************/

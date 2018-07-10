@@ -26,7 +26,8 @@
 #include "ecrt.h"
 #include "ethercat_slave.h"
 #include "ethercat_communicator.h"
-#include "ethercat_data_handler.h"
+#include "ethercat_input_data_handler.h"
+#include "ethercat_output_data_handler.h"
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC
@@ -64,7 +65,7 @@ typedef struct slave_struct
 extern slave_struct * ethercat_slaves;
 extern uint8_t *domain1_pd;
 extern uint8_t * process_data_buf;
-extern size_t num_process_data;
+extern size_t total_process_data;
 extern size_t num_process_data_in;
 extern size_t num_process_data_out;
 extern int log_fd;
@@ -75,5 +76,6 @@ extern ec_domain_t *domain1;
 extern ec_domain_state_t domain1_state;
 extern pthread_spinlock_t lock;
 extern EthercatCommunicator ethercat_comm;
-extern EthercatDataHandler ethercat_data_handler;
+extern EthercatInputDataHandler ethercat_input_data_handler;
+extern EthercatOutputDataHandler ethercat_output_data_handler;
 #endif /* IGHM_ROS_LIB_H */

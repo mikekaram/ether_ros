@@ -1,11 +1,10 @@
 
-#ifndef ETH_DATA_HANDLER_LIB_H
-#define ETH_DATA_HANDLER_LIB_H
+#ifndef ETH_INPUT_DATA_HANDLER_LIB_H
+#define ETH_INPUT_DATA_HANDLER_LIB_H
 
-#include <pthread.h>
 #include "ros/ros.h"
 #include "ighm_ros/EthercatRawData.h"
-class EthercatDataHandler
+class EthercatInputDataHandler
 {
     private:
       ros::Subscriber data_raw_sub_;
@@ -16,4 +15,4 @@ class EthercatDataHandler
       void raw_data_callback(const ighm_ros::EthercatRawData::ConstPtr &ethercat_data_raw);
 };
 
-#endif /* ETH_DATA_HANDLER_LIB_H */
+#endif /* ETH_INPUT_DATA_HANDLER_LIB_H */

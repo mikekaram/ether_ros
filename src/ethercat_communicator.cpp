@@ -165,8 +165,6 @@ void EthercatCommunicator::start()
     }
     running_thread_ = true;
 
-    memset(process_data_buf, 0, num_process_data); // fill the buffer with zeros
-    
     ret = pthread_create(&communicator_thread_, &current_thattr_, &EthercatCommunicator::run, NULL);
     if (ret != 0)
     {
@@ -258,7 +256,7 @@ void *EthercatCommunicator::run(void *arg)
         //     ROS_INFO("Angles: %d , %d \n", hip_angle[j], knee_angle[j]);
         // }
         // printf("I:");
-        // for (size_t k = ethercat_slaves[0].slave.get_pdo_in(); k < num_process_data; k++)
+        // for (size_t k = ethercat_slaves[0].slave.get_pdo_in(); k < total_process_data; k++)
         //     printf(" %2.2x", *(domain1_pd + k));
         // printf("\n");
         // check process data state (optional)
@@ -300,18 +298,6 @@ void *EthercatCommunicator::run(void *arg)
             // calculate new process data
         }
 
-        // write process data
-        // modify_output_bit(domain1_pd + pdo_out, 0, BLUE_LED_index, blink);
-        // modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
-        // modify_output_bit(domain1_pd+pdo_out, measurement_index,1);
-        // modify_output_sint16(domain1_pd + pdo_out, x_cntr_traj_id, 0);
-        // modify_output_sint16(domain1_pd + pdo_out, y_cntr_traj_id, 590);
-        // modify_output_sint16(domain1_pd + pdo_out, a_ellipse_id, 0);
-        // modify_output_sint16(domain1_pd + pdo_out, b_ellipse_id, 3);
-        // modify_output_sint16(domain1_pd + pdo_out, traj_freq_id, 100);
-        // modify_output_sint16(domain1_pd + pdo_out, phase_deg_id, 0);
-        // modify_output_sint16(domain1_pd + pdo_out, flatness_param_id, 0);
-        // modify_output_bit(domain1_pd + pdo_out, state_machine_id, state_machine_subid, 1);
 
         // write application time to master
         clock_gettime(CLOCK_TO_USE, &current_time);
@@ -397,6 +383,7 @@ void EthercatCommunicator::stop()
     /* Join with thread to see what its exit status was */
 
     ret = pthread_join(communicator_thread_, &res);
+    memset(process_data_buf, 0, total_process_data); // fill the buffer with zeros
     if (ret != 0)
         handle_error_en(ret, "pthread_join");
 

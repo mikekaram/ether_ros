@@ -7,7 +7,7 @@ class EthercatOutputDataHandler
 {
   private:
     ros::Subscriber data_raw_sub_;
-    ros::Publisher data_pub_;
+    ros::Publisher output_data_pub_;
 
   public:
     void init(ros::NodeHandle &n);

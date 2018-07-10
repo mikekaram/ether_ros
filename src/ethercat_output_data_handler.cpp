@@ -44,8 +44,7 @@ void EthercatOutputDataHandler::raw_data_callback(const ighm_ros::EthercatRawDat
         ethercat_output_data.traj_freq100 = process_input_sint16(data_ptr, 32);
         ethercat_output_data.phase_deg = process_input_sint16(data_ptr, 34);
         ethercat_output_data.flatness_param100 = process_input_sint16(data_ptr, 36);
-
-        data_pub_.publish(ethercat_output_data);
+        output_data_pub_.publish(ethercat_output_data);
     }
 }
 
@@ -55,6 +54,5 @@ void EthercatOutputDataHandler::init(ros::NodeHandle &n)
     data_raw_sub_ = n.subscribe("ethercat_data_raw", 1000, &EthercatOutputDataHandler::raw_data_callback, &ethercat_output_data_handler);
 
     //Create  ROS publishers for the Ethercat formatted data
-    ros::Publisher data_pub_;
-    data_pub_ = n.advertise<ighm_ros::EthercatOutputData>("ethercat_data_out", 1000);
+    output_data_pub_ = n.advertise<ighm_ros::EthercatOutputData>("ethercat_data_out", 1000);
 }

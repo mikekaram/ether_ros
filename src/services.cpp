@@ -35,6 +35,18 @@ bool modify_output_bit(ighm_ros::ModifyOutputBit::Request &req,
     return true;
 }
 
+bool modify_output_sbyte(ighm_ros::ModifyOutputBit::Request &req,
+                       ighm_ros::ModifyOutputBit::Response &res)
+{
+    uint8_t *data_ptr = process_data_buf;
+    int8_t *new_data_ptr = (int8_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
+    pthread_spin_lock(&lock);
+    EC_WRITE_S8(new_data_ptr, req.value);
+    pthread_spin_unlock(&lock);
+    res.success = "true";
+    return true;
+}
+
 bool modify_output_uint16(ighm_ros::ModifyOutputUInt16::Request &req,
                           ighm_ros::ModifyOutputUInt16::Response &res)
 {

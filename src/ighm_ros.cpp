@@ -116,6 +116,8 @@ int main(int argc, char **argv)
 
     ros::ServiceServer modify_output_bit_service = n.advertiseService("modify_output_bit", modify_output_bit);
     ROS_INFO("Ready to modify output bit.");
+    ros::ServiceServer modify_output_sbyte_service = n.advertiseService("modify_output_sbyte", modify_output_sbyte);
+    ROS_INFO("Ready to modify output sbyte.");
     ros::ServiceServer modify_output_uint16_service = n.advertiseService("modify_output_uint16", modify_output_uint16);
     ROS_INFO("Ready to modify output uint16.");
     ros::ServiceServer modify_output_sint16_service = n.advertiseService("modify_output_sint16", modify_output_sint16);

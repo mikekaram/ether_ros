@@ -12,7 +12,7 @@ help_message = """
     #########################################################################################################################
 
     All the terminal commands must beggin with an exclamation mark "!".
-    If you want to find the current application variables, run in a terminal: ethercat pdos
+    If you want to find the current application variables, see the EthercatOutputData.msg
     The current supported commands are:
 
     !start : starts the ethercat communicator
@@ -30,7 +30,6 @@ help_message = """
 
 class ethercat_controller(Cmd):
 
-
     variables2indeces = {
         "state_machine" : [[0, 0], "bit"],
         "initialize_clock": [[0, 1], "bit"],
@@ -40,7 +39,7 @@ class ethercat_controller(Cmd):
         "red_led": [[0, 5], "bit"],
         "button_1": [[0, 6], "bit"],
         "button_2": [[0, 7], "bit"],
-        "sync": [[1], "byte"],
+        "sync": [[1], "sbyte"],
         "desired_x_value": [[2], "sint32"],
         "filter_bandwidth": [[6], "uint16"],
         "desired_y_value": [[8], "sint32"],
@@ -61,8 +60,7 @@ class ethercat_controller(Cmd):
 
     def call_service_mux(self, name, *data):
         function = self.function_dictionary[name]
-        print(data)
-        return function(self, *data)
+        print function(self, *data)
 
     def modify_output_bit_client(self, slave_id, index, subindex, value):
         rospy.wait_for_service('modify_output_bit')
@@ -70,6 +68,16 @@ class ethercat_controller(Cmd):
             modify_output_bit = rospy.ServiceProxy(
                 'modify_output_bit', ModifyOutputBit)
             response = modify_output_bit(slave_id, index, subindex, value)
+            return response.success
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+
+    def modify_output_sbyte_client(self, slave_id, index, value):
+        rospy.wait_for_service('modify_output_sbyte')
+        try:
+            modify_output_sbyte = rospy.ServiceProxy(
+                'modify_output_sbyte', ModifyOutputSByte)
+            response = modify_output_sbyte(slave_id, index, value)
             return response.success
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
@@ -120,6 +128,7 @@ class ethercat_controller(Cmd):
             print "Service call failed: %s" % e
 
     def do_shell(self, args):
+        print(args)
         arguments = args.split(" ")
         if "start" in arguments:
             if len(arguments) != 1:
@@ -140,14 +149,15 @@ class ethercat_controller(Cmd):
             if len(arguments) != 4:
                 print "Usage: !variable [slave_id] [variable_name] [value]"
             else:
-                service_arguments_list = self.variables2indeces[arguments[2]][0]
-                service_arguments_list.insert(0, int(arguments[1]))
+                service_arguments_list = [int(arguments[1])]
+                service_arguments_list.extend(self.variables2indeces[arguments[2]][0])
                 try:
                     service_arguments_list.append(int(arguments[3]))
                 except ValueError:
                     service_arguments_list.append(float(arguments[3]))
                 self.call_service_mux(
                     self.variables2indeces[arguments[2]][1], *service_arguments_list)
+                del service_arguments_list[:]
         elif "run" in arguments:
             if len(arguments) != 2:
                 print "Usage: !run [script_to_run]"
@@ -176,6 +186,7 @@ class ethercat_controller(Cmd):
                            "sint16": modify_output_sint16_client,
                            "uint16": modify_output_uint16_client,
                            "sint32": modify_output_sint32_client,
+						   "sbyte" : modify_output_sbyte_client,
                            "ethercat_communicator": ethercat_communicator_client}
 
 if __name__ == '__main__':

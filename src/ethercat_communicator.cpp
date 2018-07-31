@@ -309,7 +309,7 @@ void *EthercatCommunicator::run(void *arg)
         }
         else
         {
-            sync_ref_counter = 5; // sync every 5 cycles
+            sync_ref_counter = 1; // sync every 1 cycles
             ecrt_master_sync_reference_clock(master);
         }
         ecrt_master_sync_slave_clocks(master);

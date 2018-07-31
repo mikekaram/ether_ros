@@ -11,6 +11,9 @@
 bool modify_output_bit(ighm_ros::ModifyOutputBit::Request &req,
                        ighm_ros::ModifyOutputBit::Response &res);
 
+bool modify_output_sbyte(ighm_ros::ModifyOutputBit::Request &req,
+                       ighm_ros::ModifyOutputBit::Response &res);
+
 bool modify_output_uint16(ighm_ros::ModifyOutputUInt16::Request &req,
                           ighm_ros::ModifyOutputUInt16::Response &res);
 

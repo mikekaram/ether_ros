@@ -64,6 +64,7 @@ add_service_files(
   ModifyOutputSInt16.srv
   ModifyOutputUInt16.srv
   ModifyOutputSInt32.srv
+  ModifyOutputSByte.srv
   EthercatCommd.srv
 )
 
@@ -146,7 +147,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 
 ## If we want to define MACROS this is the cmake way to do it:
-add_definitions(-DFREQUENCY=1000 -DRUN_TIME=1200 -std=c++11)
+add_definitions(-DFREQUENCY=500 -DRUN_TIME=1200 -std=c++11)
 add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp ${SOURCES})
 
 ## Rename C++ executable without prefix

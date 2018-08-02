@@ -2,9 +2,10 @@
 from cmd import Cmd
 import sys
 import subprocess
+import time
 
 import rospy
-from ighm_ros.srv import ModifyOutputBit, ModifyOutputSInt16, ModifyOutputSInt32, ModifyOutputUInt16, EthercatCommd
+from ighm_ros.srv import ModifyOutputBit, ModifyOutputSInt16, ModifyOutputSInt32, ModifyOutputUInt16, EthercatCommd, ModifyOutputSByte
 
 help_message = """
     #########################################################################################################################
@@ -18,7 +19,7 @@ help_message = """
     !start : starts the ethercat communicator
     !stop : stops the ethercat communicator
     !restart : restarts the ethercat communicator
-    !variable [slave_id] [variable_name] [value] : change the value of a variable in the ethercat output data
+    !variable [slave_id | 'all'] [variable_name] [value] : change the value of a variable in the ethercat output data
     !run [script_to_run] : run the script specified, inside the ighm_ros/scripts directory
     !help : shows this help message
     !q : exit the terminal
@@ -57,6 +58,18 @@ class ethercat_controller(Cmd):
         "phase_deg": [[34], "sint16"],
         "flatness_param100": [[36], "sint16"]
     }
+
+    def call_modify_service(self, slave_id, variable_name, value):
+        service_arguments_list = [slave_id]
+        service_arguments_list.extend(
+            self.variables2indeces[variable_name][0])
+        try:
+            service_arguments_list.append(int(value))
+        except ValueError:
+            service_arguments_list.append(float(value))
+        self.call_service_mux(
+            self.variables2indeces[variable_name][1], *service_arguments_list)
+        del service_arguments_list[:]
 
     def call_service_mux(self, name, *data):
         function = self.function_dictionary[name]
@@ -147,17 +160,20 @@ class ethercat_controller(Cmd):
                 self.call_service_mux("ethercat_communicator", "restart")
         elif "variable" in arguments:
             if len(arguments) != 4:
-                print "Usage: !variable [slave_id] [variable_name] [value]"
+                print "Usage: !variable [slave_id | 'all'] [variable_name] [value]"
             else:
-                service_arguments_list = [int(arguments[1])]
-                service_arguments_list.extend(self.variables2indeces[arguments[2]][0])
-                try:
-                    service_arguments_list.append(int(arguments[3]))
-                except ValueError:
-                    service_arguments_list.append(float(arguments[3]))
-                self.call_service_mux(
-                    self.variables2indeces[arguments[2]][1], *service_arguments_list)
-                del service_arguments_list[:]
+                if(arguments[1] == "all"):
+                    while(not rospy.has_param('/ethercat_slaves/slaves_count')):
+                        print("Waiting for 'slaves_count' variable to be set.")
+                        time.sleep(1)
+                    slaves_count = rospy.get_param(
+                        '/ethercat_slaves/slaves_count')
+                    for i in range(slaves_count):
+                        self.call_modify_service(
+                            i, arguments[2], arguments[3])
+                else:
+                    self.call_modify_service(
+                        int(arguments[1]), arguments[2],  arguments[3])
         elif "run" in arguments:
             if len(arguments) != 2:
                 print "Usage: !run [script_to_run]"

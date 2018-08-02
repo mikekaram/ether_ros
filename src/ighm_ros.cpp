@@ -105,6 +105,7 @@ int main(int argc, char **argv)
     ROS_INFO("Number of process data output bytes for every slave: %lu\n", num_process_data_out);
     process_data_buf = (uint8_t *)malloc(total_process_data * sizeof(uint8_t));
     memset(process_data_buf, 0, total_process_data); // fill the buffer with zeros
+    n.setParam("/ethercat_slaves/slaves_count", (int)master_info.slave_count);
 
     //Initialize the Ethercat Communicator and the Ethercat Data Handlers
     ethercat_comm.init(n);

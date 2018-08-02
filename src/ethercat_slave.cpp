@@ -93,7 +93,7 @@ void EthercatSlave::init(std::string slave, ros::NodeHandle& n)
     // configure SYNC signals for this slave
     //For XMC use: 0x0300
     //For Beckhoff FB1111 use: 0x0700
-    ecrt_slave_config_dc(ighm_slave_, assign_activate_, PERIOD_NS, PERIOD_NS / 50, 0, 0);
+    ecrt_slave_config_dc(ighm_slave_, assign_activate_, PERIOD_NS, 50, 0, 0);
 }
 
 int EthercatSlave::get_pdo_in()

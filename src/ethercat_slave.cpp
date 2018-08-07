@@ -7,66 +7,66 @@ void EthercatSlave::init(std::string slave, ros::NodeHandle& n)
 {
 
     slave_id_ = slave;
-    std::string root_loc = std::string("/ethercat_slaves/") + slave + "/";
+    std::string slave_root_loc = std::string("/ethercat_slaves/") + slave + "/";
 
-    while (!n.getParam(root_loc + "vendor_id", vendor_id_))
+    while (!n.getParam(slave_root_loc + "vendor_id", vendor_id_))
     {
         ROS_INFO("Waiting the parameter server to initialize\n");
     }
-    ROS_INFO("Got param: root_loc + vendor_id = %2.2x\n", vendor_id_);
+    ROS_INFO("Got param: slave_root_loc + vendor_id = %2.2x\n", vendor_id_);
 
-    if (n.getParam(root_loc + "alias", alias_))
+    if (n.getParam(slave_root_loc + "alias", alias_))
     {
-        ROS_INFO("Got param: root_loc + alias = %d\n", alias_);
+        ROS_INFO("Got param: slave_root_loc + alias = %d\n", alias_);
     }
     else
     {
-        ROS_FATAL("Failed to get param 'root_loc + alias'\n");
+        ROS_FATAL("Failed to get param 'slave_root_loc + alias'\n");
     }
 
-    if (n.getParam(root_loc + "position", position_))
+    if (n.getParam(slave_root_loc + "position", position_))
     {
-        ROS_INFO("Got param: root_loc + position = %d\n", position_);
+        ROS_INFO("Got param: slave_root_loc + position = %d\n", position_);
     }
     else
     {
-        ROS_FATAL("Failed to get param 'root_loc + position'\n");
+        ROS_FATAL("Failed to get param 'slave_root_loc + position'\n");
     }
 
-    if (n.getParam(root_loc + "product_code", product_code_))
+    if (n.getParam(slave_root_loc + "product_code", product_code_))
     {
-        ROS_INFO("Got param: root_loc + product_code = %2.2x\n", product_code_);
+        ROS_INFO("Got param: slave_root_loc + product_code = %2.2x\n", product_code_);
     }
     else
     {
-        ROS_FATAL("Failed to get param 'root_loc + product_code'\n");
+        ROS_FATAL("Failed to get param 'slave_root_loc + product_code'\n");
     }
 
-    if (n.getParam(root_loc + "assign_activate", assign_activate_))
+    if (n.getParam(slave_root_loc + "assign_activate", assign_activate_))
     {
-        ROS_INFO("Got param: root_loc + assign_activate = %2.2x\n", assign_activate_);
+        ROS_INFO("Got param: slave_root_loc + assign_activate = %2.2x\n", assign_activate_);
     }
     else
     {
-        ROS_FATAL("Failed to get param 'root_loc + assign_activate'\n");
+        ROS_FATAL("Failed to get param 'slave_root_loc + assign_activate'\n");
     }
 
-    if (n.getParam(root_loc + "input_port", input_port_))
+    if (n.getParam(slave_root_loc + "input_port", input_port_))
     {
-        ROS_INFO("Got param: root_loc + input_port = %2.2x\n", input_port_);
+        ROS_INFO("Got param: slave_root_loc + input_port = %2.2x\n", input_port_);
     }
     else
     {
-        ROS_FATAL("Failed to get param 'root_loc + input_port'\n");
+        ROS_FATAL("Failed to get param 'slave_root_loc + input_port'\n");
     }
 
-    if (n.getParam(root_loc + "output_port", output_port_))
+    if (n.getParam(slave_root_loc + "output_port", output_port_))
     {
-        ROS_INFO("Got param: root_loc + output_port = %2.2x\n", output_port_);
+        ROS_INFO("Got param: slave_root_loc + output_port = %2.2x\n", output_port_);
     }
     else
     {
-        ROS_FATAL("Failed to get param 'root_loc + output_port'\n");
+        ROS_FATAL("Failed to get param 'slave_root_loc + output_port'\n");
     }
     ighm_slave_ = ecrt_master_slave_config(master, alias_, position_, vendor_id_, product_code_);
     if (!ighm_slave_)

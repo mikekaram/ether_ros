@@ -4,29 +4,16 @@
 #include "ethercat_slave.h"
 #include <string.h>
 #include "ighm_ros/EthercatRawData.h"
+#include "deadline_scheduler.h"
 
 static unsigned int counter = 0;
-// static unsigned int blink = 0;
 static unsigned int sync_ref_counter = 0;
 const struct timespec cycletime = {0, PERIOD_NS};
 char new_string[100];
 
-// static uint8_t BLUE_LED_index = 4;
-// static uint8_t knee_angle_index = 6;
-// static uint8_t hip_angle_index = 0;
-// static uint8_t measurement_index = 64;
-// static uint8_t state_machine_id = 0;
-// static uint8_t state_machine_subid = 0;
-// static uint8_t x_cntr_traj_id = 24;
-// static uint8_t y_cntr_traj_id = 26;
-// static uint8_t a_ellipse_id = 28;
-// static uint8_t b_ellipse_id = 30;
-// static uint8_t traj_freq_id = 32;
-// static uint8_t phase_deg_id = 34;
-// static uint8_t flatness_param_id = 36;
-
 int EthercatCommunicator::cleanup_pop_arg_ = 0;
 bool EthercatCommunicator::running_thread_ = false;
+pthread_t EthercatCommunicator::communicator_thread_ = {};
 ros::Publisher EthercatCommunicator::data_raw_pub_;
 
 /*****************************************************************************/
@@ -120,28 +107,28 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
         ROS_FATAL("Attribute set inherit schedule\n");
         exit(1);
     }
-    if (pthread_attr_setschedpolicy(&current_thattr_, SCHED_FIFO))
-    {
-        ROS_FATAL("Attribute set schedule policy\n");
-        exit(1);
-    }
+    // if (pthread_attr_setschedpolicy(&current_thattr_, SCHED_FIFO))
+    // {
+    //     ROS_FATAL("Attribute set schedule policy\n");
+    //     exit(1);
+    // }
     // Get the values we just set, to make sure that they are set
-    ret = pthread_attr_setschedparam(&current_thattr_, &sched_param_);
-    if (ret != 0)
-    {
-        handle_error_en(ret, "pthread_attr_setschedparam");
-    }
-    ret = pthread_attr_getschedparam(&current_thattr_, &act_param);
-    if (ret != 0)
-    {
-        handle_error_en(ret, "pthread_attr_getschedparam");
-    }
-    ret = pthread_attr_getschedpolicy(&current_thattr_, &act_policy);
-    if (ret != 0)
-    {
-        handle_error_en(ret, "pthread_attr_getschedpolicy");
-    }
-    ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
+    // ret = pthread_attr_setschedparam(&current_thattr_, &sched_param_);
+    // if (ret != 0)
+    // {
+    //     handle_error_en(ret, "pthread_attr_setschedparam");
+    // }
+    // ret = pthread_attr_getschedparam(&current_thattr_, &act_param);
+    // if (ret != 0)
+    // {
+    //     handle_error_en(ret, "pthread_attr_getschedparam");
+    // }
+    // ret = pthread_attr_getschedpolicy(&current_thattr_, &act_policy);
+    // if (ret != 0)
+    // {
+    //     handle_error_en(ret, "pthread_attr_getschedpolicy");
+    // }
+    // ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
 
     //Create  ROS publisher for the Ethercat RAW data
     data_raw_pub_ = n.advertise<ighm_ros::EthercatRawData>("ethercat_data_raw", 1000);
@@ -187,10 +174,30 @@ void *EthercatCommunicator::run(void *arg)
 #endif
 
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
-
     int ret;
     int i = 0;
+    struct sched_attr sched_attr_;
+    cpu_set_t cpuset_;
 
+    sched_attr_.size = sizeof(struct sched_attr);
+    sched_attr_.sched_policy = SCHED_DEADLINE;
+    sched_attr_.sched_priority = 0;
+    sched_attr_.sched_runtime = 100 * 10 ^ 3;
+    sched_attr_.sched_deadline = 200 * 10 ^ 3;
+    sched_attr_.sched_period = PERIOD_NS;
+    CPU_SET(0, &cpuset_);
+
+
+    if (pthread_setaffinity_np(communicator_thread_, sizeof(cpuset_), &cpuset_))
+    {
+        ROS_FATAL("Set pthread affinity, not portable\n");
+        exit(1);
+    }
+    if (sched_setattr(0, &sched_attr_, 0))
+    {
+        ROS_FATAL("Set schedule attributes for DEADLINE scheduling\n");
+        exit(1);
+    }
     // get current time
     clock_gettime(CLOCK_TO_USE, &wakeup_time);
     clock_gettime(CLOCK_TO_USE, &break_time);
@@ -297,7 +304,6 @@ void *EthercatCommunicator::run(void *arg)
 
             // calculate new process data
         }
-
 
         // write application time to master
         clock_gettime(CLOCK_TO_USE, &current_time);
@@ -413,7 +419,7 @@ void EthercatCommunicator::publish_raw_data()
     std::vector<uint8_t> input_data_raw, output_data_raw;
     //Create input data raw string
     std::vector<uint8_t> input_vec, output_vec;
-    unsigned char * raw_data_pointer;
+    unsigned char *raw_data_pointer;
     for (int i = 0; i < master_info.slave_count; i++)
     {
         raw_data_pointer = (unsigned char *)domain1_pd + ethercat_slaves[i].slave.get_pdo_in();

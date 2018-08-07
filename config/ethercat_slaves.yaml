@@ -33,3 +33,5 @@ ethercat_slaves :
         assign_activate: 0x0700
         input_port: 0x6010
         output_port: 0x7000
+    ethercat_frequency: 3000
+    run_time: 1200

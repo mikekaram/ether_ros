@@ -7,7 +7,7 @@
 #include <sstream>
 
 #include <errno.h>
-#include <signal.h>
+// #include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/resource.h>
@@ -18,9 +18,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/mman.h>
-#include <malloc.h>
-#include <sched.h>
-#include <arpa/inet.h>
+// #include <malloc.h>
+// #include <arpa/inet.h>
 #include <pthread.h>
 #include <stddef.h>
 #include "ecrt.h"
@@ -39,7 +38,7 @@
 /****************************************************************************/
 
 #define NSEC_PER_SEC (1000000000L)
-#define PERIOD_NS (NSEC_PER_SEC / FREQUENCY)
+// #define PERIOD_NS (NSEC_PER_SEC / FREQUENCY)
 #define DIFF_NS(A, B) (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + \
                        (B).tv_nsec - (A).tv_nsec)
 
@@ -78,4 +77,7 @@ extern pthread_spinlock_t lock;
 extern EthercatCommunicator ethercat_comm;
 extern EthercatInputDataHandler ethercat_input_data_handler;
 extern EthercatOutputDataHandler ethercat_output_data_handler;
+extern int PERIOD_NS;
+extern int FREQUENCY;
+extern int RUN_TIME;
 #endif /* IGHM_ROS_LIB_H */

@@ -19,6 +19,9 @@ pthread_spinlock_t lock;
 EthercatCommunicator ethercat_comm;
 EthercatInputDataHandler ethercat_input_data_handler;
 EthercatOutputDataHandler ethercat_output_data_handler;
+int FREQUENCY;
+int RUN_TIME;
+int PERIOD_NS;
 /****************************************************************************/
 // EtherCAT
 // extern ec_master_t *master = NULL;
@@ -39,9 +42,9 @@ EthercatOutputDataHandler ethercat_output_data_handler;
 
 // offsets for PDO entries
 
-static char file_name[100];
-
 /****************************************************************************/
+
+static char file_name[100];
 
 int main(int argc, char **argv)
 {
@@ -85,6 +88,25 @@ int main(int argc, char **argv)
         ROS_FATAL("Failed to create domain.\n");
         exit(1);
     }
+    if (n.getParam("/ethercat_slaves/frequency", FREQUENCY))
+    {
+        ROS_INFO("Got param: /ethercat_slaves/frequency = %d\n", FREQUENCY);
+    }
+    else
+    {
+        ROS_FATAL("Failed to get param '/ethercat_slaves/frequency'\n");
+    }
+
+    if (n.getParam("/ethercat_slaves/run_time", RUN_TIME))
+    {
+        ROS_INFO("Got param: /ethercat_slaves/run_time = %d\n", RUN_TIME);
+    }
+    else
+    {
+        ROS_FATAL("Failed to get param '/ethercat_slaves/run_time'\n");
+    }
+    PERIOD_NS = (NSEC_PER_SEC / FREQUENCY);
+
     ROS_INFO("Number of slaves in bus: %u", master_info.slave_count);
     ethercat_slaves = new slave_struct[master_info.slave_count];
     for (int i = 0; i < master_info.slave_count; i++)
@@ -95,7 +117,7 @@ int main(int argc, char **argv)
     }
 
     /******************************************
-        Application domain data
+    *    Application domain data              *
     *******************************************/
     total_process_data = ecrt_domain_size(domain1);
     ROS_INFO("Number of total process data bytes: %lu\n", total_process_data);
@@ -111,9 +133,10 @@ int main(int argc, char **argv)
     ethercat_comm.init(n);
     ethercat_input_data_handler.init(n);
     ethercat_output_data_handler.init(n);
-    /************************************************
-        Launch the ROS services
-    *************************************************/
+
+    /******************************************
+    *    Launch the ROS services              *
+    *******************************************/
 
     ros::ServiceServer modify_output_bit_service = n.advertiseService("modify_output_bit", modify_output_bit);
     ROS_INFO("Ready to modify output bit.");
@@ -128,9 +151,10 @@ int main(int argc, char **argv)
     ros::ServiceServer ethercat_communicatord_service = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
 
-    // ************************************************
-    /* Open log file */
 #ifdef MEASURE_TIMING
+    /******************************************
+    *           Open Log file                 *
+    *******************************************/
     sprintf(file_name, "./outputs/measure_test_2/nort_ectest_dc_res_time_%d_%d_Hz_%d_s.csv", NUM_SLAVES, FREQUENCY, RUN_TIME);
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
     int flags = O_WRONLY | O_CREAT | O_TRUNC;

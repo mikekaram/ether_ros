@@ -107,28 +107,32 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
         ROS_FATAL("Attribute set inherit schedule\n");
         exit(1);
     }
-    // if (pthread_attr_setschedpolicy(&current_thattr_, SCHED_FIFO))
-    // {
-    //     ROS_FATAL("Attribute set schedule policy\n");
-    //     exit(1);
-    // }
+
+    /*
+    * Use the SCHED_FIFO for now. It should be tested later if there is a better scheduler (see: SCHED_DEADLINE, EDF + CBS)
+    */
+    if (pthread_attr_setschedpolicy(&current_thattr_, SCHED_FIFO))
+    {
+        ROS_FATAL("Attribute set schedule policy\n");
+        exit(1);
+    }
     // Get the values we just set, to make sure that they are set
-    // ret = pthread_attr_setschedparam(&current_thattr_, &sched_param_);
-    // if (ret != 0)
-    // {
-    //     handle_error_en(ret, "pthread_attr_setschedparam");
-    // }
-    // ret = pthread_attr_getschedparam(&current_thattr_, &act_param);
-    // if (ret != 0)
-    // {
-    //     handle_error_en(ret, "pthread_attr_getschedparam");
-    // }
-    // ret = pthread_attr_getschedpolicy(&current_thattr_, &act_policy);
-    // if (ret != 0)
-    // {
-    //     handle_error_en(ret, "pthread_attr_getschedpolicy");
-    // }
-    // ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
+    ret = pthread_attr_setschedparam(&current_thattr_, &sched_param_);
+    if (ret != 0)
+    {
+        handle_error_en(ret, "pthread_attr_setschedparam");
+    }
+    ret = pthread_attr_getschedparam(&current_thattr_, &act_param);
+    if (ret != 0)
+    {
+        handle_error_en(ret, "pthread_attr_getschedparam");
+    }
+    ret = pthread_attr_getschedpolicy(&current_thattr_, &act_policy);
+    if (ret != 0)
+    {
+        handle_error_en(ret, "pthread_attr_getschedpolicy");
+    }
+    ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
 
     //Create  ROS publisher for the Ethercat RAW data
     data_raw_pub_ = n.advertise<ighm_ros::EthercatRawData>("ethercat_data_raw", 1000);
@@ -176,28 +180,30 @@ void *EthercatCommunicator::run(void *arg)
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
     int ret;
     int i = 0;
-    struct sched_attr sched_attr_;
-    cpu_set_t cpuset_;
+    // struct sched_attr sched_attr_;
+    // cpu_set_t cpuset_;
 
-    sched_attr_.size = sizeof(struct sched_attr);
-    sched_attr_.sched_policy = SCHED_DEADLINE;
-    sched_attr_.sched_priority = 0;
-    sched_attr_.sched_runtime = 100 * 10 ^ 3;
-    sched_attr_.sched_deadline = 200 * 10 ^ 3;
-    sched_attr_.sched_period = PERIOD_NS;
-    CPU_SET(0, &cpuset_);
+    // sched_attr_.size = sizeof(struct sched_attr);
+    // sched_attr_.sched_policy = SCHED_DEADLINE;
+    // sched_attr_.sched_priority = 0;
+    // sched_attr_.sched_runtime = 30000;
+    // sched_attr_.sched_deadline = 100000;
+    // sched_attr_.sched_period = PERIOD_NS;
+    // CPU_SET(0, &cpuset_);
 
-
-    if (pthread_setaffinity_np(communicator_thread_, sizeof(cpuset_), &cpuset_))
-    {
-        ROS_FATAL("Set pthread affinity, not portable\n");
-        exit(1);
-    }
-    if (sched_setattr(0, &sched_attr_, 0))
-    {
-        ROS_FATAL("Set schedule attributes for DEADLINE scheduling\n");
-        exit(1);
-    }
+    // if (pthread_setaffinity_np(communicator_thread_, sizeof(cpuset_), &cpuset_))
+    // {
+    //     ROS_FATAL("Set pthread affinity, not portable\n");
+    //     exit(1);
+    // }
+    // ROS_INFO("Size: %d, Policy: %u, Priority: %u, Runtime: %llu, Deadline: %llu, Period: %llu",
+    //          sched_attr_.size, sched_attr_.sched_policy,
+    //          sched_attr_.sched_priority, sched_attr_.sched_runtime, sched_attr_.sched_deadline, sched_attr_.sched_period);
+    // if (sched_setattr(0, &sched_attr_, 0))
+    // {
+    //     ROS_FATAL("Set schedule attributes for DEADLINE scheduling\n");
+    //     exit(1);
+    // }
     // get current time
     clock_gettime(CLOCK_TO_USE, &wakeup_time);
     clock_gettime(CLOCK_TO_USE, &break_time);

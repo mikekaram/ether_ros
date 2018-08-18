@@ -1,3 +1,34 @@
+/******************************************************************************
+ *
+ *  $Id$
+ *
+ *  Copyright (C) 2018 Mike Karamousadakis, NTUA CSL
+ *
+ *  This file is part of the IgH EtherCAT master userspace program in the ROS environment.
+ *
+ *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
+ *  redistribute it and/or modify it under the terms of the GNU General
+ *  Public License as published by the Free Software Foundation; version 3
+ *  of the License.
+ *
+ *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
+ *  it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ *  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with the IgH EtherCAT master userspace library. If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ *  ---
+ *
+ *  The license mentioned above concerns the source code only. Using the
+ *  EtherCAT technology and brand is only permitted in compliance with the
+ *  industrial property and similar rights of Beckhoff Automation GmbH.
+ *
+ *  Contact information: mkaramousadakis@zoho.eu
+ *****************************************************************************/
+
 #include "ethercat_communicator.h"
 #include "ighm_ros.h"
 #include "utilities.h"
@@ -5,6 +36,7 @@
 #include <string.h>
 #include "ighm_ros/EthercatRawData.h"
 #include "deadline_scheduler.h"
+#include <sys/time.h>
 
 static unsigned int counter = 0;
 static unsigned int sync_ref_counter = 0;
@@ -353,7 +385,7 @@ void *EthercatCommunicator::run(void *arg)
         snprintf(new_string, 100, "%10u , %10u , 10u , %10u , 10u , %10u\n",
                  period_min_ns[i], period_max_ns[i], exec_min_ns[i], exec_max_ns[i],
                  latency_min_ns[i], latency_max_ns[i]);
-        fprintf(file, "%s", string_file);
+        dprintf(log_fd, "%s", new_string);
     }
 #elif MEASURE_TIMING == 2
     for (i = 0; i < RUN_TIME * FREQUENCY; i++)

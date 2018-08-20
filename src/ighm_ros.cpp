@@ -8,7 +8,7 @@
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
  *  redistribute it and/or modify it under the terms of the GNU General
- *  Public License as published by the Free Software Foundation; version 3
+ *  Public License as published by the Free Software Foundation; version 2
  *  of the License.
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
@@ -17,7 +17,7 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with the IgH EtherCAT master userspace library. If not, see
+ *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
  *  <http://www.gnu.org/licenses/>.
  *
  *  ---
@@ -29,19 +29,21 @@
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
 
-/** \file
- *
- * IgH EtherCAT Master module main in ROS.
- *
- * \defgroup IgHEMM_ROS EtherCAT module main
- *
+//\defgroup IgHEMM_ROS EtherCAT module main
+
+/** \file ighm_ros.cpp
+ * 
+ * \brief Main source file.
+ * 
  * IgH Master EtherCAT module main for realtime communication with EtherCAT slaves. 
  * This interface is designed for realtime modules, running in the ROS environment 
  * and want to use EtherCAT. There are classes and functions to get the Input and Output PDOs
  * in a realtime context. Before trying to understand the source code of the project,
  * please consider to read and understand the IgH Master Documentation located at: 
  * https://www.etherlab.org/download/ethercat/ethercat-1.5.2.pdf. Finally try to 
- * understand the API provided in the /opt/etherlab/include/ecrt.h file.
+ * understand the API provided in the /opt/etherlab/include/ecrt.h file. The author admits that
+ * the C++ language, is not his strong suit. Therefore feel free to refactore the code given with 
+ * use of the new C++ (11/14/17) helpful tools (unique/shared pointers and other cool stuff).
  *
  *
  * Changes in version 0.3:
@@ -89,32 +91,25 @@
 
 /************************GLOBAL VARIABLES ************************************/
 
-uint8_t *domain1_pd; /**< Global buffer for the actual communication with the IgH Master Module. */
-uint8_t *process_data_buf; /**< Global buffer for safe concurrent accesses from the output PDOs services and the EtherCAT Communicator. \see ethercat_comm */
-size_t total_process_data; /**< Total number of process data (PD) (bytes). */
-size_t num_process_data_in; /**< Number of input PD per slave (bytes). Assumes that the EtherCAT application is the same for every slave. */
-size_t num_process_data_out; /**< Number of output PD per slave (bytes). Assumes that the EtherCAT application is the same for every slave.*/
-int log_fd; /**< File descriptor used for logging, provided that measure_timing is enabled. Could be deprecated in a next version (see kernelshark) */
-ec_master_t *master; /**< The main master struct. Used for communication with the IgH Master Module. */
-ec_master_state_t master_state; /**< The master state struct. Used to examine the current state (Links Up/Down, AL states) of the Master.  */
-ec_master_info_t master_info; /**< The master info struct. Used to know the slaves responding to the Master. */
-ec_domain_t *domain1; /**< The main domain variable. Used to send and receive the datagrams. */
-ec_domain_state_t domain1_state; /**< The domain state struct. Used to examine the current state (Working counter, DL states) of the domain.   */
-slave_struct *ethercat_slaves; /**< The main slave struct, used by our program to contain all the useful info of every slave. */
-pthread_spinlock_t lock; /**< The shared spinlock, used by every thread whick modifies the process_data_buf. \see process_data_buf */
-EthercatCommunicator ethercat_comm; /**< The barebone object of our application. Used for realtime communication (Tx/Rx) with the EtherCAT slaves.
-                                            Doesn't change the output PDOs. Basic state machine: 
-                                            -  Receive the new PDOs in domain1_pd from the IgH Master Module (and then to EtherCAT slaves)
-                                            - Move to the domain_pd the output data of process_data_buf, safely
-                                            - Publish the "raw" data (not linked to EtherCAT variables) in PDOs from the domain1_pd
-                                            - Send the new PDOs from domain1_pd to the IgH Master Module (and then to EtherCAT slaves)*/
-EthercatInputDataHandler ethercat_input_data_handler; /**< Main object for publishing to the /ethercat_data_slave_x the values of the EtherCAT input variables.
-                                                        Maps indeces to variables. */
-EthercatOutputDataHandler ethercat_output_data_handler; /**< Main object for publishing to the /ethercat_data_out the values of the EtherCAT output variables.
-                                                        Maps indeces to variables. */
-int FREQUENCY; /**< Frequency of the realtime thread: EtherCAT Communicator */
-int RUN_TIME; /**< Total run time of the realtime thread: EtherCAT Communicator */
-int PERIOD_NS; /**< Handy variable induced from the Frequency variable. \see FREQUENCY */
+uint8_t *domain1_pd;
+uint8_t *process_data_buf;
+size_t total_process_data; 
+size_t num_process_data_in; 
+size_t num_process_data_out; 
+int log_fd; 
+ec_master_t *master; 
+ec_master_state_t master_state; 
+ec_master_info_t master_info; 
+ec_domain_t *domain1; 
+ec_domain_state_t domain1_state;
+slave_struct *ethercat_slaves; 
+pthread_spinlock_t lock; 
+EthercatCommunicator ethercat_comm;
+EthercatInputDataHandler ethercat_input_data_handler;
+EthercatOutputDataHandler ethercat_output_data_handler;
+int FREQUENCY; 
+int RUN_TIME; 
+int PERIOD_NS;
 
 /****************************************************************************/
 

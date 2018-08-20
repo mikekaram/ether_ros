@@ -8,7 +8,7 @@
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
  *  redistribute it and/or modify it under the terms of the GNU General
- *  Public License as published by the Free Software Foundation; version 3
+ *  Public License as published by the Free Software Foundation; version 2
  *  of the License.
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
@@ -17,7 +17,7 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with the IgH EtherCAT master userspace library. If not, see
+ *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
  *  <http://www.gnu.org/licenses/>.
  *
  *  ---
@@ -28,20 +28,24 @@
  *
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
+/**
+   \file ethercat_communicator.cpp
+   \brief Implementation of EthercatCommunicator class. 
+   
+   Used for real-time communication with the EtherCAT slaves, via the IgH Master module. The new PD are sent 
+   to the  \a /ethercat_data_raw topic.
+*/
 
+/*****************************************************************************/
 #include "ethercat_communicator.h"
 #include "ighm_ros.h"
 #include "utilities.h"
 #include "ethercat_slave.h"
-#include <string.h>
+// #include <string.h>
 #include "ighm_ros/EthercatRawData.h"
 #include "deadline_scheduler.h"
-#include <sys/time.h>
 
-static unsigned int counter = 0;
-static unsigned int sync_ref_counter = 0;
-const struct timespec cycletime = {0, PERIOD_NS};
-char new_string[100];
+
 
 int EthercatCommunicator::cleanup_pop_arg_ = 0;
 bool EthercatCommunicator::running_thread_ = false;
@@ -63,53 +67,7 @@ uint32_t latency_ns[RUN_TIME * FREQUENCY] = {0},
 #endif
 /*****************************************************************************/
 
-struct timespec timespec_add(struct timespec time1, struct timespec time2)
-{
-    struct timespec result;
 
-    if ((time1.tv_nsec + time2.tv_nsec) >= NSEC_PER_SEC)
-    {
-        result.tv_sec = time1.tv_sec + time2.tv_sec + 1;
-        result.tv_nsec = time1.tv_nsec + time2.tv_nsec - NSEC_PER_SEC;
-    }
-    else
-    {
-        result.tv_sec = time1.tv_sec + time2.tv_sec;
-        result.tv_nsec = time1.tv_nsec + time2.tv_nsec;
-    }
-
-    return result;
-}
-
-void check_domain1_state(void)
-{
-    ec_domain_state_t ds;
-
-    ecrt_domain_state(domain1, &ds);
-
-    if (ds.working_counter != domain1_state.working_counter)
-        ROS_INFO("Domain1: WC %u.\n", ds.working_counter);
-    if (ds.wc_state != domain1_state.wc_state)
-        ROS_INFO("Domain1: State %u.\n", ds.wc_state);
-
-    domain1_state = ds;
-}
-
-void check_master_state(void)
-{
-    ec_master_state_t ms;
-
-    ecrt_master_state(master, &ms);
-
-    if (ms.slaves_responding != master_state.slaves_responding)
-        ROS_INFO("%u slave(s).\n", ms.slaves_responding);
-    if (ms.al_states != master_state.al_states)
-        ROS_INFO("AL states: 0x%02X.\n", ms.al_states);
-    if (ms.link_up != master_state.link_up)
-        ROS_INFO("Link is %s.\n", ms.link_up ? "up" : "down");
-
-    master_state = ms;
-}
 
 bool EthercatCommunicator::has_running_thread()
 {
@@ -148,12 +106,12 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
         ROS_FATAL("Attribute set schedule policy\n");
         exit(1);
     }
-    // Get the values we just set, to make sure that they are set
     ret = pthread_attr_setschedparam(&current_thattr_, &sched_param_);
     if (ret != 0)
     {
         handle_error_en(ret, "pthread_attr_setschedparam");
     }
+    // Get the values we just set, to make sure that they are set
     ret = pthread_attr_getschedparam(&current_thattr_, &act_param);
     if (ret != 0)
     {
@@ -208,7 +166,10 @@ void *EthercatCommunicator::run(void *arg)
 #ifdef MEASURE_TIMING
     struct timespec start_time, end_time, last_start_time = {};
 #endif
-
+    unsigned int counter = 0;
+    unsigned int sync_ref_counter = 0;
+    const struct timespec cycletime = {0, PERIOD_NS};
+    char new_string[100];
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
     int ret;
     int i = 0;
@@ -294,17 +255,6 @@ void *EthercatCommunicator::run(void *arg)
         // receive process data
         ecrt_master_receive(master);
         ecrt_domain_process(domain1);
-        // for (int j = 0; j < NUM_SLAVES; j++)
-        // {
-        //     hip_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), hip_angle_index, hip_angle_index + 1);
-        //     knee_angle[j] = process_input_sint16(domain1_pd + ethercat_slaves[j].slave.get_pdo_in(), knee_angle_index, knee_angle_index + 1);
-        //     ROS_INFO("Angles: %d , %d \n", hip_angle[j], knee_angle[j]);
-        // }
-        // printf("I:");
-        // for (size_t k = ethercat_slaves[0].slave.get_pdo_in(); k < total_process_data; k++)
-        //     printf(" %2.2x", *(domain1_pd + k));
-        // printf("\n");
-        // check process data state (optional)
         check_domain1_state();
 
         if (counter)
@@ -379,6 +329,7 @@ void *EthercatCommunicator::run(void *arg)
     } while (DIFF_NS(current_time, break_time) > 0);
 
     // write the statistics to file
+#ifdef MEASURE_TIMING
 #if MEASURE_TIMING == 1
     for (i = 0; i < RUN_TIME * SAMPLING_FREQ; i++)
     {
@@ -401,7 +352,7 @@ void *EthercatCommunicator::run(void *arg)
         }
     }
 #endif
-#ifdef MEASURE_TIMING
+
     if (close(log_fd))
     {
         ROS_ERROR("ec_thread: close log fd");

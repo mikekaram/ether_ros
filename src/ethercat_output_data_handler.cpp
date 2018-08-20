@@ -8,7 +8,7 @@
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
  *  redistribute it and/or modify it under the terms of the GNU General
- *  Public License as published by the Free Software Foundation; version 3
+ *  Public License as published by the Free Software Foundation; version 2
  *  of the License.
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
@@ -17,7 +17,7 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with the IgH EtherCAT master userspace library. If not, see
+ *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
  *  <http://www.gnu.org/licenses/>.
  *
  *  ---
@@ -28,6 +28,16 @@
  *
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
+/**
+   \file ethercat_output_data_handler.cpp
+   \brief Implementation of EthercatOutputDataHandler class. 
+   
+   Used for handling the "raw" output data, received from EtherCAT Communicator and transforming them into 
+   useful, human-readable format, consisted of the EtherCAT variables used by our
+   application. Transforms the indeces to variables.
+*/
+
+/*****************************************************************************/
 
 #include "ethercat_output_data_handler.h"
 #include "ighm_ros/EthercatOutputData.h"

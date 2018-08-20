@@ -8,7 +8,7 @@
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
  *  redistribute it and/or modify it under the terms of the GNU General
- *  Public License as published by the Free Software Foundation; version 3
+ *  Public License as published by the Free Software Foundation; version 2
  *  of the License.
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
@@ -17,7 +17,7 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with the IgH EtherCAT master userspace library. If not, see
+ *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
  *  <http://www.gnu.org/licenses/>.
  *
  *  ---
@@ -28,18 +28,50 @@
  *
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
+/**
+   \file ethercat_output_data_handler.h
+   \brief Header file for the EthercatOutputDataHandler class.
+*/
+
+/*****************************************************************************/
 
 #ifndef ETH_OUTPUT_DATA_HANDLER_LIB_H
 #define ETH_OUTPUT_DATA_HANDLER_LIB_H
 
 #include "ros/ros.h"
 #include "ighm_ros/EthercatRawData.h"
+
+/** \class EthercatOutputDataHandler
+    \brief The Ethercat Output Data Handler class.
+
+    Used for trasforming the "raw" indexed data from 
+    the \a /ethercat_data_raw topic, sent by the Ethercat
+    Communicator, to values of variables, and stream them 
+    to the \a /ethercat_data_out topic.
+*/
 class EthercatOutputDataHandler
 {
   private:
     ros::Subscriber data_raw_sub_;
     ros::Publisher output_data_pub_;
+    
+/** \fn void init(ros::NodeHandle &n)
+    \brief Initialization Method.
 
+    Used for initializing the EthercatInputDataHandler object. It's basically
+    the main method in the class, which initializes the listener to the afore
+    mentioned topic.
+    \param n The ROS Node Handle
+*/
+/** \fn void raw_data_callback(const ighm_ros::EthercatRawData::ConstPtr &ethercat_data_raw)
+    \brief Raw Data Callback
+
+    This method, is called when there are data in the \a /ethercat_data_raw topic.
+    Should the EtherCAT application change, this callback must change also.
+    Implements the basic functionality of the class, to transform the "raw" data
+    into variable values and pipe them into another topic.
+    \param ethercat_data_raw A copy of the actual data sent to the topic \a /ethercat_data_raw.
+*/
   public:
     void init(ros::NodeHandle &n);
     void raw_data_callback(const ighm_ros::EthercatRawData::ConstPtr &ethercat_data_raw);

@@ -8,7 +8,7 @@
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
  *  redistribute it and/or modify it under the terms of the GNU General
- *  Public License as published by the Free Software Foundation; version 3
+ *  Public License as published by the Free Software Foundation; version 2
  *  of the License.
  *
  *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
@@ -17,7 +17,7 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with the IgH EtherCAT master userspace library. If not, see
+ *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
  *  <http://www.gnu.org/licenses/>.
  *
  *  ---
@@ -28,7 +28,16 @@
  *
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
+/**
+   \file services.cpp
+   \brief Implements the services used.
+   
+   Provides services for:
+   - Interacting with the EtherCAT Communicator
+   - Changing the EtherCAT output PDOs
+*/
 
+/*****************************************************************************/
 
 #include "services.h"
 #include "ecrt.h"

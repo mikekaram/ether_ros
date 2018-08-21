@@ -63,7 +63,7 @@
  * 
  * - Added processing for the /ethercat_data_raw topic and created:
  *   Service API for Output PDO handling and topic streaming: /ethercat_output_data
- *   Service API for Input PDO topic streaming: /ethercat_data_slave_x
+ *   Service API for Input PDO handling and topic streaming: /ethercat_data_slave_{slave_id}
  * 
  * - Added synchronization primitives (spinlocks) for the concurrent threads accessing the EtherCAT buffer.
  * - Added more source files, ethercat communicator, ethercat_slave, ethercat_input_data_handler and 

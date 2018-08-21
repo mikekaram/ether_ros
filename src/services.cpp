@@ -44,7 +44,33 @@
 #include "ethercat_communicator.h"
 #include "ighm_ros.h"
 
-//See more at: http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
+/** \fn std::string &ltrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
+    \brief Left trims a string.
+
+    This function trims any character specified in \a chars, which is left of the input
+    \a str.
+
+    \param str The input untrimmed string.
+    \param chars The characters to trim.
+*/
+/** \fn std::string &rtrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
+    \brief Right trims a string.
+
+    This function trims any character specified in \a chars, which is right of the input
+    \a str.
+
+    \param str The input untrimmed string.
+    \param chars The characters to trim.
+*/
+/** \fn std::string &trim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
+    \brief Trims a string from the left and right.
+
+    This function trims any character specified in \a chars, which is right  or left 
+    of the input \a str. Calls internally the \a ltrim and \a rtrim functions.
+    See more at: http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
+    \see ltrim
+    \see rtrim
+*/
 // trim string from start
 std::string &ltrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
 {

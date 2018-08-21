@@ -7,30 +7,21 @@ import time
 import rospy
 from ighm_ros.srv import ModifyOutputBit, ModifyOutputSInt16, ModifyOutputSInt32, ModifyOutputUInt16, EthercatCommd, ModifyOutputSByte
 
-help_message = """
-    #########################################################################################################################
-    ## Ethercat Keyboard controller for changing elliptic trajectory parameters  and controlling the ethercat communicator ##
-    #########################################################################################################################
-
-    All the terminal commands must beggin with an exclamation mark "!".
-    If you want to find the current application variables, see the EthercatOutputData.msg
-    The current supported commands are:
-
-    !start : starts the ethercat communicator
-    !stop : stops the ethercat communicator
-    !restart : restarts the ethercat communicator
-    !variable [slave_id | 'all'] [variable_name] [value] : change the value of a variable in the ethercat output data
-    !run [script_to_run] : run the script specified, inside the ighm_ros/scripts directory
-    !help : shows this help message
-    !q : exit the terminal
-
-    Type !q to quit
-    """
 
 
 
+##\class  ethercat_controller(Cmd)
+# \brief Base Ethercat Controller class.
+#
+# Inherits from the base class Cmd.
+# Serves as a frontend to the C++  code, 
+# and specifically to the services implemented.
 class ethercat_controller(Cmd):
 
+    ## \var variables2indeces
+    # \brief variables2indeces dictionary.
+    #
+    # Used for transforming the [index,subindex] -> variable
     variables2indeces = {
         "state_machine" : [[0, 0], "bit"],
         "initialize_clock": [[0, 1], "bit"],
@@ -58,6 +49,14 @@ class ethercat_controller(Cmd):
         "phase_deg": [[34], "sint16"],
         "flatness_param100": [[36], "sint16"]
     }
+    ## \fn call_modify_service(self, slave_id, variable_name, value)
+    # \brief modify_service wrapper.
+    #
+    # Used for creating the arguments for calling the \a Modify \a Services.
+    # \param self The current object.
+    # \param slave_id The slave's index.
+    # \param variable_name The variable's name to modify.
+    # \param value The value to set.
 
     def call_modify_service(self, slave_id, variable_name, value):
         service_arguments_list = [slave_id]
@@ -71,9 +70,25 @@ class ethercat_controller(Cmd):
             self.variables2indeces[variable_name][1], *service_arguments_list)
         del service_arguments_list[:]
 
+    ## \fn call_service_mux(self, name, *data)
+    # \brief call service  mux.
+    #
+    # Used for muxing the calls to the \a Modify \a Services.
+    # \param self The current object.
+    # \param name The function's name
+    # \param data The arguments for the function
     def call_service_mux(self, name, *data):
         function = self.function_dictionary[name]
         print function(self, *data)
+
+    ## \fn modify_output_bit_client(self, slave_id, index, subindex, value)
+    # \brief Frontend client for the modify_output_bit service.
+    #
+    # \param self The current object.
+    # \param slave_id The slave's index.
+    # \param index The index to change inside the buffer.
+    # \param subindex The subindex inside the index.
+    # \param value The value to set. 
 
     def modify_output_bit_client(self, slave_id, index, subindex, value):
         rospy.wait_for_service('modify_output_bit')
@@ -85,6 +100,14 @@ class ethercat_controller(Cmd):
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
+    ## \fn modify_output_sbyte_client(self, slave_id, index, value)
+    # \brief Frontend client for the modify_output_sbyte service.
+    #
+    # \param self The current object.
+    # \param slave_id The slave's index.
+    # \param index The index to change inside the buffer.
+    # \param value The value to set. 
+
     def modify_output_sbyte_client(self, slave_id, index, value):
         rospy.wait_for_service('modify_output_sbyte')
         try:
@@ -95,6 +118,13 @@ class ethercat_controller(Cmd):
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
+    ## \fn modify_output_sint16_client(self, slave_id, index, value)
+    # \brief Frontend client for the modify_output_sint16 service.
+    #
+    # \param self The current object.
+    # \param slave_id The slave's index.
+    # \param index The index to change inside the buffer.
+    # \param value The value to set. 
 
     def modify_output_sint16_client(self, slave_id, index, value):
         rospy.wait_for_service('modify_output_sint16')
@@ -106,6 +136,13 @@ class ethercat_controller(Cmd):
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
+    ## \fn modify_output_uint16_client(self, slave_id, index, value)
+    # \brief Frontend client for the modify_output_uint16 service.
+    #
+    # \param self The current object.
+    # \param slave_id The slave's index.
+    # \param index The index to change inside the buffer.
+    # \param value The value to set. 
 
     def modify_output_uint16_client(self, slave_id, index, value):
         print(slave_id, index, value)
@@ -118,6 +155,13 @@ class ethercat_controller(Cmd):
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
+    ## \fn modify_output_sint32_client(self, slave_id, index, value)
+    # \brief Frontend client for the modify_output_sint32 service.
+    #
+    # \param self The current object.
+    # \param slave_id The slave's index.
+    # \param index The index to change inside the buffer.
+    # \param value The value to set. 
 
     def modify_output_sint32_client(self, slave_id, index, value):
         rospy.wait_for_service('modify_output_sint32')
@@ -129,6 +173,11 @@ class ethercat_controller(Cmd):
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
+    ## \fn ethercat_communicator_client(self,mode)
+    # \brief Frontend client for the ethercat_communicatord service.
+    #
+    # \param self The current object.
+    # \param mode The mode to change to (start/stop/restart).
 
     def ethercat_communicator_client(self,mode):
         rospy.wait_for_service('ethercat_communicatord')
@@ -139,6 +188,13 @@ class ethercat_controller(Cmd):
             return response.success
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
+
+    ## \fn do_shell(self, args)
+    # \brief Main method of ethercat_controller class.
+    #
+    # Accepts commnads, decomposes them and acts.
+    # \param self The current object.
+    # \param args The arguments given from the cmd line.
 
     def do_shell(self, args):
         print(args)
@@ -189,15 +245,28 @@ class ethercat_controller(Cmd):
         else:
             self.default(args)
 
+    ## \fn do_help(self, line)
+    # \brief Helper method.
+    #
+    # \param self The current object.
+    # \param line Unrelated argument.Just follow the API
+
     def do_help(self, line):
         print(help_message)
 
+    ## \fn default(self, line)
+    # \brief Unrecognized command method.
+    #
+    # \param self The current object.
+    # \param line Unrelated argument.Just follow the API
     def default(self, line):
         print("Unrecognized command. Please type '!help' or '?' for help.")
 
-    @classmethod
-    def emptyline(cls):
-        pass
+    ## \var function_dictionary
+    # \brief Function dictionary
+    #
+    # It's keys are the names of the methods, and their values are the
+    # references to the actual methods.
     function_dictionary = {"bit": modify_output_bit_client,
                            "sint16": modify_output_sint16_client,
                            "uint16": modify_output_uint16_client,
@@ -207,7 +276,35 @@ class ethercat_controller(Cmd):
 
 if __name__ == '__main__':
 
-    intro_message = "Welcome to the Ethercat Keyboard Controller!\nBy Mike Karamousadakis\nContact: mkaramousadakis@zoho.eu\n"
+help_message = """
+    ##################################
+    ## Ethercat Keyboard controller ##
+    ##################################
+    Changes elliptic trajectory parameters  
+    and controlls the ethercat communicator.
+    All the terminal commands must beggin with 
+    an exclamation mark "!".
+    If you want to find the current application variables, 
+    see the EthercatOutputData.msg.
+    The current supported commands are:
+
+    !start : starts the ethercat communicator
+    !stop : stops the ethercat communicator
+    !restart : restarts the ethercat communicator
+    !variable [slave_id | 'all'] [variable_name] [value] : 
+    change the value of a variable in the ethercat output data
+    !run [script_to_run] : run the script specified, 
+    inside the ighm_ros/scripts directory
+    !help : shows this help message
+    !q : exit the terminal
+
+    Type !q to quit
+    """
+    intro_message = """
+    Welcome to the Ethercat Keyboard Controller!
+    By Mike Karamousadakis
+    Contact: mkaramousadakis@zoho.eu
+    """
     print(intro_message)
     print(help_message)
     prompt = ethercat_controller()

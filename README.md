@@ -18,7 +18,7 @@ Features
 - Real time characteristics
 - EtherCAT protocol utilization
 - Working in a ROS environment (kinetic version)
-- Utilizes the main development framework for EtherCAT applications, IgH Master Kernel Modules
+- Utilizes the main development framework for EtherCAT applications, IgH Master Kernel Module
 
 Installation
 ------------

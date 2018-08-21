@@ -83,13 +83,13 @@ public:
     \brief Starts the main thread.
 
     The function that actually starts the realtime thread. The realtime attributes have been set from \a init.
-    \see void init(ros::NodeHandle &n)
     Implements the basic realtime communication (Tx/Rx) with the EtherCAT slaves.
     Doesn't change the output PDOs. Basic state machine: 
     -  Receive the new PDOs in domain1_pd from the IgH Master Module (and then to EtherCAT slaves)
     - Move to the domain_pd the output data of process_data_buf, safely
     - Publish the "raw" data (not linked to EtherCAT variables) in PDOs received from the domain1_pd, to the /ethercat_data_raw topic 
     - Send the new PDOs from domain1_pd to the IgH Master Module (and then to EtherCAT slaves)
+    \see void init(ros::NodeHandle &n)
 
 */
 /** \fn void stop()

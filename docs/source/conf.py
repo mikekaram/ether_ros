@@ -155,7 +155,7 @@ texinfo_documents = [
      author, 'IgHMasteruserspaceprograminROS', 'One line description of project.',
      'Miscellaneous'),
 ]
-
+import sys
 sys.path.append( "../../breathe/" )
 breathe_projects = { "IgHMUR": "../doxygen/xml/" }
 breathe_default_project = "IgHMUR"

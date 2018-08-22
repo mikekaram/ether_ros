@@ -80,7 +80,7 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -167,6 +167,6 @@ breathe_default_project = "IgHMUR"
 
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
-# if  read_the_docs_build:
+if  read_the_docs_build:
 
-subprocess.call('cd ../doxygen; doxygen', shell=True)
+    subprocess.call('cd ../doxygen; doxygen', shell=True)

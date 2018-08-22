@@ -31,7 +31,7 @@ release = u'0.3.1'
 import sys, os, subprocess
 parent_path = os.path.dirname(os.path.abspath(__file__))
 gparent_path = os.path.split(parent_path.rstrip("/"))[0]
-sys.path.append(gparent_path + "/breathe-4.10.0/" )
+sys.path.append(gparent_path + "/breathe/" )
 # subprocess.call("pip install --user -U breathe", shell = True)
 
 # -- General configuration ---------------------------------------------------

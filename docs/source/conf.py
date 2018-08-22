@@ -19,14 +19,14 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u'IgH Master userspace program in ROS environment'
+project = u'IgH Master userspace program in ROS'
 copyright = u'2018, Mike Karamousadakis'
 author = u'Mike Karamousadakis'
 
 # The short X.Y version
 version = u''
 # The full version, including alpha/beta/rc tags
-release = u'0.3'
+release = u'0.3.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,10 +39,11 @@ release = u'0.3'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ['ntemplates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -63,7 +64,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -85,7 +86,8 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['nstatic']
+html_extra_path = ['../../doxygen/html']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -101,7 +103,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'IgHMasteruserspaceprograminROSenvironmentdoc'
+htmlhelp_basename = 'IgHMasteruserspaceprograminROSdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -128,7 +130,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'IgHMasteruserspaceprograminROSenvironment.tex', u'IgH Master userspace program in ROS environment Documentation',
+    (master_doc, 'IgHMasteruserspaceprograminROS.tex', u'IgH Master userspace program in ROS Documentation',
      u'Mike Karamousadakis', 'manual'),
 ]
 
@@ -138,7 +140,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'ighmasteruserspaceprograminrosenvironment', u'IgH Master userspace program in ROS environment Documentation',
+    (master_doc, 'ighmasteruserspaceprograminros', u'IgH Master userspace program in ROS Documentation',
      [author], 1)
 ]
 
@@ -149,14 +151,17 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'IgHMasteruserspaceprograminROSenvironment', u'IgH Master userspace program in ROS environment Documentation',
-     author, 'IgHMasteruserspaceprograminROSenvironment', 'One line description of project.',
+    (master_doc, 'IgHMasteruserspaceprograminROS', u'IgH Master userspace program in ROS Documentation',
+     author, 'IgHMasteruserspaceprograminROS', 'One line description of project.',
      'Miscellaneous'),
 ]
+
+
+# -- Extension configuration -------------------------------------------------
 import subprocess, os
 
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
 if read_the_docs_build:
 
-    subprocess.call('cd ../doxygen; doxygen', shell=True)
+    subprocess.call('cd ../../doxygen; doxygen', shell=True)

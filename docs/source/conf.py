@@ -28,13 +28,17 @@ version = u''
 # The full version, including alpha/beta/rc tags
 release = u'0.3.1'
 
-import sys
-sys.path.append( "../breathe/" )
+import sys, os, subprocess
+parent_path = os.path.dirname(os.path.abspath(__file__))
+gparent_path = os.path.split(parent_path.rstrip("/"))[0]
+sys.path.append(gparent_path + "/breathe/" )
+# subprocess.call("pip install --user -U breathe", shell = True)
+
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
+# needs_sphinx = '1.4'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -160,7 +164,6 @@ breathe_projects = { "IgHMUR": "../doxygen/xml/" }
 breathe_default_project = "IgHMUR"
 
 # -- Extension configuration -------------------------------------------------
-import subprocess, os
 
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 

@@ -31,7 +31,7 @@ release = u'0.3.1'
 import sys, os, subprocess
 parent_path = os.path.dirname(os.path.abspath(__file__))
 gparent_path = os.path.split(parent_path.rstrip("/"))[0]
-sys.path.append(gparent_path + "/breathe/" )
+sys.path.append(gparent_path + "/breathe-4.10.0/" )
 # subprocess.call("pip install --user -U breathe", shell = True)
 
 # -- General configuration ---------------------------------------------------
@@ -167,6 +167,6 @@ breathe_default_project = "IgHMUR"
 
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
-if  read_the_docs_build:
+# if  read_the_docs_build:
 
-    subprocess.call('cd ../doxygen; doxygen', shell=True)
+subprocess.call('cd ../doxygen; doxygen', shell=True)

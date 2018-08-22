@@ -28,7 +28,8 @@ version = u''
 # The full version, including alpha/beta/rc tags
 release = u'0.3.1'
 
-
+import sys
+sys.path.append( "../breathe/" )
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -87,7 +88,6 @@ html_theme = 'alabaster'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['nstatic']
-# html_extra_path = ['../../doxygen/html']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -155,8 +155,7 @@ texinfo_documents = [
      author, 'IgHMasteruserspaceprograminROS', 'One line description of project.',
      'Miscellaneous'),
 ]
-import sys
-sys.path.append( "../../breathe/" )
+
 breathe_projects = { "IgHMUR": "../doxygen/xml/" }
 breathe_default_project = "IgHMUR"
 
@@ -165,6 +164,6 @@ import subprocess, os
 
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
-if read_the_docs_build:
+if  read_the_docs_build:
 
     subprocess.call('cd ../doxygen; doxygen', shell=True)

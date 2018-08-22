@@ -1,12 +1,18 @@
 Simple Documentation Tutorial: IgH Master userspace program in ROS
 ===================================================================
 
+Contents
+-------
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
-.. doxygenfile:: ethercat_communicator.h
-   :project: IgHMUR
+   files
+   classes
+   README
+   licence
+   guide
+
+
 
 
 

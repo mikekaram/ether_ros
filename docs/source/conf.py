@@ -39,7 +39,7 @@ release = u'0.3.1'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc','breathe'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -156,6 +156,9 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+sys.path.append( "../../breathe/" )
+breathe_projects = { "IgHMUR": "../doxygen/xml/" }
+breathe_default_project = "IgHMUR"
 
 # -- Extension configuration -------------------------------------------------
 import subprocess, os

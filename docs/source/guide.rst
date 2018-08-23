@@ -6,24 +6,23 @@ Look how easy it is to use:
 
 - After you *catkin_make* the project, in one terminal run:
 
-```bash
+.. highlight:: bash
 $ roslaunch ighm_ros ighm_ros.launch
 
-```
 - After that, and while the process is running, you run in another terminal:
-```
+
+.. highlight:: bash
 $ rosrun ighm_ros ethercat_keyboard_controller.py
 
-```
 
 - Now you can give orders to the EtherCAT Communicator via a custom terminal. 
 Have fun playing around!
 
-- * Tip: You could run a bash script in the custom terminal by running:
-```bash
+- *Tip: You could run a bash script in the custom terminal by running:*
+
+.. highlight:: bash
 [ethercat_controller] > !r my_awesome_bash_script.sh
 
-```
 Notice that your script must be under the *scripts* directory. You could also check some 
 example scripts there.
 

@@ -14,9 +14,9 @@ Features
 --------
 
 - Real time characteristics, using PREEMPT_RT patch
-- EtherCAT protocol utilization
-- Working in a ROS environment (kinetic version)
-- Utilizes the main development framework for EtherCAT applications, IgH Master Kernel Module
+- EtherCAT technology adaptation in Linux
+- Works in a recent version of ROS (kinetic)
+- Utilizes the main development framework for EtherCAT applications, IgH Master kernel module
 
 Installation
 ------------
@@ -28,8 +28,8 @@ It will be intense.
 Contribute
 ----------
 
-- Issue Tracker: github.com/$project/$project/issues
-- Source Code: github.com/$project/$project
+- Issue Tracker: https://github.com/mikekaram/IgHMaster_userspace_program_in_ROS/issues
+- Source Code: https://github.com/mikekaram/IgHMaster_userspace_program_in_ROS
 
 Support
 -------
@@ -39,4 +39,5 @@ We don't have a mailing list yet, so the default way is by communicating with: m
 
 License
 -------
-The project is licensed under the GPLv2 licence. See more details in the source files of the project.
+The project is licensed under the GPLv2 licence. See more details in the source files of the project or in
+the Lincence section.

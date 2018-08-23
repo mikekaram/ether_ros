@@ -10,7 +10,7 @@ from ighm_ros.srv import ModifyOutputBit, ModifyOutputSInt16, ModifyOutputSInt32
 
 
 
-##\class  ethercat_controller(Cmd)
+##\class  ethercat_controller
 # \brief Base Ethercat Controller class.
 #
 # Inherits from the base class Cmd.

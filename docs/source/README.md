@@ -43,15 +43,4 @@ License
 -------
 
 The project is licensed under the GPLv2 licence. See more details in the source files of the project.
-    .. doxygenclass:: EthercatCommunicator
-    :project: IgHMUR
-    :members:
-    .. doxygenclass:: EthercatInputDataHandler
-    :project: IgHMUR
-    :members:
-    .. doxygenclass:: EthercatOutputDataHandler
-    :project: IgHMUR
-    :members:
-    .. doxygenclass:: EthercatSlave
-    :project: IgHMUR
-    :members:
+

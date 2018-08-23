@@ -7,11 +7,11 @@ see the Guide section. For help or new features or bugs, see information in the 
 of the Guide section.
 
 Contents
--------
+--------
 .. toctree::
    :maxdepth: 2
+
    files
-   classes
    licence
    guide
 

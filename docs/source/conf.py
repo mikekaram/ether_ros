@@ -24,7 +24,7 @@ copyright = u'2018, Mike Karamousadakis'
 author = u'Mike Karamousadakis'
 
 # The short X.Y version
-version = u''
+version = u'0.3'
 # The full version, including alpha/beta/rc tags
 release = u'0.3.1'
 

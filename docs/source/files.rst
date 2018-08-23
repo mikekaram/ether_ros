@@ -1,5 +1,5 @@
-Files
-=========
+Files / Classes
+================
 
 Header Files
 ------------
@@ -8,49 +8,49 @@ EtherCAT Communicator header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_communicator.h
-:project: IgHMUR
+   :project: IgHMUR
 
 EtherCAT Input Data Handler header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_input_data_handler.h
-:project: IgHMUR
+   :project: IgHMUR
 
 EtherCAT Output Data Handler header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_output_data_handler.h
-:project: IgHMUR
+   :project: IgHMUR
 
 EtherCAT Slave header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_slave.h
-:project: IgHMUR
+    :project: IgHMUR
 
 Main header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ighm_ros.h
-:project: IgHMUR
+   :project: IgHMUR
 
 Services header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: services.h
-:project: IgHMUR
+   :project: IgHMUR
 
 Utilities header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: utilities.h
-:project: IgHMUR
+   :project: IgHMUR
 
 Deadline Scheduler header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: deadline_scheduler.h
-:project: IgHMUR
+   :project: IgHMUR
 
 Source Files
 ------------
@@ -59,46 +59,46 @@ EtherCAT Communicator source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_communicator.cpp
-:project: IgHMUR
+   :project: IgHMUR
 
 EtherCAT Input Data Handler source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_input_data_handler.cpp
-:project: IgHMUR
+   :project: IgHMUR
 
 EtherCAT Output Data Handler source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_output_data_handler.cpp
-:project: IgHMUR
+   :project: IgHMUR
 
 EtherCAT Slave source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_slave.cpp
-:project: IgHMUR
+   :project: IgHMUR
 
 Main source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ighm_ros.cpp
-:project: IgHMUR
+   :project: IgHMUR
 
 Services source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: services.cpp
-:project: IgHMUR
+   :project: IgHMUR
 
 Utilities source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: utilities.cpp
-:project: IgHMUR
+   :project: IgHMUR
 
 EtherCAT Keyboard Controller python file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: ethercat_keyboard_controller.py
-:project: IgHMUR
+   :project: IgHMUR

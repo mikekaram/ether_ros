@@ -2,7 +2,8 @@ Documentation Tutorial: IgH Master userspace real time program in ROS
 =============================================================================
 
 Welcome to the documentation of IgH Master userspace real time program in ROS.
-
+If you would like to see an example of usage and installation instructions,
+see the Guide. For help or new features or bugs, see information in the Help section.
 
 Contents
 -------
@@ -14,14 +15,7 @@ Contents
    licence
    help
    contribute
-guide
-
-
-
-
-
-
-
+   guide
 
 Indices and tables
 ==================

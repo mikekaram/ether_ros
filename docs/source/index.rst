@@ -1,5 +1,8 @@
-Simple Documentation Tutorial: IgH Master userspace program in ROS
-===================================================================
+Documentation Tutorial: IgH Master userspace real time program in ROS
+=============================================================================
+
+Welcome to the documentation of IgH Master userspace real time program in ROS.
+
 
 Contents
 -------
@@ -8,9 +11,13 @@ Contents
 
    files
    classes
-   README
    licence
-   guide
+   help
+   contribute
+guide
+
+
+
 
 
 

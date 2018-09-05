@@ -1,57 +1,121 @@
+/******************************************************************************
+ *
+ *  $Id$
+ *
+ *  Copyright (C) 2018 Mike Karamousadakis, NTUA CSL
+ *
+ *  This file is part of the IgH EtherCAT master userspace program in the ROS environment.
+ *
+ *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
+ *  redistribute it and/or modify it under the terms of the GNU General
+ *  Public License as published by the Free Software Foundation; version 2
+ *  of the License.
+ *
+ *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
+ *  it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ *  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ *  ---
+ *
+ *  The license mentioned above concerns the source code only. Using the
+ *  EtherCAT technology and brand is only permitted in compliance with the
+ *  industrial property and similar rights of Beckhoff Automation GmbH.
+ *
+ *  Contact information: mkaramousadakis@zoho.eu
+ *****************************************************************************/
+
+//\defgroup IgHEMM_ROS EtherCAT module main
+
+/** \file ighm_ros.cpp
+ * 
+ * \brief Main source file.
+ * 
+ * IgH Master EtherCAT module main for realtime communication with EtherCAT slaves. 
+ * This interface is designed for realtime modules, running in the ROS environment 
+ * and want to use EtherCAT. There are classes and functions to get the Input and Output PDOs
+ * in a realtime context. Before trying to understand the source code of the project,
+ * please consider to read and understand the IgH Master Documentation located at: 
+ * https://www.etherlab.org/download/ethercat/ethercat-1.5.2.pdf. Finally try to 
+ * understand the API provided in the /opt/etherlab/include/ecrt.h file. The author admits that
+ * the C++ language, is not his strong suit. Therefore feel free to refactore the code given with 
+ * use of the new C++ (11/14/17) helpful tools (unique/shared pointers and other cool stuff).
+ *
+ *
+ * Changes in version 0.3:
+ *
+ * - Created a frontend UI client in Python, for interacting with the Services API.
+ * Features include:
+ * Start/Stop function of the EtherCAT Communicator
+ * Change the Output PDOs on the run
+ * Run script with the aproppriate Service API calls
+ * 
+ * 
+ * Changes in version 0.2:
+ *
+ * - Added features and bug fixes including:
+ *   First realtime characteristics added (debate: FIFO vs DEADLINE scheduling?)
+ *   Handling of the EtherCAT communicator module: Start/Stop/Restart API
+ * 
+ * - Added processing for the /ethercat_data_raw topic and created:
+ *   Service API for Output PDO handling and topic streaming: /ethercat_output_data
+ *   Service API for Input PDO handling and topic streaming: /ethercat_data_slave_{slave_id}
+ * 
+ * - Added synchronization primitives (spinlocks) for the concurrent threads accessing the EtherCAT buffer.
+ * - Added more source files, ethercat communicator, ethercat_slave, ethercat_input_data_handler and 
+ * ethercat_output_data_handler. Created external objects to use the appropriate classes and functions.
+ * 
+ * 
+ * Version 0.1:
+ *
+ * - Created the first bare communication layer in the ROS environment. Many bugs and 
+ * deficiencies including: Non realtime characteristics, no API for Output PDO handling and topic
+ * streaming, no handling of the EtherCAT communicator module, no Service API for Input PDO topic streaming.
+ * - One topic streaming: /ethercat_data_raw
+ *
+ * @{
+ */
+
+/*****************************************************************************/
+
 #include "utilities.h"
 #include "services.h"
 #include "ighm_ros.h"
 #include "ethercat_communicator.h"
 
+/*****************************************************************************/
+
+/************************GLOBAL VARIABLES ************************************/
+
 uint8_t *domain1_pd;
 uint8_t *process_data_buf;
-size_t total_process_data;
-size_t num_process_data_in;
-size_t num_process_data_out;
-int log_fd;
-ec_master_t *master;
-ec_master_state_t master_state;
-ec_master_info_t master_info;
-ec_domain_t *domain1;
+size_t total_process_data; 
+size_t num_process_data_in; 
+size_t num_process_data_out; 
+int log_fd; 
+ec_master_t *master; 
+ec_master_state_t master_state; 
+ec_master_info_t master_info; 
+ec_domain_t *domain1; 
 ec_domain_state_t domain1_state;
-slave_struct *ethercat_slaves;
-pthread_spinlock_t lock;
+slave_struct *ethercat_slaves; 
+pthread_spinlock_t lock; 
 EthercatCommunicator ethercat_comm;
 EthercatInputDataHandler ethercat_input_data_handler;
 EthercatOutputDataHandler ethercat_output_data_handler;
-int FREQUENCY;
-int RUN_TIME;
+int FREQUENCY; 
+int RUN_TIME; 
 int PERIOD_NS;
-/****************************************************************************/
-// EtherCAT
-// extern ec_master_t *master = NULL;
-// static ec_master_state_t master_state = {};
-
-// static ec_domain_t *domain1 = NULL;
-// static ec_domain_state_t domain1_state = {};
 
 /****************************************************************************/
-
-// process data
-
-// #define ForeLeg    0, 0
-
-// #define BECKHOFF_FB1111 0x00000A12, 0x00A986FD
-// #define XMC_4800 0x00000A12, 0x00000000
-// #define IDS_Counter     0x000012ad, 0x05de3052
-
-// offsets for PDO entries
-
-/****************************************************************************/
-
-static char file_name[100];
 
 int main(int argc, char **argv)
 {
     int ret;
-
-    std::stringstream ss;
-    std::string s;
     std::string slave_names[4] = {"front_left_leg", "front_right_leg", "back_right_leg", "back_left_leg"};
 
     ros::init(argc, argv, "ighm_ros");
@@ -119,6 +183,7 @@ int main(int argc, char **argv)
     /******************************************
     *    Application domain data              *
     *******************************************/
+   
     total_process_data = ecrt_domain_size(domain1);
     ROS_INFO("Number of total process data bytes: %lu\n", total_process_data);
     num_process_data_in = total_process_data - ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_in();
@@ -155,6 +220,8 @@ int main(int argc, char **argv)
     /******************************************
     *           Open Log file                 *
     *******************************************/
+
+    static char file_name[100];
     sprintf(file_name, "./outputs/measure_test_2/nort_ectest_dc_res_time_%d_%d_Hz_%d_s.csv", NUM_SLAVES, FREQUENCY, RUN_TIME);
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
     int flags = O_WRONLY | O_CREAT | O_TRUNC;
@@ -168,3 +235,7 @@ int main(int argc, char **argv)
 
     ros::spin();
 }
+
+/*****************************************************************************/
+
+/** @} */

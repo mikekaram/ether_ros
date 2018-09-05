@@ -1,1 +1,5 @@
 .vscode/
+docs/doxygen/html
+docs/doxygen/latex
+docs/doxygen/xml
+docs/build/

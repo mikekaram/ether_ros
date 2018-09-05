@@ -1,11 +1,40 @@
+/******************************************************************************
+ *
+ *  $Id$
+ *
+ *  Copyright (C) 2018 Mike Karamousadakis, NTUA CSL
+ *
+ *  This file is part of the IgH EtherCAT master userspace program in the ROS environment.
+ *
+ *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
+ *  redistribute it and/or modify it under the terms of the GNU General
+ *  Public License as published by the Free Software Foundation; version 2
+ *  of the License.
+ *
+ *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
+ *  it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ *  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ *  ---
+ *
+ *  The license mentioned above concerns the source code only. Using the
+ *  EtherCAT technology and brand is only permitted in compliance with the
+ *  industrial property and similar rights of Beckhoff Automation GmbH.
+ *
+ *  Contact information: mkaramousadakis@zoho.eu
+ *****************************************************************************/
+/**
+   \file utilities.cpp
+   \brief A library with useful functions for handling EtherCAT PDOs and other utilities.
+*/
 
-/*
- * utilities.cpp
- *
- * A library with useful functions
- * for communication and handling process data, using EtherCAT
- *
- */
+/*****************************************************************************/
+
 
 #include <unistd.h>
 #include <stdio.h>
@@ -85,6 +114,54 @@ int32_t process_input_sint32(uint8_t *data_ptr, uint8_t index)
     new_data_ptr[3] = data_ptr[index + 3];
     return_value = EC_READ_S32(new_data_ptr);
     return return_value;
+}
+
+struct timespec timespec_add(struct timespec time1, struct timespec time2)
+{
+    struct timespec result;
+
+    if ((time1.tv_nsec + time2.tv_nsec) >= NSEC_PER_SEC)
+    {
+        result.tv_sec = time1.tv_sec + time2.tv_sec + 1;
+        result.tv_nsec = time1.tv_nsec + time2.tv_nsec - NSEC_PER_SEC;
+    }
+    else
+    {
+        result.tv_sec = time1.tv_sec + time2.tv_sec;
+        result.tv_nsec = time1.tv_nsec + time2.tv_nsec;
+    }
+
+    return result;
+}
+
+void check_domain1_state(void)
+{
+    ec_domain_state_t ds;
+
+    ecrt_domain_state(domain1, &ds);
+
+    if (ds.working_counter != domain1_state.working_counter)
+        ROS_INFO("Domain1: WC %u.\n", ds.working_counter);
+    if (ds.wc_state != domain1_state.wc_state)
+        ROS_INFO("Domain1: State %u.\n", ds.wc_state);
+
+    domain1_state = ds;
+}
+
+void check_master_state(void)
+{
+    ec_master_state_t ms;
+
+    ecrt_master_state(master, &ms);
+
+    if (ms.slaves_responding != master_state.slaves_responding)
+        ROS_INFO("%u slave(s).\n", ms.slaves_responding);
+    if (ms.al_states != master_state.al_states)
+        ROS_INFO("AL states: 0x%02X.\n", ms.al_states);
+    if (ms.link_up != master_state.link_up)
+        ROS_INFO("Link is %s.\n", ms.link_up ? "up" : "down");
+
+    master_state = ms;
 }
 
 ssize_t insist_write(int fd, const char *buf, size_t count)

@@ -1,10 +1,76 @@
+/******************************************************************************
+ *
+ *  $Id$
+ *
+ *  Copyright (C) 2018 Mike Karamousadakis, NTUA CSL
+ *
+ *  This file is part of the IgH EtherCAT master userspace program in the ROS environment.
+ *
+ *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
+ *  redistribute it and/or modify it under the terms of the GNU General
+ *  Public License as published by the Free Software Foundation; version 2
+ *  of the License.
+ *
+ *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
+ *  it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ *  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ *  ---
+ *
+ *  The license mentioned above concerns the source code only. Using the
+ *  EtherCAT technology and brand is only permitted in compliance with the
+ *  industrial property and similar rights of Beckhoff Automation GmbH.
+ *
+ *  Contact information: mkaramousadakis@zoho.eu
+ *****************************************************************************/
+/**
+   \file services.cpp
+   \brief Implements the services used.
+   
+   Provides services for:
+   - Interacting with the EtherCAT Communicator
+   - Changing the EtherCAT output PDOs
+*/
+
+/*****************************************************************************/
 
 #include "services.h"
 #include "ecrt.h"
 #include "ethercat_communicator.h"
 #include "ighm_ros.h"
 
-//See more at: http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
+/** \fn std::string &ltrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
+    \brief Left trims a string.
+
+    This function trims any character specified in \a chars, which is left of the input
+    \a str.
+
+    \param str The input untrimmed string.
+    \param chars The characters to trim.
+*/
+/** \fn std::string &rtrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
+    \brief Right trims a string.
+
+    This function trims any character specified in \a chars, which is right of the input
+    \a str.
+
+    \param str The input untrimmed string.
+    \param chars The characters to trim.
+*/
+/** \fn std::string &trim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
+    \brief Trims a string from the left and right.
+
+    This function trims any character specified in \a chars, which is right  or left 
+    of the input \a str. Calls internally the \a ltrim and \a rtrim functions.
+    See more at: http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
+    \see ltrim
+    \see rtrim
+*/
 // trim string from start
 std::string &ltrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
 {

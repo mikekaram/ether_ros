@@ -42,7 +42,7 @@
 #include <string.h>
 #include "ecrt.h"
 #include "utilities.h"
-
+#include "ighm_ros.h"
 
 int safe_atoi(const char *s, int *val)
 {

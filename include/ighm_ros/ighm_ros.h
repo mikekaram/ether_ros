@@ -103,12 +103,12 @@
     - Publish the "raw" data (not linked to EtherCAT variables) in PDOs from the domain1_pd
     - Send the new PDOs from domain1_pd to the IgH Master Module (and then to EtherCAT slaves)
 */
-/** \var EthercatInputDataHandler ethercat_input_data_handler
+/** \var EthercatInputDataHandler pdo_in_publisher
     \brief Main object for publishing to the /ethercat_data_slave_x the values of the EtherCAT input variables.
 
     Maps indeces to variables.
 */
-/** \var EthercatOutputDataHandler ethercat_output_data_handler
+/** \var EthercatOutputDataHandler pdo_out_publisher
     \brief Main object for publishing to the /ethercat_data_out the values of the EtherCAT output variables.
 
     Maps indeces to variables.
@@ -188,11 +188,11 @@
 // #include <time.h>
 #include <sys/mman.h>
 #include <stddef.h>
-// #include "ecrt.h"
-// #include "ethercat_slave.h"
-// #include "ethercat_communicator.h"
-// #include "ethercat_input_data_handler.h"
-// #include "ethercat_output_data_handler.h"
+#include "ecrt.h"
+#include "ethercat_slave.h"
+#include "ethercat_communicator.h"
+#include "pdo_in_publisher.h"
+#include "pdo_out_publisher.h"
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC

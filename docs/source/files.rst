@@ -13,13 +13,13 @@ EtherCAT Communicator header file
 EtherCAT Input Data Handler header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfile:: ethercat_input_data_handler.h
+.. doxygenfile:: pdo_in_publisher.h
    :project: IgHMUR
 
 EtherCAT Output Data Handler header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfile:: ethercat_output_data_handler.h
+.. doxygenfile:: pdo_out_publisher.h
    :project: IgHMUR
 
 EtherCAT Slave header file
@@ -64,13 +64,13 @@ EtherCAT Communicator source file
 EtherCAT Input Data Handler source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfile:: ethercat_input_data_handler.cpp
+.. doxygenfile:: pdo_in_publisher.cpp
    :project: IgHMUR
 
 EtherCAT Output Data Handler source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfile:: ethercat_output_data_handler.cpp
+.. doxygenfile:: pdo_out_publisher.cpp
    :project: IgHMUR
 
 EtherCAT Slave source file

@@ -30,19 +30,18 @@
  *****************************************************************************/
 /**
    \file ethercat_communicator.cpp
-   \brief Implementation of EthercatCommunicator class. 
-   
-   Used for real-time communication with the EtherCAT slaves, via the IgH Master module. The new PD are sent 
+   \brief Implementation of EthercatCommunicator class.
+
+   Used for real-time communication with the EtherCAT slaves, via the IgH Master module. The new PD are sent
    to the  \a /ethercat_data_raw topic.
 */
 
 /*****************************************************************************/
 #include "ethercat_communicator.h"
-#include "ighm_ros.h"
 #include "utilities.h"
 #include "ethercat_slave.h"
 // #include <string.h>
-#include "ighm_ros/EthercatRawData.h"
+#include "ighm_ros/PDORaw.h"
 #include "deadline_scheduler.h"
 
 
@@ -423,7 +422,7 @@ void EthercatCommunicator::publish_raw_data()
     }
     output_data_raw.insert(std::end(output_data_raw), std::begin(output_vec), std::end(output_vec));
     //Send both strings to the topic
-    ighm_ros::EthercatRawData raw_data;
+    ighm_ros::PDORaw raw_data;
     raw_data.input_data_raw = input_data_raw;
     raw_data.output_data_raw = output_data_raw;
     data_raw_pub_.publish(raw_data);

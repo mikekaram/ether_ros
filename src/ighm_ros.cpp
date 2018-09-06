@@ -66,8 +66,8 @@
  *   Service API for Input PDO handling and topic streaming: /ethercat_data_slave_{slave_id}
  *
  * - Added synchronization primitives (spinlocks) for the concurrent threads accessing the EtherCAT buffer.
- * - Added more source files, ethercat communicator, ethercat_slave, ethercat_input_data_handler and
- * ethercat_output_data_handler. Created external objects to use the appropriate classes and functions.
+ * - Added more source files, ethercat communicator, ethercat_slave, pdo_in_publisher and
+ * pdo_out_publisher. Created external objects to use the appropriate classes and functions.
  *
  *
  * Version 0.1:
@@ -196,8 +196,8 @@ int main(int argc, char **argv)
 
     //Initialize the Ethercat Communicator and the Ethercat Data Handlers
     ethercat_comm.init(n);
-    ethercat_input_data_handler.init(n);
-    ethercat_output_data_handler.init(n);
+    pdo_in_publisher.init(n);
+    pdo_out_publisher.init(n);
 
     /******************************************
     *    Launch the ROS services              *

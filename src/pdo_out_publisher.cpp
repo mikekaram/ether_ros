@@ -29,7 +29,7 @@
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
 /**
-   \file ethercat_output_data_handler.cpp
+   \file pdo_out_publisher.cpp
    \brief Implementation of PDOOutPublisher class.
 
    Used for handling the "raw" output data, received from EtherCAT Communicator and transforming them into

@@ -30,9 +30,9 @@
  *****************************************************************************/
 /**
    \file ethercat_output_data_handler.cpp
-   \brief Implementation of EthercatOutputDataHandler class. 
-   
-   Used for handling the "raw" output data, received from EtherCAT Communicator and transforming them into 
+   \brief Implementation of EthercatOutputDataHandler class.
+
+   Used for handling the "raw" output data, received from EtherCAT Communicator and transforming them into
    useful, human-readable format, consisted of the EtherCAT variables used by our
    application. Transforms the indeces to variables.
 */
@@ -44,7 +44,7 @@
 #include "ighm_ros/EthercatRawData.h"
 #include "ethercat_slave.h"
 #include "utilities.h"
-#include "vector"
+#include <vector>
 #include "ighm_ros.h"
 #include <iostream>
 #include <string>

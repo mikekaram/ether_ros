@@ -44,76 +44,76 @@
     \brief Total number of process data (PD) (bytes).
 */
 /** \var size_t num_process_data_in
-    \brief Number of input PD per slave (bytes). 
-    
+    \brief Number of input PD per slave (bytes).
+
     Assumes that the EtherCAT application is the same for every slave.
 */
 /** \var size_t num_process_data_out
-    \brief Number of output PD per slave (bytes). 
-    
+    \brief Number of output PD per slave (bytes).
+
     Assumes that the EtherCAT application is the same for every slave.
 */
 /** \var int log_fd
-    \brief File descriptor used for logging, provided that measure_timing is enabled. 
-    
+    \brief File descriptor used for logging, provided that measure_timing is enabled.
+
     Could be deprecated in a next version (see kernelshark).
 */
 /** \var ec_master_t *master
-    \brief The main master struct. 
-    
+    \brief The main master struct.
+
     Used for communication with the IgH Master Module.
 */
 /** \var ec_master_state_t master_state
-    \brief The master state struct. 
-    
+    \brief The master state struct.
+
     Used to examine the current state (Links Up/Down, AL states) of the Master.
 */
 /** \var ec_master_info_t master_info
-    \brief The master info struct. 
-    
+    \brief The master info struct.
+
     Used to know the slaves responding to the Master.
 */
 /** \var ec_domain_t *domain1
-    \brief The main domain struct variable. 
-    
-    Used to send and receive the datagrams. 
+    \brief The main domain struct variable.
+
+    Used to send and receive the datagrams.
 */
 /** \var ec_domain_state_t domain1_state
-    \brief The domain state struct. 
-    
+    \brief The domain state struct.
+
     Used to examine the current state (Working counter, DL states) of the domain. \see ethercat_comm
 */
 /** \var slave_struct *ethercat_slaves
-    \brief The main slave struct. 
-    
+    \brief The main slave struct.
+
     Used by our program to contain all the useful info of every slave.
 */
 /** \var pthread_spinlock_t lock
-    \brief The shared spinlock. 
-    
+    \brief The shared spinlock.
+
     Used by every thread whick modifies the process_data_buf. \see process_data_buf
 */
 /** \var EthercatCommunicator ethercat_comm
-    \brief The barebone object of our application. 
-    
+    \brief The barebone object of our application.
+
     Used for realtime communication (Tx/Rx) with the EtherCAT slaves.
-    Doesn't change the output PDOs. Basic state machine: 
+    Doesn't change the output PDOs. Basic state machine:
     -  Receive the new PDOs in domain1_pd from the IgH Master Module (and then to EtherCAT slaves)
     - Move to the domain_pd the output data of process_data_buf, safely
     - Publish the "raw" data (not linked to EtherCAT variables) in PDOs from the domain1_pd
     - Send the new PDOs from domain1_pd to the IgH Master Module (and then to EtherCAT slaves)
 */
 /** \var EthercatInputDataHandler ethercat_input_data_handler
-    \brief Main object for publishing to the /ethercat_data_slave_x the values of the EtherCAT input variables. 
-    
+    \brief Main object for publishing to the /ethercat_data_slave_x the values of the EtherCAT input variables.
+
     Maps indeces to variables.
 */
 /** \var EthercatOutputDataHandler ethercat_output_data_handler
     \brief Main object for publishing to the /ethercat_data_out the values of the EtherCAT output variables.
-    
+
     Maps indeces to variables.
 */
-/** \var int FREQUENCY /**<  
+/** \var int FREQUENCY /**<
     \brief Frequency of the realtime thread: EtherCAT Communicator.
 */
 /** \var int RUN_TIME
@@ -125,7 +125,7 @@
 /** \def CLOCK_TO_USE CLOCK_MONOTONIC
     \brief A macro that helps to try different clocks easily.
 
-    The CLOCK_MONOTONIC is the best for 
+    The CLOCK_MONOTONIC is the best for
     realtime purposes.
 */
 /** \def SAMPLING_FREQ 10
@@ -145,9 +145,9 @@
 
     Used in the realtime \a while loop.
 */
-/** \def handle_error_en(en, msg) 
-    do                           
-    {                            
+/** \def handle_error_en(en, msg)
+    do
+    {
         errno = en;
         ROS_FATAL(msg);
         exit(EXIT_FAILURE);
@@ -188,11 +188,11 @@
 // #include <time.h>
 #include <sys/mman.h>
 #include <stddef.h>
-// #include "ecrt.h"
-// #include "ethercat_slave.h"
-// #include "ethercat_communicator.h"
-// #include "ethercat_input_data_handler.h"
-// #include "ethercat_output_data_handler.h"
+#include "ecrt.h"
+#include "ethercat_slave.h"
+#include "ethercat_communicator.h"
+#include "ethercat_input_data_handler.h"
+#include "ethercat_output_data_handler.h"
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC

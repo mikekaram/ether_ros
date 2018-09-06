@@ -41,6 +41,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include "ecrt.h"
+#include "ighm_ros.h"
 #include "utilities.h"
 
 

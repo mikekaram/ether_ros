@@ -30,9 +30,9 @@
  *****************************************************************************/
 /**
    \file ethercat_communicator.cpp
-   \brief Implementation of EthercatCommunicator class. 
-   
-   Used for real-time communication with the EtherCAT slaves, via the IgH Master module. The new PD are sent 
+   \brief Implementation of EthercatCommunicator class.
+
+   Used for real-time communication with the EtherCAT slaves, via the IgH Master module. The new PD are sent
    to the  \a /ethercat_data_raw topic.
 */
 
@@ -41,7 +41,6 @@
 #include "ighm_ros.h"
 #include "utilities.h"
 #include "ethercat_slave.h"
-// #include <string.h>
 #include "ighm_ros/EthercatRawData.h"
 #include "deadline_scheduler.h"
 

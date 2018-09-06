@@ -32,17 +32,17 @@
 //\defgroup IgHEMM_ROS EtherCAT module main
 
 /** \file ighm_ros.cpp
- * 
+ *
  * \brief Main source file.
- * 
- * IgH Master EtherCAT module main for realtime communication with EtherCAT slaves. 
- * This interface is designed for realtime modules, running in the ROS environment 
+ *
+ * IgH Master EtherCAT module main for realtime communication with EtherCAT slaves.
+ * This interface is designed for realtime modules, running in the ROS environment
  * and want to use EtherCAT. There are classes and functions to get the Input and Output PDOs
  * in a realtime context. Before trying to understand the source code of the project,
- * please consider to read and understand the IgH Master Documentation located at: 
- * https://www.etherlab.org/download/ethercat/ethercat-1.5.2.pdf. Finally try to 
+ * please consider to read and understand the IgH Master Documentation located at:
+ * https://www.etherlab.org/download/ethercat/ethercat-1.5.2.pdf. Finally try to
  * understand the API provided in the /opt/etherlab/include/ecrt.h file. The author admits that
- * the C++ language, is not his strong suit. Therefore feel free to refactore the code given with 
+ * the C++ language, is not his strong suit. Therefore feel free to refactore the code given with
  * use of the new C++ (11/14/17) helpful tools (unique/shared pointers and other cool stuff).
  *
  *
@@ -53,26 +53,26 @@
  * Start/Stop function of the EtherCAT Communicator
  * Change the Output PDOs on the run
  * Run script with the aproppriate Service API calls
- * 
- * 
+ *
+ *
  * Changes in version 0.2:
  *
  * - Added features and bug fixes including:
  *   First realtime characteristics added (debate: FIFO vs DEADLINE scheduling?)
  *   Handling of the EtherCAT communicator module: Start/Stop/Restart API
- * 
+ *
  * - Added processing for the /ethercat_data_raw topic and created:
  *   Service API for Output PDO handling and topic streaming: /ethercat_output_data
  *   Service API for Input PDO handling and topic streaming: /ethercat_data_slave_{slave_id}
- * 
+ *
  * - Added synchronization primitives (spinlocks) for the concurrent threads accessing the EtherCAT buffer.
- * - Added more source files, ethercat communicator, ethercat_slave, ethercat_input_data_handler and 
+ * - Added more source files, ethercat communicator, ethercat_slave, ethercat_input_data_handler and
  * ethercat_output_data_handler. Created external objects to use the appropriate classes and functions.
- * 
- * 
+ *
+ *
  * Version 0.1:
  *
- * - Created the first bare communication layer in the ROS environment. Many bugs and 
+ * - Created the first bare communication layer in the ROS environment. Many bugs and
  * deficiencies including: Non realtime characteristics, no API for Output PDO handling and topic
  * streaming, no handling of the EtherCAT communicator module, no Service API for Input PDO topic streaming.
  * - One topic streaming: /ethercat_data_raw
@@ -93,22 +93,22 @@
 
 uint8_t *domain1_pd;
 uint8_t *process_data_buf;
-size_t total_process_data; 
-size_t num_process_data_in; 
-size_t num_process_data_out; 
-int log_fd; 
-ec_master_t *master; 
-ec_master_state_t master_state; 
-ec_master_info_t master_info; 
-ec_domain_t *domain1; 
+size_t total_process_data;
+size_t num_process_data_in;
+size_t num_process_data_out;
+int log_fd;
+ec_master_t *master;
+ec_master_state_t master_state;
+ec_master_info_t master_info;
+ec_domain_t *domain1;
 ec_domain_state_t domain1_state;
-slave_struct *ethercat_slaves; 
-pthread_spinlock_t lock; 
+slave_struct *ethercat_slaves;
+pthread_spinlock_t lock;
 EthercatCommunicator ethercat_comm;
 EthercatInputDataHandler ethercat_input_data_handler;
 EthercatOutputDataHandler ethercat_output_data_handler;
-int FREQUENCY; 
-int RUN_TIME; 
+int FREQUENCY;
+int RUN_TIME;
 int PERIOD_NS;
 
 /****************************************************************************/
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
     /******************************************
     *    Application domain data              *
     *******************************************/
-   
+
     total_process_data = ecrt_domain_size(domain1);
     ROS_INFO("Number of total process data bytes: %lu\n", total_process_data);
     num_process_data_in = total_process_data - ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_in();

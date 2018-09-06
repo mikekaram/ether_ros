@@ -52,9 +52,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  EthercatInputData.msg
-  EthercatOutputData.msg
-  EthercatRawData.msg
+  PDOIn.msg
+  PDOOut.msg
+  PDORaw.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -122,7 +122,7 @@ catkin_package(
 ###########
 set(etherlab_include /opt/etherlab/include)
 set(etherlab_lib /opt/etherlab/lib/libethercat.so)
-set(SOURCES src/utilities.cpp src/ethercat_communicator.cpp src/services.cpp src/ethercat_slave.cpp src/ethercat_input_data_handler.cpp src/ethercat_output_data_handler.cpp)
+set(SOURCES src/utilities.cpp src/ethercat_communicator.cpp src/services.cpp src/ethercat_slave.cpp src/pdo_in_publisher.cpp src/pdo_out_publisher.cpp)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations

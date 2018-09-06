@@ -29,52 +29,52 @@
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
 /**
-   \file ethercat_output_data_handler.h
-   \brief Header file for the EthercatOutputDataHandler class.
+   \file pdo_out_publisher.h
+   \brief Header file for the PDOOutPublisher class.
 */
 
 /*****************************************************************************/
 
-#ifndef ETH_OUTPUT_DATA_HANDLER_LIB_H
-#define ETH_OUTPUT_DATA_HANDLER_LIB_H
+#ifndef PDO_OUT_PUB_LIB_H
+#define PDO_OUT_PUB_LIB_H
 
 #include "ros/ros.h"
-#include "ighm_ros/EthercatRawData.h"
+#include "ighm_ros/PDORaw.h"
 
-/** \class EthercatOutputDataHandler
-    \brief The Ethercat Output Data Handler class.
+/** \class PDOOutPublisher
+    \brief The Process Data Objects Publisher class.
 
-    Used for trasforming the "raw" indexed data from 
-    the \a /ethercat_data_raw topic, sent by the Ethercat
-    Communicator, to values of variables, and stream them 
-    to the \a /ethercat_data_out topic.
+    Used for trasforming the "raw" indexed data from
+    the \a /pdo_raw topic, sent by the Ethercat
+    Communicator, to values of variables, and stream them
+    to the \a /pdo_out topic.
 */
-class EthercatOutputDataHandler
+class PDOOutPublisher
 {
   private:
-    ros::Subscriber data_raw_sub_;
-    ros::Publisher output_data_pub_;
-    
-/** \fn void init(ros::NodeHandle &n)
+    ros::Subscriber pdo_raw_sub_;
+    ros::Publisher pdo_out_pub_;
+
+    /** \fn void init(ros::NodeHandle &n)
     \brief Initialization Method.
 
-    Used for initializing the EthercatInputDataHandler object. It's basically
+    Used for initializing the PDOOutPublisher object. It's basically
     the main method in the class, which initializes the listener to the afore
     mentioned topic.
     \param n The ROS Node Handle
 */
-/** \fn void raw_data_callback(const ighm_ros::EthercatRawData::ConstPtr &ethercat_data_raw)
-    \brief Raw Data Callback
+    /** \fn void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
+    \brief Process Data Objects Callback
 
-    This method, is called when there are data in the \a /ethercat_data_raw topic.
+    This method, is called when there are data in the \a /pdo_raw topic.
     Should the EtherCAT application change, this callback must change also.
     Implements the basic functionality of the class, to transform the "raw" data
     into variable values and pipe them into another topic.
-    \param ethercat_data_raw A copy of the actual data sent to the topic \a /ethercat_data_raw.
+    \param pdo_raw A copy of the actual data sent to the topic \a /pdo_raw.
 */
   public:
     void init(ros::NodeHandle &n);
-    void raw_data_callback(const ighm_ros::EthercatRawData::ConstPtr &ethercat_data_raw);
+    void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw);
 };
 
-#endif /* ETH_OUTPUT_DATA_HANDLER_LIB_H */
+#endif /* PDO_OUT_PUB_LIB_H */

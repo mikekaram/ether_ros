@@ -40,7 +40,7 @@
 #include "ethercat_communicator.h"
 #include "utilities.h"
 #include "ethercat_slave.h"
-// #include <string.h>
+#include "ighm_ros.h"
 #include "ighm_ros/PDORaw.h"
 #include "deadline_scheduler.h"
 
@@ -49,7 +49,7 @@
 int EthercatCommunicator::cleanup_pop_arg_ = 0;
 bool EthercatCommunicator::running_thread_ = false;
 pthread_t EthercatCommunicator::communicator_thread_ = {};
-ros::Publisher EthercatCommunicator::data_raw_pub_;
+ros::Publisher EthercatCommunicator::pdo_raw_pub_;
 
 /*****************************************************************************/
 
@@ -124,7 +124,7 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
     ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
 
     //Create  ROS publisher for the Ethercat RAW data
-    data_raw_pub_ = n.advertise<ighm_ros::EthercatRawData>("ethercat_data_raw", 1000);
+    pdo_raw_pub_ = n.advertise<ighm_ros::PDORaw>("pdo_raw", 1000);
 }
 
 void EthercatCommunicator::start()
@@ -423,7 +423,7 @@ void EthercatCommunicator::publish_raw_data()
     output_data_raw.insert(std::end(output_data_raw), std::begin(output_vec), std::end(output_vec));
     //Send both strings to the topic
     ighm_ros::PDORaw raw_data;
-    raw_data.input_data_raw = input_data_raw;
-    raw_data.output_data_raw = output_data_raw;
-    data_raw_pub_.publish(raw_data);
+    raw_data.pdo_in_raw = input_data_raw;
+    raw_data.pdo_out_raw = output_data_raw;
+    pdo_raw_pub_.publish(raw_data);
 }

@@ -43,10 +43,10 @@
 #include <sched.h>
 /** \class EthercatCommunicator
     \brief The Ethercat Communicator class.
-    
-    Basic class for implementing realtime pure communication purposes, 
+
+    Basic class for implementing realtime pure communication purposes,
     from our application to the Ethercat slaves, via IgH Master module.
-    The class uses the POSIX API for gaining realtime attributes. 
+    The class uses the POSIX API for gaining realtime attributes.
 */
 
 class EthercatCommunicator
@@ -54,11 +54,11 @@ class EthercatCommunicator
 private:
   pthread_attr_t current_thattr_;
   struct sched_param sched_param_;
-  static int cleanup_pop_arg_; 
-  //cleanup_pop_arg_ is used only for future references. No actual usage in our application. 
+  static int cleanup_pop_arg_;
+  //cleanup_pop_arg_ is used only for future references. No actual usage in our application.
   //Serves as an argument to the cleanup_handler.
   static pthread_t communicator_thread_;
-  static ros::Publisher data_raw_pub_;
+  static ros::Publisher pdo_raw_pub_;
   static bool running_thread_;
   static void *run(void *arg);
   static void cleanup_handler(void *arg);
@@ -84,10 +84,10 @@ public:
 
     The function that actually starts the realtime thread. The realtime attributes have been set from \a init.
     Implements the basic realtime communication (Tx/Rx) with the EtherCAT slaves.
-    Doesn't change the output PDOs. Basic state machine: 
+    Doesn't change the output PDOs. Basic state machine:
     -  Receive the new PDOs in domain1_pd from the IgH Master Module (and therefore from the EtherCAT slaves)
     - Move to the domain_pd the output data of process_data_buf, safely
-    - Publish the "raw" data (not linked to EtherCAT variables) in PDOs received from the domain1_pd, to the /ethercat_data_raw topic 
+    - Publish the "raw" data (not linked to EtherCAT variables) in PDOs received from the domain1_pd, to the /ethercat_data_raw topic
     - Synchronize the DC of every slave (every \a count'nth cycle)
     - Send the new PDOs from domain1_pd to the IgH Master Module (and then to EtherCAT slaves)
     \see void init(ros::NodeHandle &n)

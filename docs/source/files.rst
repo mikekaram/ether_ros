@@ -11,13 +11,13 @@ EtherCAT Communicator header file
    :project: IgHMUR
 
 Input Process Data Objects publisher header file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: pdo_in_publisher.h
    :project: IgHMUR
 
 Output Process Data Objects publisher header file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: pdo_out_publisher.h
    :project: IgHMUR
@@ -62,13 +62,13 @@ EtherCAT Communicator source file
    :project: IgHMUR
 
 Input Process Data Objects publisher source file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: pdo_in_publisher.cpp
    :project: IgHMUR
 
 Output Process Data Objects publisher source file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfile:: pdo_out_publisher.cpp
    :project: IgHMUR

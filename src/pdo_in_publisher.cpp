@@ -58,15 +58,29 @@ void PDOInPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
         pos = i * num_process_data_in; //The size of every entry is num_process_data_in
         data_ptr = (uint8_t * ) & pdo_in_raw[pos];
         ighm_ros::PDOIn pdo_in;
-        pdo_in.hip_angle = process_input_sint16(data_ptr, 0);
-        pdo_in.desired_hip_angle = process_input_sint16(data_ptr, 2);
+        using namespace utilities;
+
+        // change the following code to match your needs
+        /*
+
+        Insert code here ...
+
+        */
+
+        pdo_in.hip_angle = process_input_int16(data_ptr, 0);
+        pdo_in.desired_hip_angle = process_input_int16(data_ptr, 2);
         pdo_in.time = process_input_uint16(data_ptr, 4);
-        pdo_in.knee_angle = process_input_sint16(data_ptr, 6);
-        pdo_in.desired_knee_angle = process_input_sint16(data_ptr, 8);
-        pdo_in.PWM10000_knee = process_input_sint16(data_ptr, 10);
-        pdo_in.PWM10000_hip = process_input_sint16(data_ptr, 12);
-        pdo_in.velocity_knee1000 = process_input_sint32(data_ptr, 14);
-        pdo_in.velocity_hip1000 = process_input_sint32(data_ptr, 18);
+        pdo_in.knee_angle = process_input_int16(data_ptr, 6);
+        pdo_in.desired_knee_angle = process_input_int16(data_ptr, 8);
+        pdo_in.PWM10000_knee = process_input_int16(data_ptr, 10);
+        pdo_in.PWM10000_hip = process_input_int16(data_ptr, 12);
+        pdo_in.velocity_knee1000 = process_input_int32(data_ptr, 14);
+        pdo_in.velocity_hip1000 = process_input_int32(data_ptr, 18);
+
+        /*
+            .....
+
+        */
         pdo_in_pub_[i].publish(pdo_in);
     }
 }

@@ -199,7 +199,7 @@ void *EthercatCommunicator::run(void *arg)
     // get current time
     clock_gettime(CLOCK_TO_USE, &wakeup_time);
     clock_gettime(CLOCK_TO_USE, &break_time);
-    break_time = timespec_add(break_time, offset_time);
+    break_time = utilities::timespec_add(break_time, offset_time);
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL); //PTHREAD_CANCEL_DEFERRED is the default but nevertheless
 
     do
@@ -210,7 +210,7 @@ void *EthercatCommunicator::run(void *arg)
         {
             handle_error_en(ret, "pthread_setcancelstate");
         }
-        wakeup_time = timespec_add(wakeup_time, cycletime);
+        wakeup_time = utilities::timespec_add(wakeup_time, cycletime);
         clock_nanosleep(CLOCK_TO_USE, TIMER_ABSTIME, &wakeup_time, NULL);
 #ifdef MEASURE_TIMING
         clock_gettime(CLOCK_TO_USE, &start_time);
@@ -254,7 +254,7 @@ void *EthercatCommunicator::run(void *arg)
         // receive process data
         ecrt_master_receive(master);
         ecrt_domain_process(domain1);
-        check_domain1_state();
+        utilities::check_domain1_state();
 
         if (counter)
         {
@@ -269,7 +269,7 @@ void *EthercatCommunicator::run(void *arg)
 #endif
             i++;
             // check for master state (optional)
-            check_master_state();
+            utilities::check_master_state();
 
 #if MEASURE_TIMING == 1
             // output timing stats
@@ -308,7 +308,7 @@ void *EthercatCommunicator::run(void *arg)
         ecrt_master_sync_slave_clocks(master);
 
         //move the data from process_data_buf to domain1_pd buf carefuly
-        EthercatCommunicator::copy_data_to_domain_buf();
+        utilities::copy_process_data_buffer_to_buf(domain1_pd);
 
         //send the raw data to the raw data topic
         EthercatCommunicator::publish_raw_data();
@@ -390,17 +390,7 @@ void EthercatCommunicator::stop()
         ROS_INFO("stop(): communicator thread wasn't canceled (shouldn't happen!)\n");
 }
 
-void EthercatCommunicator::copy_data_to_domain_buf()
-{
-    pthread_spin_lock(&lock);
-    for (int i = 0; i < master_info.slave_count; i++)
-    {
-        memcpy((domain1_pd + ethercat_slaves[i].slave.get_pdo_out()),
-               (process_data_buf + ethercat_slaves[i].slave.get_pdo_out()),
-               (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
-    }
-    pthread_spin_unlock(&lock);
-}
+
 
 void EthercatCommunicator::publish_raw_data()
 {

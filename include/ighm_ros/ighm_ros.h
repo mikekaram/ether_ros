@@ -193,6 +193,8 @@
 #include "ethercat_communicator.h"
 #include "pdo_in_publisher.h"
 #include "pdo_out_publisher.h"
+#include "modify_pdo_variables_listener.h"
+#include "process_data_buffer_publishing_timer.h"
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC
@@ -243,6 +245,8 @@ extern pthread_spinlock_t lock;
 extern EthercatCommunicator ethercat_comm;
 extern PDOInPublisher pdo_in_publisher;
 extern PDOOutPublisher pdo_out_publisher;
+extern ModifyPDOVariablesListener modify_pdo_variables_listener;
+extern ProcessDataBufferPublishingTimer process_data_buffer_publishing_timer;
 extern int PERIOD_NS;
 extern int FREQUENCY;
 extern int RUN_TIME;

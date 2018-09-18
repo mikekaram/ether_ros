@@ -35,7 +35,6 @@
 
 /*****************************************************************************/
 
-
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -43,6 +42,9 @@
 #include "ecrt.h"
 #include "utilities.h"
 #include "ighm_ros.h"
+
+namespace utilities
+{
 
 int safe_atoi(const char *s, int *val)
 {
@@ -62,27 +64,26 @@ int safe_atoi(const char *s, int *val)
 bool process_input_bit(uint8_t *data_ptr, uint8_t index, uint8_t subindex)
 {
     bool return_value = false;
-    uint8_t * new_data_ptr;
+    uint8_t *new_data_ptr;
     new_data_ptr = (data_ptr + index);
     return_value = EC_READ_BIT(new_data_ptr, subindex);
-    return return_value;
-}
-
-int8_t process_input_sint8(uint8_t *data_ptr, uint8_t index)
-{
-    int8_t return_value = 0x00;
-    uint8_t * new_data_ptr;
-    new_data_ptr = (data_ptr + index);
-    return_value = EC_READ_S8(new_data_ptr);
     return return_value;
 }
 
 uint8_t process_input_uint8(uint8_t *data_ptr, uint8_t index)
 {
     uint8_t return_value = 0x00;
-    uint8_t * new_data_ptr;
+    uint8_t *new_data_ptr;
     new_data_ptr = (data_ptr + index);
     return_value = EC_READ_U8(new_data_ptr);
+    return return_value;
+}
+int8_t process_input_int8(uint8_t *data_ptr, uint8_t index)
+{
+    int8_t return_value = 0x00;
+    uint8_t *new_data_ptr;
+    new_data_ptr = (data_ptr + index);
+    return_value = EC_READ_S8(new_data_ptr);
     return return_value;
 }
 
@@ -95,7 +96,7 @@ uint16_t process_input_uint16(uint8_t *data_ptr, uint8_t index)
     return_value = EC_READ_U16(new_data_ptr);
     return return_value;
 }
-int16_t process_input_sint16(uint8_t *data_ptr, uint8_t index)
+int16_t process_input_int16(uint8_t *data_ptr, uint8_t index)
 {
     int16_t return_value = 0x0000;
     uint8_t new_data_ptr[2];
@@ -104,7 +105,18 @@ int16_t process_input_sint16(uint8_t *data_ptr, uint8_t index)
     return_value = EC_READ_S16(new_data_ptr);
     return return_value;
 }
-int32_t process_input_sint32(uint8_t *data_ptr, uint8_t index)
+uint32_t process_input_uint32(uint8_t *data_ptr, uint8_t index)
+{
+    uint32_t return_value = 0x00000000;
+    uint8_t new_data_ptr[4];
+    new_data_ptr[0] = data_ptr[index];
+    new_data_ptr[1] = data_ptr[index + 1];
+    new_data_ptr[2] = data_ptr[index + 2];
+    new_data_ptr[3] = data_ptr[index + 3];
+    return_value = EC_READ_U32(new_data_ptr);
+    return return_value;
+}
+int32_t process_input_int32(uint8_t *data_ptr, uint8_t index)
 {
     int32_t return_value = 0x00000000;
     uint8_t new_data_ptr[4];
@@ -113,6 +125,36 @@ int32_t process_input_sint32(uint8_t *data_ptr, uint8_t index)
     new_data_ptr[2] = data_ptr[index + 2];
     new_data_ptr[3] = data_ptr[index + 3];
     return_value = EC_READ_S32(new_data_ptr);
+    return return_value;
+}
+uint64_t process_input_uint64(uint8_t *data_ptr, uint8_t index)
+{
+    uint64_t return_value = 0x0000000000000000;
+    uint8_t new_data_ptr[8];
+    new_data_ptr[0] = data_ptr[index];
+    new_data_ptr[1] = data_ptr[index + 1];
+    new_data_ptr[2] = data_ptr[index + 2];
+    new_data_ptr[3] = data_ptr[index + 3];
+    new_data_ptr[4] = data_ptr[index + 4];
+    new_data_ptr[5] = data_ptr[index + 5];
+    new_data_ptr[6] = data_ptr[index + 6];
+    new_data_ptr[7] = data_ptr[index + 7];
+    return_value = EC_READ_U64(new_data_ptr);
+    return return_value;
+}
+int64_t process_input_int64(uint8_t *data_ptr, uint8_t index)
+{
+    int64_t return_value = 0x0000000000000000;
+    uint8_t new_data_ptr[8];
+    new_data_ptr[0] = data_ptr[index];
+    new_data_ptr[1] = data_ptr[index + 1];
+    new_data_ptr[2] = data_ptr[index + 2];
+    new_data_ptr[3] = data_ptr[index + 3];
+    new_data_ptr[4] = data_ptr[index + 4];
+    new_data_ptr[5] = data_ptr[index + 5];
+    new_data_ptr[6] = data_ptr[index + 6];
+    new_data_ptr[7] = data_ptr[index + 7];
+    return_value = EC_READ_S64(new_data_ptr);
     return return_value;
 }
 
@@ -179,3 +221,34 @@ ssize_t insist_write(int fd, const char *buf, size_t count)
     }
     return orig_count;
 }
+
+// trim string from start
+std::string &ltrim(std::string &str, const std::string &chars)
+{
+    str.erase(0, str.find_first_not_of(chars));
+    return str;
+}
+
+std::string &rtrim(std::string &str, const std::string &chars)
+{
+    str.erase(str.find_last_not_of(chars) + 1);
+    return str;
+}
+
+std::string &trim(std::string &str, const std::string &chars)
+{
+    return ltrim(rtrim(str, chars), chars);
+}
+
+void copy_process_data_buffer_to_buf(uint8_t * buffer)
+{
+    pthread_spin_lock(&lock);
+    for (int i = 0; i < master_info.slave_count; i++)
+    {
+        memcpy((buffer + ethercat_slaves[i].slave.get_pdo_out()),
+               (process_data_buf + ethercat_slaves[i].slave.get_pdo_out()),
+               (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
+    }
+    pthread_spin_unlock(&lock);
+}
+} // namespace utilities

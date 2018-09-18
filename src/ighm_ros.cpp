@@ -85,7 +85,6 @@
 #include "utilities.h"
 #include "services.h"
 #include "ighm_ros.h"
-#include "ethercat_communicator.h"
 
 /*****************************************************************************/
 
@@ -107,6 +106,8 @@ pthread_spinlock_t lock;
 EthercatCommunicator ethercat_comm;
 PDOInPublisher pdo_in_publisher;
 PDOOutPublisher pdo_out_publisher;
+ModifyPDOVariablesListener modify_pdo_variables_listener;
+ProcessDataBufferPublishingTimer process_data_buffer_publishing_timer;
 int FREQUENCY;
 int RUN_TIME;
 int PERIOD_NS;
@@ -198,21 +199,23 @@ int main(int argc, char **argv)
     ethercat_comm.init(n);
     pdo_in_publisher.init(n);
     pdo_out_publisher.init(n);
+    modify_pdo_variables_listener.init(n);
+    process_data_buffer_publishing_timer.init(n);
 
     /******************************************
     *    Launch the ROS services              *
     *******************************************/
 
-    ros::ServiceServer modify_output_bit_service = n.advertiseService("modify_output_bit", modify_output_bit);
-    ROS_INFO("Ready to modify output bit.");
-    ros::ServiceServer modify_output_sbyte_service = n.advertiseService("modify_output_sbyte", modify_output_sbyte);
-    ROS_INFO("Ready to modify output sbyte.");
-    ros::ServiceServer modify_output_uint16_service = n.advertiseService("modify_output_uint16", modify_output_uint16);
-    ROS_INFO("Ready to modify output uint16.");
-    ros::ServiceServer modify_output_sint16_service = n.advertiseService("modify_output_sint16", modify_output_sint16);
-    ROS_INFO("Ready to modify output sint16.");
-    ros::ServiceServer modify_output_sint32_service = n.advertiseService("modify_output_sint32", modify_output_sint32);
-    ROS_INFO("Ready to modify output sint32.");
+    // ros::ServiceServer modify_output_bit_service = n.advertiseService("modify_output_bit", modify_output_bit);
+    // ROS_INFO("Ready to modify output bit.");
+    // ros::ServiceServer modify_output_sbyte_service = n.advertiseService("modify_output_sbyte", modify_output_sbyte);
+    // ROS_INFO("Ready to modify output sbyte.");
+    // ros::ServiceServer modify_output_uint16_service = n.advertiseService("modify_output_uint16", modify_output_uint16);
+    // ROS_INFO("Ready to modify output uint16.");
+    // ros::ServiceServer modify_output_sint16_service = n.advertiseService("modify_output_sint16", modify_output_sint16);
+    // ROS_INFO("Ready to modify output sint16.");
+    // ros::ServiceServer modify_output_sint32_service = n.advertiseService("modify_output_sint32", modify_output_sint32);
+    // ROS_INFO("Ready to modify output sint32.");
     ros::ServiceServer ethercat_communicatord_service = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
 

@@ -55,16 +55,17 @@ add_message_files(
   PDOIn.msg
   PDOOut.msg
   PDORaw.msg
+  ModifyPDOVariables.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  ModifyOutputBit.srv
-  ModifyOutputSInt16.srv
-  ModifyOutputUInt16.srv
-  ModifyOutputSInt32.srv
-  ModifyOutputSByte.srv
+  # ModifyOutputBit.srv
+  # ModifyOutputSInt16.srv
+  # ModifyOutputUInt16.srv
+  # ModifyOutputSInt32.srv
+  # ModifyOutputSByte.srv
   EthercatCommd.srv
 )
 
@@ -122,7 +123,16 @@ catkin_package(
 ###########
 set(etherlab_include /opt/etherlab/include)
 set(etherlab_lib /opt/etherlab/lib/libethercat.so)
-set(SOURCES src/utilities.cpp src/ethercat_communicator.cpp src/services.cpp src/ethercat_slave.cpp src/pdo_in_publisher.cpp src/pdo_out_publisher.cpp)
+set(SOURCES
+    src/utilities.cpp
+    src/ethercat_communicator.cpp
+    src/services.cpp
+    src/ethercat_slave.cpp
+    src/pdo_in_publisher.cpp
+    src/pdo_out_publisher.cpp
+    src/modify_pdo_variables_listener.cpp
+    src/process_data_buffer_publishing_timer.cpp
+    )
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations

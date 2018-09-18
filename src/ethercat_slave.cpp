@@ -30,10 +30,10 @@
  *****************************************************************************/
 /**
    \file ethercat_slave.cpp
-   \brief Implementation of EthercatSlave class. 
-   
+   \brief Implementation of EthercatSlave class.
+
    Used for containing all the useful information
-   of an EtherCAT slave, from the userspace program perspective. Receives all the 
+   of an EtherCAT slave, from the userspace program perspective. Receives all the
    useful information via the ROS Parameter Server (after they are loaded from ethercat_slaves.yaml).
 */
 
@@ -132,7 +132,8 @@ void EthercatSlave::init(std::string slave, ros::NodeHandle& n)
     // configure SYNC signals for this slave
     //For XMC use: 0x0300
     //For Beckhoff FB1111 use: 0x0700
-    ecrt_slave_config_dc(ighm_slave_, assign_activate_, PERIOD_NS, 50, 0, 0);
+    //Use PERIOD_NS as the period, and 50 μs shift time
+    ecrt_slave_config_dc(ighm_slave_, assign_activate_, PERIOD_NS, 50000, 0, 0);
 }
 
 int EthercatSlave::get_pdo_in()

@@ -39,9 +39,8 @@
 
 /*****************************************************************************/
 
-#include "pdo_out_publisher.h"
+#include "process_data_buffer_publishing_timer.h"
 #include "ighm_ros/PDOOut.h"
-#include "ighm_ros/PDORaw.h"
 #include "ethercat_slave.h"
 #include "utilities.h"
 #include "vector"
@@ -49,18 +48,20 @@
 #include <iostream>
 #include <string>
 
-void PDOOutPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
+void ProcessDataBufferPublishingTimer::timer_callback(const ros::TimerEvent &event)
 {
-    std::vector<uint8_t> pdo_out_raw = pdo_raw->pdo_out_raw;
-    uint8_t *data_ptr;
     size_t pos;
+    uint8_t * data_ptr;
+    using namespace utilities;
+    copy_process_data_buffer_to_buf(data_ptr_);
+
     for (int i = 0; i < master_info.slave_count; i++)
     {
         pos = i * num_process_data_out; //The size of every entry is num_process_data_out
-        data_ptr = (uint8_t *)&pdo_out_raw[pos];
+        data_ptr = (uint8_t *) (data_ptr_ + pos);
         ighm_ros::PDOOut pdo_out;
         pdo_out.slave_id = i;
-        using namespace utilities;
+
 
         // change the following code to match your needs
         /*
@@ -98,15 +99,20 @@ void PDOOutPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw
             .....
 
         */
-        pdo_out_pub_.publish(pdo_out);
+        process_data_buffer_pub_.publish(pdo_out);
     }
 }
 
-void PDOOutPublisher::init(ros::NodeHandle &n)
+void ProcessDataBufferPublishingTimer::init(ros::NodeHandle &n)
 {
-    //Create  ROS subscriber for the Ethercat RAW data
-    pdo_raw_sub_ = n.subscribe("pdo_raw", 1000, &PDOOutPublisher::pdo_raw_callback, &pdo_out_publisher);
+    data_ptr_ = (uint8_t *)malloc(total_process_data * sizeof(uint8_t));
+    memset(data_ptr_, 0, total_process_data); // fill the buffer with zeros
 
     //Create  ROS publisher for the Ethercat formatted data
-    pdo_out_pub_ = n.advertise<ighm_ros::PDOOut>("pdo_out", 1000);
+    process_data_buffer_pub_ = n.advertise<ighm_ros::PDOOut>("pdo_out_timer", 1000);
+
+    //Create  ROS subscriber for the Ethercat RAW data
+    //first parameter is in seconds...
+    ros::Timer pdo_out_timer_ = n.createTimer(ros::Duration(5), &ProcessDataBufferPublishingTimer::timer_callback, &process_data_buffer_publishing_timer);
+
 }

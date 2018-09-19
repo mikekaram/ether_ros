@@ -46,7 +46,7 @@
 /** \class EthercatSlave
     \brief The Ethercat Slave class.
 
-    Used for having all the ethercat slave related variables, 
+    Used for having all the ethercat slave related variables,
     fetched from the correspondent yaml file, in a single entity.
 */
 class EthercatSlave
@@ -63,6 +63,7 @@ class EthercatSlave
     ec_slave_config_t *ighm_slave_; //pointer to the basic slave struct in ighm
     int pdo_in_;
     int pdo_out_;
+    int32_t sync0_shift_;
 
   public:
 /** \fn void init(std::string slave, ros::NodeHandle& n)

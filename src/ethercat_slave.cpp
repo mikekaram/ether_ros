@@ -129,11 +129,19 @@ void EthercatSlave::init(std::string slave, ros::NodeHandle& n)
     }
     ROS_INFO("Offset pdo in is: %d\n", pdo_in_);
 
+    if (n.getParam("sync0_shift", sync0_shift_))
+    {
+        ROS_INFO("Got param: sync0_shift = %2.2x\n", sync0_shift_);
+    }
+    else
+    {
+        ROS_FATAL("Failed to get param 'sync0_shift'\n");
+    }
     // configure SYNC signals for this slave
     //For XMC use: 0x0300
     //For Beckhoff FB1111 use: 0x0700
     //Use PERIOD_NS as the period, and 50 μs shift time
-    ecrt_slave_config_dc(ighm_slave_, assign_activate_, PERIOD_NS, 50000, 0, 0);
+    ecrt_slave_config_dc(ighm_slave_, assign_activate_, PERIOD_NS, sync0_shift_, 0, 0);
 }
 
 int EthercatSlave::get_pdo_in()

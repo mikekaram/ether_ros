@@ -296,15 +296,7 @@ void *EthercatCommunicator::run(void *arg)
         clock_gettime(CLOCK_TO_USE, &current_time);
         ecrt_master_application_time(master, TIMESPEC2NS(current_time));
 
-        if (sync_ref_counter)
-        {
-            sync_ref_counter--;
-        }
-        else
-        {
-            sync_ref_counter = 1; // sync every 1 cycles
-            ecrt_master_sync_reference_clock(master);
-        }
+        ecrt_master_sync_reference_clock(master);
         ecrt_master_sync_slave_clocks(master);
 
         //move the data from process_data_buf to domain1_pd buf carefuly

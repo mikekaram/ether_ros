@@ -1,0 +1,35 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1517328573 -3600
+#      Tue Jan 30 17:09:33 2018 +0100
+# Parent  4c8a4b8c0521b66dc2b2c25d049217dedae8276a
+Applied 0002-use-setup_timer-for-v4.15.patch from Beckhoff.
+
+diff --git a/examples/mini/mini.c b/examples/mini/mini.c
+--- a/examples/mini/mini.c
++++ b/examples/mini/mini.c
+@@ -307,7 +307,11 @@ void read_voe(void)
+ 
+ /*****************************************************************************/
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++void cyclic_task(struct timer_list *t)
++#else
+ void cyclic_task(unsigned long data)
++#endif
+ {
+     // receive process data
+     down(&master_sem);
+@@ -492,8 +496,12 @@ int __init init_mini_module(void)
+ #endif
+ 
+     printk(KERN_INFO PFX "Starting cyclic sample thread.\n");
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
++    timer_setup(&timer, cyclic_task, 0);
++#else
+     init_timer(&timer);
+     timer.function = cyclic_task;
++#endif
+     timer.expires = jiffies + 10;
+     add_timer(&timer);
+ 

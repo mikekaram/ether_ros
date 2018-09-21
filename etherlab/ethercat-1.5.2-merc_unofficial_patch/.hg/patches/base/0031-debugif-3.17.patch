@@ -1,0 +1,25 @@
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 6 Nov 2017 13:35:13 +0100
+
+Fix alloc_netdev call
+
+Kernel 3.17 changed the prototype alloc_netdev
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+
+diff --git a/master/debug.c b/master/debug.c
+--- a/master/debug.c
++++ b/master/debug.c
+@@ -84,7 +84,11 @@ int ec_debug_init(
+     memset(&dbg->stats, 0, sizeof(struct net_device_stats));
+ 
+     if (!(dbg->dev =
+-          alloc_netdev(sizeof(ec_debug_t *), name, ether_setup))) {
++          alloc_netdev(sizeof(ec_debug_t *), name,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0)
++			NET_NAME_UNKNOWN,
++#endif
++			ether_setup))) {
+         EC_MASTER_ERR(device->master, "Unable to allocate net_device"
+                 " for debug object!\n");
+         return -ENODEV;

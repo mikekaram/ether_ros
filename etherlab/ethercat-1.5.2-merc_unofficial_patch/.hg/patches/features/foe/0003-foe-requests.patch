@@ -1,0 +1,1630 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Tue, 19 Jul 2016 15:38:04 +1200
+
+Make the FoE Request API public
+
+This allows the application to make FoE requests asynchronously, perhaps
+even in realtime.
+
+diff --git a/include/ecrt.h b/include/ecrt.h
+--- a/include/ecrt.h
++++ b/include/ecrt.h
+@@ -245,11 +245,14 @@ typedef struct ec_domain ec_domain_t; /*
+ struct ec_sdo_request;
+ typedef struct ec_sdo_request ec_sdo_request_t; /**< \see ec_sdo_request. */
+ 
++struct ec_foe_request;
++typedef struct ec_foe_request ec_foe_request_t; /**< \see ec_foe_request. */
++
+ struct ec_voe_handler;
+ typedef struct ec_voe_handler ec_voe_handler_t; /**< \see ec_voe_handler. */
+ 
+ struct ec_reg_request;
+-typedef struct ec_reg_request ec_reg_request_t; /**< \see ec_sdo_request. */
++typedef struct ec_reg_request ec_reg_request_t; /**< \see ec_reg_request. */
+ 
+ /*****************************************************************************/
+ 
+@@ -535,6 +538,30 @@ typedef enum {
+ 
+ /*****************************************************************************/
+ 
++/** FoE error enumeration type.
++ */
++typedef enum {
++    FOE_BUSY               = 0, /**< Busy. */
++    FOE_READY              = 1, /**< Ready. */
++    FOE_IDLE               = 2, /**< Idle. */
++    FOE_WC_ERROR           = 3, /**< Working counter error. */
++    FOE_RECEIVE_ERROR      = 4, /**< Receive error. */
++    FOE_PROT_ERROR         = 5, /**< Protocol error. */
++    FOE_NODATA_ERROR       = 6, /**< No data error. */
++    FOE_PACKETNO_ERROR     = 7, /**< Packet number error. */
++    FOE_OPCODE_ERROR       = 8, /**< OpCode error. */
++    FOE_TIMEOUT_ERROR      = 9, /**< Timeout error. */
++    FOE_SEND_RX_DATA_ERROR = 10, /**< Error sending received data. */
++    FOE_RX_DATA_ACK_ERROR  = 11, /**< Error acknowledging received data. */
++    FOE_ACK_ERROR          = 12, /**< Acknowledge error. */
++    FOE_MBOX_FETCH_ERROR   = 13, /**< Error fetching data from mailbox. */
++    FOE_READ_NODATA_ERROR  = 14, /**< No data while reading. */
++    FOE_MBOX_PROT_ERROR    = 15, /**< Mailbox protocol error. */
++    FOE_READ_OVER_ERROR    = 16, /**< Read buffer overflow. */
++} ec_foe_error_t;
++
++/*****************************************************************************/
++
+ /** Application-layer state.
+  */
+ typedef enum {
+@@ -1650,6 +1677,21 @@ ec_sdo_request_t *ecrt_slave_config_crea
+         size_t size /**< Data size to reserve. */
+         );
+ 
++/** Create an FoE request to exchange files during realtime operation.
++ *
++ * The created FoE request object is freed automatically when the master is
++ * released.
++ *
++ * This method has to be called in non-realtime context before
++ * ecrt_master_activate().
++ *
++ * \return New FoE request, or NULL on error.
++ */
++ec_foe_request_t *ecrt_slave_config_create_foe_request(
++        ec_slave_config_t *sc, /**< Slave configuration. */
++        size_t size /**< Data size to reserve. */
++        );
++
+ /** Create an VoE handler to exchange vendor-specific data during realtime
+  * operation.
+  *
+@@ -1968,6 +2010,129 @@ void ecrt_sdo_request_read(
+         );
+ 
+ /*****************************************************************************
++ * FoE request methods.
++ ****************************************************************************/
++
++/** Select the filename to use for the next FoE operation.
++ */
++void ecrt_foe_request_file(
++        ec_foe_request_t *req, /**< FoE request. */
++        const char *file_name, /**< File name. */
++        uint32_t password /**< Password. */
++        );
++
++/** Set the timeout for an FoE request.
++ *
++ * If the request cannot be processed in the specified time, if will be marked
++ * as failed.
++ *
++ * The timeout is permanently stored in the request object and is valid until
++ * the next call of this method.
++ */
++void ecrt_foe_request_timeout(
++        ec_foe_request_t *req, /**< FoE request. */
++        uint32_t timeout /**< Timeout in milliseconds. Zero means no
++                           timeout. */
++        );
++
++/** Access to the FoE request's data.
++ *
++ * This function returns a pointer to the request's internal data memory.
++ *
++ * - After a read operation was successful, the data can be read from this
++ *   buffer up to the ecrt_foe_request_data_size().
++ * - If a write operation shall be triggered, the data has to be written to
++ *   the internal memory. Be sure that the data fit into the memory. The
++ *   memory size is a parameter of ecrt_slave_config_create_foe_request().
++ *
++ * \attention The return value can be invalid during a read operation, because
++ * the internal data memory could be re-allocated if the read data does not
++ * fit inside.
++ *
++ * \return Pointer to the internal file data memory.
++ */
++uint8_t *ecrt_foe_request_data(
++        ec_foe_request_t *req /**< FoE request. */
++        );
++
++/** Returns the current FoE data size.
++ *
++ * When the FoE request is created, the data size is set to the size of the
++ * reserved memory. After a read operation completes the size is set to the
++ * size of the read data. After a write operation starts the size is set to
++ * the size of the data to write.
++ *
++ * \return FoE data size in bytes.
++ */
++size_t ecrt_foe_request_data_size(
++        const ec_foe_request_t *req /**< FoE request. */
++        );
++
++/** Get the current state of the FoE request.
++ *
++ * \return Request state.
++ */
++#ifdef __KERNEL__
++ec_request_state_t ecrt_foe_request_state(
++        const ec_foe_request_t *req /**< FoE request. */
++    );
++#else
++ec_request_state_t ecrt_foe_request_state(
++        ec_foe_request_t *req /**< FoE request. */
++    );
++#endif
++
++/** Get the result of the FoE request.
++ *
++ * \attention This method may not be called while ecrt_foe_request_state()
++ * returns EC_REQUEST_BUSY.
++ *
++ * \return FoE transfer result.
++ */
++ec_foe_error_t ecrt_foe_request_result(
++        const ec_foe_request_t *req /**< FoE request. */
++    );
++
++/** Get the FoE error code from the FoE request.
++ *
++ * \attention This value is only valid when ecrt_foe_request_result()
++ * returns FOE_OPCODE_ERROR.
++ *
++ * \return FoE error code.  If the returned value is zero, then the error
++ * is that an unexpected opcode was received; if it is non-zero then the
++ * value is the code reported by the slave in the FoE ERROR opcode.
++ */
++uint32_t ecrt_foe_request_error_code(
++        const ec_foe_request_t *req /**< FoE request. */
++    );
++
++/** Schedule an FoE write operation.
++ *
++ * \attention This method may not be called while ecrt_foe_request_state()
++ * returns EC_REQUEST_BUSY.
++ *
++ * \attention The size must be less than or equal to the size specified
++ * when the request was created.
++ */
++void ecrt_foe_request_write(
++        ec_foe_request_t *req, /**< FoE request. */
++        size_t size /**< Size of data to write. */
++        );
++
++/** Schedule an FoE read operation.
++ *
++ * \attention This method may not be called while ecrt_foe_request_state()
++ * returns EC_REQUEST_BUSY.
++ *
++ * \attention After calling this function, the return value of
++ * ecrt_foe_request_data() must be considered as invalid while
++ * ecrt_foe_request_state() returns EC_REQUEST_BUSY.
++ */
++void ecrt_foe_request_read(
++        ec_foe_request_t *req /**< FoE request. */
++        );
++
++/*****************************************************************************
+  * VoE handler methods.
+  ****************************************************************************/
+ 
+diff --git a/lib/Makefile.am b/lib/Makefile.am
+--- a/lib/Makefile.am
++++ b/lib/Makefile.am
+@@ -36,6 +36,7 @@ libethercat_la_SOURCES = \
+ 	common.c \
+ 	domain.c \
+ 	master.c \
++	foe_request.c \
+ 	reg_request.c \
+ 	sdo_request.c \
+ 	slave_config.c \
+@@ -45,6 +46,7 @@ noinst_HEADERS = \
+ 	domain.h \
+ 	ioctl.h \
+ 	master.h \
++	foe_request.h \
+ 	reg_request.h \
+ 	sdo_request.h \
+ 	slave_config.h \
+diff --git a/lib/foe_request.c b/lib/foe_request.c
+new file mode 100644
+--- /dev/null
++++ b/lib/foe_request.c
+@@ -0,0 +1,201 @@
++/******************************************************************************
++ *
++ *  $Id$
++ *
++ *  Copyright (C) 2016       Gavin Lambert
++ *  Copyright (C) 2006-2012  Florian Pose, Ingenieurgemeinschaft IgH
++ *
++ *  This file is part of the IgH EtherCAT master userspace library.
++ *
++ *  The IgH EtherCAT master userspace library is free software; you can
++ *  redistribute it and/or modify it under the terms of the GNU Lesser General
++ *  Public License as published by the Free Software Foundation; version 2.1
++ *  of the License.
++ *
++ *  The IgH EtherCAT master userspace library is distributed in the hope that
++ *  it will be useful, but WITHOUT ANY WARRANTY; without even the implied
++ *  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU Lesser General Public License for more details.
++ *
++ *  You should have received a copy of the GNU Lesser General Public License
++ *  along with the IgH EtherCAT master userspace library. If not, see
++ *  <http://www.gnu.org/licenses/>.
++ *
++ *  ---
++ *
++ *  The license mentioned above concerns the source code only. Using the
++ *  EtherCAT technology and brand is only permitted in compliance with the
++ *  industrial property and similar rights of Beckhoff Automation GmbH.
++ *
++ *****************************************************************************/
++
++/** \file
++ * File access over EtherCAT FoE request functions.
++ */
++
++/*****************************************************************************/
++
++#include <stdio.h>
++#include <string.h>
++
++#include "ioctl.h"
++#include "foe_request.h"
++#include "slave_config.h"
++#include "master.h"
++
++/*****************************************************************************/
++
++void ec_foe_request_clear(ec_foe_request_t *req)
++{
++    if (req->data) {
++        free(req->data);
++    }
++}
++
++/*****************************************************************************
++ * Application interface.
++ ****************************************************************************/
++
++void ecrt_foe_request_file(ec_foe_request_t *req,
++        const char *file_name, uint32_t password)
++{
++    ec_ioctl_foe_request_t data;
++    int ret;
++
++    data.config_index = req->config->index;
++    data.request_index = req->index;
++    strncpy(data.file_name, file_name, sizeof(data.file_name));
++    data.file_name[sizeof(data.file_name)-1] = 0;
++    data.password = password;
++
++    ret = ioctl(req->config->master->fd, EC_IOCTL_FOE_REQUEST_FILE, &data);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        fprintf(stderr, "Failed to set FoE request filename: %s\n",
++                strerror(EC_IOCTL_ERRNO(ret)));
++    }
++}
++
++/*****************************************************************************/
++
++void ecrt_foe_request_timeout(ec_foe_request_t *req, uint32_t timeout)
++{
++    ec_ioctl_foe_request_t data;
++    int ret;
++
++    data.config_index = req->config->index;
++    data.request_index = req->index;
++    data.timeout = timeout;
++
++    ret = ioctl(req->config->master->fd, EC_IOCTL_FOE_REQUEST_TIMEOUT, &data);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        fprintf(stderr, "Failed to set FoE request timeout: %s\n",
++                strerror(EC_IOCTL_ERRNO(ret)));
++    }
++}
++
++/*****************************************************************************/
++
++uint8_t *ecrt_foe_request_data(ec_foe_request_t *req)
++{
++    return req->data;
++}
++
++/*****************************************************************************/
++
++size_t ecrt_foe_request_data_size(const ec_foe_request_t *req)
++{
++    return req->data_size;
++}
++
++/*****************************************************************************/
++
++ec_request_state_t ecrt_foe_request_state(ec_foe_request_t *req)
++{
++    ec_ioctl_foe_request_t data;
++    int ret;
++
++    data.config_index = req->config->index;
++    data.request_index = req->index;
++
++    ret = ioctl(req->config->master->fd, EC_IOCTL_FOE_REQUEST_STATE, &data);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        fprintf(stderr, "Failed to get SDO request state: %s\n",
++                strerror(EC_IOCTL_ERRNO(ret)));
++        return EC_REQUEST_ERROR;
++    }
++    req->result = data.result;
++    req->error_code = data.error_code;
++
++    if (data.size) { // new data waiting to be copied
++        if (req->mem_size < data.size) {
++            fprintf(stderr, "Received %zu bytes do not fit into FoE data"
++                    " memory (%zu bytes)!\n", data.size, req->mem_size);
++            return EC_REQUEST_ERROR;
++        }
++
++        data.data = req->data;
++
++        ret = ioctl(req->config->master->fd,
++                EC_IOCTL_FOE_REQUEST_DATA, &data);
++        if (EC_IOCTL_IS_ERROR(ret)) {
++            fprintf(stderr, "Failed to get FoE data: %s\n",
++                    strerror(EC_IOCTL_ERRNO(ret)));
++            return EC_REQUEST_ERROR;
++        }
++        req->data_size = data.size;
++    }
++
++    return data.state;
++}
++
++/*****************************************************************************/
++
++ec_foe_error_t ecrt_foe_request_result(const ec_foe_request_t *req)
++{
++    return req->result;
++}
++
++/*****************************************************************************/
++
++uint32_t ecrt_foe_request_error_code(const ec_foe_request_t *req)
++{
++    return req->error_code;
++}
++
++/*****************************************************************************/
++
++void ecrt_foe_request_read(ec_foe_request_t *req)
++{
++    ec_ioctl_foe_request_t data;
++    int ret;
++
++    data.config_index = req->config->index;
++    data.request_index = req->index;
++
++    ret = ioctl(req->config->master->fd, EC_IOCTL_FOE_REQUEST_READ, &data);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        fprintf(stderr, "Failed to command an FoE read operation : %s\n",
++                strerror(EC_IOCTL_ERRNO(ret)));
++    }
++}
++
++/*****************************************************************************/
++
++void ecrt_foe_request_write(ec_foe_request_t *req, size_t size)
++{
++    ec_ioctl_foe_request_t data;
++    int ret;
++
++    data.config_index = req->config->index;
++    data.request_index = req->index;
++    data.data = req->data;
++    data.size = size;
++
++    ret = ioctl(req->config->master->fd, EC_IOCTL_FOE_REQUEST_WRITE, &data);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        fprintf(stderr, "Failed to command an FoE write operation : %s\n",
++                strerror(EC_IOCTL_ERRNO(ret)));
++    }
++}
++
++/*****************************************************************************/
+diff --git a/lib/foe_request.h b/lib/foe_request.h
+new file mode 100644
+--- /dev/null
++++ b/lib/foe_request.h
+@@ -0,0 +1,51 @@
++/******************************************************************************
++ *
++ *  $Id$
++ *
++ *  Copyright (C) 2016       Gavin Lambert
++ *  Copyright (C) 2006-2009  Florian Pose, Ingenieurgemeinschaft IgH
++ *
++ *  This file is part of the IgH EtherCAT master userspace library.
++ *
++ *  The IgH EtherCAT master userspace library is free software; you can
++ *  redistribute it and/or modify it under the terms of the GNU Lesser General
++ *  Public License as published by the Free Software Foundation; version 2.1
++ *  of the License.
++ *
++ *  The IgH EtherCAT master userspace library is distributed in the hope that
++ *  it will be useful, but WITHOUT ANY WARRANTY; without even the implied
++ *  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU Lesser General Public License for more details.
++ *
++ *  You should have received a copy of the GNU Lesser General Public License
++ *  along with the IgH EtherCAT master userspace library. If not, see
++ *  <http://www.gnu.org/licenses/>.
++ *
++ *  ---
++ *
++ *  The license mentioned above concerns the source code only. Using the
++ *  EtherCAT technology and brand is only permitted in compliance with the
++ *  industrial property and similar rights of Beckhoff Automation GmbH.
++ *
++ *****************************************************************************/
++
++#include "include/ecrt.h"
++
++/*****************************************************************************/
++
++struct ec_foe_request {
++    ec_foe_request_t *next; /**< List header. */
++    ec_slave_config_t *config; /**< Parent slave configuration. */
++    unsigned int index; /**< Request index (identifier). */
++    uint8_t *data; /**< Pointer to file data. */
++    size_t mem_size; /**< Size of file data memory. */
++    size_t data_size; /**< Size of file data. */
++    ec_foe_error_t result; /**< FoE request abort code. Zero on success. */
++    uint32_t error_code; /**< Error code from an FoE Error Request. */
++};
++
++/*****************************************************************************/
++
++void ec_foe_request_clear(ec_foe_request_t *);
++
++/*****************************************************************************/
+diff --git a/lib/master.c b/lib/master.c
+--- a/lib/master.c
++++ b/lib/master.c
+@@ -193,6 +193,7 @@ ec_slave_config_t *ecrt_master_slave_con
+     sc->alias = alias;
+     sc->position = position;
+     sc->first_sdo_request = NULL;
++    sc->first_foe_request = NULL;
+     sc->first_reg_request = NULL;
+     sc->first_voe_handler = NULL;
+ 
+diff --git a/lib/slave_config.c b/lib/slave_config.c
+--- a/lib/slave_config.c
++++ b/lib/slave_config.c
+@@ -37,6 +37,7 @@
+ #include "slave_config.h"
+ #include "domain.h"
+ #include "sdo_request.h"
++#include "foe_request.h"
+ #include "reg_request.h"
+ #include "voe_handler.h"
+ #include "master.h"
+@@ -46,6 +47,7 @@
+ void ec_slave_config_clear(ec_slave_config_t *sc)
+ {
+     ec_sdo_request_t *r, *next_r;
++    ec_foe_request_t *f, *next_f;
+     ec_reg_request_t *e, *next_e;
+     ec_voe_handler_t *v, *next_v;
+ 
+@@ -56,6 +58,13 @@ void ec_slave_config_clear(ec_slave_conf
+         r = next_r;
+     }
+ 
++    f = sc->first_foe_request;
++    while (f) {
++        next_f = f->next;
++        ec_foe_request_clear(f);
++        f = next_f;
++    }
++
+     e = sc->first_reg_request;
+     while (e) {
+         next_e = e->next;
+@@ -676,6 +685,72 @@ ec_sdo_request_t *ecrt_slave_config_crea
+ 
+ /*****************************************************************************/
+ 
++void ec_slave_config_add_foe_request(ec_slave_config_t *sc,
++        ec_foe_request_t *req)
++{
++    if (sc->first_foe_request) {
++        ec_foe_request_t *r = sc->first_foe_request;
++        while (r->next) {
++            r = r->next;
++        }
++        r->next = req;
++    } else {
++        sc->first_foe_request = req;
++    }
++}
++
++/*****************************************************************************/
++
++ec_foe_request_t *ecrt_slave_config_create_foe_request(ec_slave_config_t *sc,
++        size_t size)
++{
++    ec_ioctl_foe_request_t data;
++    ec_foe_request_t *req;
++    int ret;
++
++    req = malloc(sizeof(ec_foe_request_t));
++    if (!req) {
++        EC_PRINT_ERR("Failed to allocate memory.\n");
++        return 0;
++    }
++
++    if (size) {
++        req->data = malloc(size);
++        if (!req->data) {
++            EC_PRINT_ERR("Failed to allocate %zu bytes of FoE data"
++                    " memory.\n", size);
++            free(req);
++            return 0;
++        }
++    } else {
++        req->data = NULL;
++    }
++
++    data.config_index = sc->index;
++    data.size = size;
++
++    ret = ioctl(sc->master->fd, EC_IOCTL_SC_FOE_REQUEST, &data);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        EC_PRINT_ERR("Failed to create FoE request: %s\n",
++                strerror(EC_IOCTL_ERRNO(ret)));
++        ec_foe_request_clear(req);
++        free(req);
++        return NULL;
++    }
++
++    req->next = NULL;
++    req->config = sc;
++    req->index = data.request_index;
++    req->data_size = size;
++    req->mem_size = size;
++
++    ec_slave_config_add_foe_request(sc, req);
++
++    return req;
++}
++
++/*****************************************************************************/
++
+ void ec_slave_config_add_reg_request(ec_slave_config_t *sc,
+         ec_reg_request_t *reg)
+ {
+diff --git a/lib/slave_config.h b/lib/slave_config.h
+--- a/lib/slave_config.h
++++ b/lib/slave_config.h
+@@ -39,6 +39,7 @@ struct ec_slave_config {
+     uint16_t alias;
+     uint16_t position;
+     ec_sdo_request_t *first_sdo_request;
++    ec_foe_request_t *first_foe_request;
+     ec_reg_request_t *first_reg_request;
+     ec_voe_handler_t *first_voe_handler;
+ };
+diff --git a/master/Makefile.am b/master/Makefile.am
+--- a/master/Makefile.am
++++ b/master/Makefile.am
+@@ -40,7 +40,6 @@ noinst_HEADERS = \
+ 	eoe_request.c eoe_request.h \
+ 	ethernet.c ethernet.h \
+ 	fmmu_config.c fmmu_config.h \
+-	foe.h \
+ 	foe_request.c foe_request.h \
+ 	fsm_change.c fsm_change.h \
+ 	fsm_coe.c fsm_coe.h \
+diff --git a/master/foe.h b/master/foe.h
+deleted file mode 100644
+--- a/master/foe.h
++++ /dev/null
+@@ -1,63 +0,0 @@
+-/******************************************************************************
+- *
+- *  $Id$
+- *
+- *  Copyright (C) 2006-2008  Florian Pose, Ingenieurgemeinschaft IgH
+- *
+- *  This file is part of the IgH EtherCAT Master.
+- *
+- *  The IgH EtherCAT Master is free software; you can redistribute it and/or
+- *  modify it under the terms of the GNU General Public License version 2, as
+- *  published by the Free Software Foundation.
+- *
+- *  The IgH EtherCAT Master is distributed in the hope that it will be useful,
+- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+- *  Public License for more details.
+- *
+- *  You should have received a copy of the GNU General Public License along
+- *  with the IgH EtherCAT Master; if not, write to the Free Software
+- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+- *
+- *  ---
+- *
+- *  The license mentioned above concerns the source code only. Using the
+- *  EtherCAT technology and brand is only permitted in compliance with the
+- *  industrial property and similar rights of Beckhoff Automation GmbH.
+- *
+- *****************************************************************************/
+-
+-/** \file
+- * FoE defines.
+- */
+-
+-#ifndef __FOE_H__
+-#define __FOE_H__
+-
+-/*****************************************************************************/
+-
+-/** FoE error enumeration type.
+- */
+-typedef enum {
+-    FOE_BUSY               = 0, /**< Busy. */
+-    FOE_READY              = 1, /**< Ready. */
+-    FOE_IDLE               = 2, /**< Idle. */
+-    FOE_WC_ERROR           = 3, /**< Working counter error. */
+-    FOE_RECEIVE_ERROR      = 4, /**< Receive error. */
+-    FOE_PROT_ERROR         = 5, /**< Protocol error. */
+-    FOE_NODATA_ERROR       = 6, /**< No data error. */
+-    FOE_PACKETNO_ERROR     = 7, /**< Packet number error. */
+-    FOE_OPCODE_ERROR       = 8, /**< OpCode error. */
+-    FOE_TIMEOUT_ERROR      = 9, /**< Timeout error. */
+-    FOE_SEND_RX_DATA_ERROR = 10, /**< Error sending received data. */
+-    FOE_RX_DATA_ACK_ERROR  = 11, /**< Error acknowledging received data. */
+-    FOE_ACK_ERROR          = 12, /**< Acknowledge error. */
+-    FOE_MBOX_FETCH_ERROR   = 13, /**< Error fetching data from mailbox. */
+-    FOE_READ_NODATA_ERROR  = 14, /**< No data while reading. */
+-    FOE_MBOX_PROT_ERROR    = 15, /**< Mailbox protocol error. */
+-    FOE_READ_OVER_ERROR    = 16, /**< Read buffer overflow. */
+-} ec_foe_error_t;
+-
+-/*****************************************************************************/
+-
+-#endif
+diff --git a/master/foe_request.c b/master/foe_request.c
+--- a/master/foe_request.c
++++ b/master/foe_request.c
+@@ -38,7 +38,6 @@
+ #include <linux/slab.h>
+ 
+ #include "foe_request.h"
+-#include "foe.h"
+ 
+ /*****************************************************************************/
+ 
+@@ -55,12 +54,12 @@ void ec_foe_request_clear_data(ec_foe_re
+ /** FoE request constructor.
+  */
+ void ec_foe_request_init(
+-        ec_foe_request_t *req, /**< FoE request. */
+-        uint8_t* file_name /** filename */)
++        ec_foe_request_t *req /**< FoE request. */
++        )
+ {
+     INIT_LIST_HEAD(&req->list);
+     req->buffer = NULL;
+-    req->file_name = file_name;
++    req->file_name[0] = 0;
+     req->password = 0;
+     req->buffer_size = 0;
+     req->data_size = 0;
+@@ -170,11 +169,13 @@ int ec_foe_request_timed_out(
+         && jiffies - req->jiffies_start > HZ * req->issue_timeout / 1000;
+ }
+ 
+-/*****************************************************************************/
++/*****************************************************************************
++ * Application interface.
++ ****************************************************************************/
+ 
+ /** Set the request timeout.
+  */
+-void ec_foe_request_timeout(
++void ecrt_foe_request_timeout(
+         ec_foe_request_t *req, /**< FoE request. */
+         uint32_t timeout /**< Timeout in ms. */
+         )
+@@ -184,11 +185,25 @@ void ec_foe_request_timeout(
+ 
+ /*****************************************************************************/
+ 
++/** Selects a new file for the request.
++ */
++void ecrt_foe_request_file(
++        ec_foe_request_t *req, /**< FoE request. */
++        const char* file_name, /** filename */
++        uint32_t password /** password */
++        )
++{
++    strlcpy((char*) req->file_name, file_name, sizeof(req->file_name));
++    req->password = password;
++}
++
++/*****************************************************************************/
++
+ /** Returns a pointer to the request's data.
+  *
+  * \return Data pointer.
+  */
+-uint8_t *ec_foe_request_data(
++uint8_t *ecrt_foe_request_data(
+         ec_foe_request_t *req /**< FoE request. */
+         )
+ {
+@@ -201,7 +216,7 @@ uint8_t *ec_foe_request_data(
+  *
+  * \return Data size.
+  */
+-size_t ec_foe_request_data_size(
++size_t ecrt_foe_request_data_size(
+         const ec_foe_request_t *req /**< FoE request. */
+         )
+ {
+@@ -210,12 +225,34 @@ size_t ec_foe_request_data_size(
+ 
+ /*****************************************************************************/
+ 
++ec_request_state_t ecrt_foe_request_state(const ec_foe_request_t *req)
++{
++    return ec_request_state_translation_table[req->state];
++}
++
++/*****************************************************************************/
++
++ec_foe_error_t ecrt_foe_request_result(const ec_foe_request_t *req)
++{
++    return req->result;
++}
++
++/*****************************************************************************/
++
++uint32_t ecrt_foe_request_error_code(const ec_foe_request_t *req)
++{
++    return req->error_code;
++}
++
++/*****************************************************************************/
++
+ /** Prepares a read request (slave to master).
+  */
+-void ec_foe_request_read(
++void ecrt_foe_request_read(
+         ec_foe_request_t *req /**< FoE request. */
+         )
+ {
++    req->data_size = 0;
+     req->dir = EC_DIR_INPUT;
+     req->state = EC_INT_REQUEST_QUEUED;
+     req->result = FOE_BUSY;
+@@ -226,10 +263,18 @@ void ec_foe_request_read(
+ 
+ /** Prepares a write request (master to slave).
+  */
+-void ec_foe_request_write(
+-        ec_foe_request_t *req /**< FoE request. */
++void ecrt_foe_request_write(
++        ec_foe_request_t *req, /**< FoE request. */
++        size_t data_size /**< Data size. */
+         )
+ {
++    if (data_size > req->buffer_size) {
++        EC_ERR("Request to write %zu bytes to FoE buffer of size %zu.\n",
++               data_size, req->buffer_size);
++        req->state = EC_INT_REQUEST_FAILURE;
++        return;
++    }
++    req->data_size = data_size;
+     req->dir = EC_DIR_OUTPUT;
+     req->state = EC_INT_REQUEST_QUEUED;
+     req->result = FOE_BUSY;
+@@ -237,3 +282,19 @@ void ec_foe_request_write(
+ }
+ 
+ /*****************************************************************************/
++
++/** \cond */
++
++EXPORT_SYMBOL(ecrt_foe_request_file);
++EXPORT_SYMBOL(ecrt_foe_request_timeout);
++EXPORT_SYMBOL(ecrt_foe_request_data);
++EXPORT_SYMBOL(ecrt_foe_request_data_size);
++EXPORT_SYMBOL(ecrt_foe_request_state);
++EXPORT_SYMBOL(ecrt_foe_request_result);
++EXPORT_SYMBOL(ecrt_foe_request_error_code);
++EXPORT_SYMBOL(ecrt_foe_request_read);
++EXPORT_SYMBOL(ecrt_foe_request_write);
++
++/** \endcond */
++
++/*****************************************************************************/
+diff --git a/master/foe_request.h b/master/foe_request.h
+--- a/master/foe_request.h
++++ b/master/foe_request.h
+@@ -47,7 +47,7 @@
+ 
+ /** FoE request.
+  */
+-typedef struct {
++struct ec_foe_request {
+     struct list_head list; /**< List item. */
+     uint8_t *buffer; /**< Pointer to FoE data. */
+     size_t buffer_size; /**< Size of FoE data memory. */
+@@ -64,24 +64,21 @@ typedef struct {
+     unsigned long jiffies_start; /**< Jiffies, when the request was issued. */
+     unsigned long jiffies_sent; /**< Jiffies, when the upload/download
+                                      request was sent. */
+-    uint8_t *file_name; /**< Pointer to the filename. */
+     uint32_t password; /**< FoE password. */
+-    uint32_t result; /**< FoE request abort code. Zero on success. */
++    ec_foe_error_t result; /**< FoE request abort code. Zero on success. */
+     uint32_t error_code; /**< Error code from an FoE Error Request. */
+-} ec_foe_request_t;
++    uint8_t file_name[255]; /**< FoE filename. */
++};
+ 
+ /*****************************************************************************/
+ 
+-void ec_foe_request_init(ec_foe_request_t *, uint8_t *file_name);
++void ec_foe_request_init(ec_foe_request_t *);
+ void ec_foe_request_clear(ec_foe_request_t *);
+ 
+ int ec_foe_request_alloc(ec_foe_request_t *, size_t);
+ int ec_foe_request_copy_data(ec_foe_request_t *, const uint8_t *, size_t);
+ int ec_foe_request_timed_out(const ec_foe_request_t *);
+ 
+-void ec_foe_request_write(ec_foe_request_t *);
+-void ec_foe_request_read(ec_foe_request_t *);
+-
+ /*****************************************************************************/
+ 
+ #endif
+diff --git a/master/fsm_foe.c b/master/fsm_foe.c
+--- a/master/fsm_foe.c
++++ b/master/fsm_foe.c
+@@ -38,7 +38,6 @@
+ #include "master.h"
+ #include "mailbox.h"
+ #include "fsm_foe.h"
+-#include "foe.h"
+ 
+ /*****************************************************************************/
+ 
+diff --git a/master/fsm_slave.c b/master/fsm_slave.c
+--- a/master/fsm_slave.c
++++ b/master/fsm_slave.c
+@@ -492,30 +492,43 @@ int ec_fsm_slave_action_process_foe(
+     ec_slave_t *slave = fsm->slave;
+     ec_foe_request_t *request;
+ 
+-    if (list_empty(&slave->foe_requests)) {
++    if (slave->config) {
++        // search the first internal file request to be processed
++        list_for_each_entry(request, &slave->config->foe_requests, list) {
++            if (request->state == EC_INT_REQUEST_QUEUED) {
++                fsm->foe_request = request;
++                break;
++            }
++        }
++    }
++
++    if (!fsm->foe_request && !list_empty(&slave->foe_requests)) {
++        // take the first external request to be processed
++        fsm->foe_request =
++            list_entry(slave->foe_requests.next, ec_foe_request_t, list);
++        list_del_init(&fsm->foe_request->list); // dequeue
++    }
++
++    if (!fsm->foe_request) {
+         return 0;
+     }
+ 
+-    // take the first request to be processed
+-    request = list_entry(slave->foe_requests.next, ec_foe_request_t, list);
+-    list_del_init(&request->list); // dequeue
+-
+     if (slave->current_state & EC_SLAVE_STATE_ACK_ERR) {
+         EC_SLAVE_WARN(slave, "Aborting FoE request,"
+                 " slave has error flag set.\n");
+-        request->state = EC_INT_REQUEST_FAILURE;
++        fsm->foe_request->state = EC_INT_REQUEST_FAILURE;
+         wake_up_all(&slave->master->request_queue);
++        fsm->foe_request = NULL;
+         fsm->state = ec_fsm_slave_state_idle;
+         return 0;
+     }
+ 
+-    request->state = EC_INT_REQUEST_BUSY;
+-    fsm->foe_request = request;
++    fsm->foe_request->state = EC_INT_REQUEST_BUSY;
+ 
+     EC_SLAVE_DBG(slave, 1, "Processing FoE request.\n");
+ 
+     fsm->state = ec_fsm_slave_state_foe_request;
+-    ec_fsm_foe_transfer(&fsm->fsm_foe, slave, request);
++    ec_fsm_foe_transfer(&fsm->fsm_foe, slave, fsm->foe_request);
+     ec_fsm_foe_exec(&fsm->fsm_foe, datagram);
+     return 1;
+ }
+diff --git a/master/ioctl.c b/master/ioctl.c
+--- a/master/ioctl.c
++++ b/master/ioctl.c
+@@ -3250,6 +3250,56 @@ static ATTRIBUTES int ec_ioctl_sc_create
+ 
+ /*****************************************************************************/
+ 
++/** Create an FoE request.
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_sc_create_foe_request(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    ec_ioctl_foe_request_t data;
++    ec_slave_config_t *sc;
++    ec_foe_request_t *req;
++
++    if (unlikely(!ctx->requested))
++        return -EPERM;
++
++    if (copy_from_user(&data, (void __user *) arg, sizeof(data))) {
++        return -EFAULT;
++    }
++
++    data.request_index = 0;
++
++    if (ec_lock_down_interruptible(&master->master_sem))
++        return -EINTR;
++
++    sc = ec_master_get_config(master, data.config_index);
++    if (!sc) {
++        ec_lock_up(&master->master_sem);
++        return -ENOENT;
++    }
++
++    list_for_each_entry(req, &sc->foe_requests, list) {
++        data.request_index++;
++    }
++
++    ec_lock_up(&master->master_sem); /** \todo sc could be invalidated */
++
++    req = ecrt_slave_config_create_foe_request_err(sc, data.size);
++    if (IS_ERR(req))
++        return PTR_ERR(req);
++
++    if (copy_to_user((void __user *) arg, &data, sizeof(data)))
++        return -EFAULT;
++
++    return 0;
++}
++
++/*****************************************************************************/
++
+ /** Create a register request.
+  *
+  * \return Zero on success, otherwise a negative error code.
+@@ -3870,6 +3920,249 @@ static ATTRIBUTES int ec_ioctl_sdo_reque
+ 
+ /*****************************************************************************/
+ 
++/** Sets an FoE request's FoE filename and password.
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_foe_request_file(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    ec_ioctl_foe_request_t data;
++    ec_slave_config_t *sc;
++    ec_foe_request_t *req;
++
++    if (unlikely(!ctx->requested))
++        return -EPERM;
++
++    if (copy_from_user(&data, (void __user *) arg, sizeof(data)))
++        return -EFAULT;
++
++    /* no locking of master_sem needed, because neither sc nor req will not be
++     * deleted in the meantime. */
++
++    if (!(sc = ec_master_get_config(master, data.config_index))) {
++        return -ENOENT;
++    }
++
++    if (!(req = ec_slave_config_find_foe_request(sc, data.request_index))) {
++        return -ENOENT;
++    }
++
++    ecrt_foe_request_file(req, data.file_name, data.password);
++    return 0;
++}
++
++/*****************************************************************************/
++
++/** Sets an FoE request's timeout.
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_foe_request_timeout(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    ec_ioctl_foe_request_t data;
++    ec_slave_config_t *sc;
++    ec_foe_request_t *req;
++
++    if (unlikely(!ctx->requested))
++        return -EPERM;
++
++    if (copy_from_user(&data, (void __user *) arg, sizeof(data)))
++        return -EFAULT;
++
++    /* no locking of master_sem needed, because neither sc nor req will not be
++     * deleted in the meantime. */
++
++    if (!(sc = ec_master_get_config(master, data.config_index))) {
++        return -ENOENT;
++    }
++
++    if (!(req = ec_slave_config_find_foe_request(sc, data.request_index))) {
++        return -ENOENT;
++    }
++
++    ecrt_foe_request_timeout(req, data.timeout);
++    return 0;
++}
++
++/*****************************************************************************/
++
++/** Gets an FoE request's state.
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_foe_request_state(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    ec_ioctl_foe_request_t data;
++    ec_slave_config_t *sc;
++    ec_foe_request_t *req;
++
++    if (unlikely(!ctx->requested))
++        return -EPERM;
++
++    if (copy_from_user(&data, (void __user *) arg, sizeof(data)))
++        return -EFAULT;
++
++    /* no locking of master_sem needed, because neither sc nor req will not be
++     * deleted in the meantime. */
++
++    if (!(sc = ec_master_get_config(master, data.config_index))) {
++        return -ENOENT;
++    }
++
++    if (!(req = ec_slave_config_find_foe_request(sc, data.request_index))) {
++        return -ENOENT;
++    }
++
++    data.state = ecrt_foe_request_state(req);
++    if (data.state == EC_REQUEST_SUCCESS && req->dir == EC_DIR_INPUT)
++        data.size = ecrt_foe_request_data_size(req);
++    else
++        data.size = 0;
++    data.result = req->result;
++    data.error_code = req->error_code;
++
++    if (copy_to_user((void __user *) arg, &data, sizeof(data)))
++        return -EFAULT;
++
++    return 0;
++}
++
++/*****************************************************************************/
++
++/** Starts an FoE read operation.
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_foe_request_read(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    ec_ioctl_foe_request_t data;
++    ec_slave_config_t *sc;
++    ec_foe_request_t *req;
++
++    if (unlikely(!ctx->requested))
++        return -EPERM;
++
++    if (copy_from_user(&data, (void __user *) arg, sizeof(data)))
++        return -EFAULT;
++
++    /* no locking of master_sem needed, because neither sc nor req will not be
++     * deleted in the meantime. */
++
++    if (!(sc = ec_master_get_config(master, data.config_index))) {
++        return -ENOENT;
++    }
++
++    if (!(req = ec_slave_config_find_foe_request(sc, data.request_index))) {
++        return -ENOENT;
++    }
++
++    ecrt_foe_request_read(req);
++    return 0;
++}
++
++/*****************************************************************************/
++
++/** Starts an FoE write operation.
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_foe_request_write(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    ec_ioctl_foe_request_t data;
++    ec_slave_config_t *sc;
++    ec_foe_request_t *req;
++    int ret;
++
++    if (unlikely(!ctx->requested))
++        return -EPERM;
++
++    if (copy_from_user(&data, (void __user *) arg, sizeof(data)))
++        return -EFAULT;
++
++    /* no locking of master_sem needed, because neither sc nor req will not be
++     * deleted in the meantime. */
++
++    if (!(sc = ec_master_get_config(master, data.config_index))) {
++        return -ENOENT;
++    }
++
++    if (!(req = ec_slave_config_find_foe_request(sc, data.request_index))) {
++        return -ENOENT;
++    }
++
++    ret = ec_foe_request_alloc(req, data.size);
++    if (ret)
++        return ret;
++
++    if (copy_from_user(ecrt_foe_request_data(req), (void __user *) data.data, data.size))
++        return -EFAULT;
++
++    ecrt_foe_request_write(req, data.size);
++    return 0;
++}
++
++/*****************************************************************************/
++
++/** Read FoE data.
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_foe_request_data(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    ec_ioctl_foe_request_t data;
++    ec_slave_config_t *sc;
++    ec_foe_request_t *req;
++
++    if (unlikely(!ctx->requested))
++        return -EPERM;
++
++    if (copy_from_user(&data, (void __user *) arg, sizeof(data)))
++        return -EFAULT;
++
++    /* no locking of master_sem needed, because neither sc nor req will not be
++     * deleted in the meantime. */
++
++    if (!(sc = ec_master_get_config(master, data.config_index))) {
++        return -ENOENT;
++    }
++
++    if (!(req = ec_slave_config_find_foe_request(sc, data.request_index))) {
++        return -ENOENT;
++    }
++
++    if (copy_to_user((void __user *) data.data, ecrt_foe_request_data(req),
++                ecrt_foe_request_data_size(req)))
++        return -EFAULT;
++
++    return 0;
++}
++
++/*****************************************************************************/
++
+ /** Read register data.
+  *
+  * \return Zero on success, otherwise a negative error code.
+@@ -4418,15 +4711,15 @@ static ATTRIBUTES int ec_ioctl_slave_foe
+         return -EFAULT;
+     }
+ 
+-    ec_foe_request_init(&request, io.file_name);
++    ec_foe_request_init(&request);
+     ret = ec_foe_request_alloc(&request, io.buffer_size);
+     if (ret) {
+         ec_foe_request_clear(&request);
+         return ret;
+     }
+ 
+-    request.password = io.password;
+-    ec_foe_request_read(&request);
++    ecrt_foe_request_file(&request, io.file_name, io.password);
++    ecrt_foe_request_read(&request);
+ 
+     if (ec_lock_down_interruptible(&master->master_sem)) {
+         ec_foe_request_clear(&request);
+@@ -4515,7 +4808,7 @@ static ATTRIBUTES int ec_ioctl_slave_foe
+         return -EFAULT;
+     }
+ 
+-    ec_foe_request_init(&request, io.file_name);
++    ec_foe_request_init(&request);
+ 
+     ret = ec_foe_request_alloc(&request, io.buffer_size);
+     if (ret) {
+@@ -4529,9 +4822,8 @@ static ATTRIBUTES int ec_ioctl_slave_foe
+         return -EFAULT;
+     }
+ 
+-    request.data_size = io.buffer_size;
+-    request.password = io.password;
+-    ec_foe_request_write(&request);
++    ecrt_foe_request_file(&request, io.file_name, io.password);
++    ecrt_foe_request_write(&request, io.buffer_size);
+ 
+     if (ec_lock_down_interruptible(&master->master_sem)) {
+         ec_foe_request_clear(&request);
+@@ -5121,6 +5413,13 @@ long EC_IOCTL(
+             }
+             ret = ec_ioctl_sc_create_sdo_request(master, arg, ctx);
+             break;
++        case EC_IOCTL_SC_FOE_REQUEST:
++            if (!ctx->writable) {
++                ret = -EPERM;
++                break;
++            }
++            ret = ec_ioctl_sc_create_foe_request(master, arg, ctx);
++            break;
+         case EC_IOCTL_SC_REG_REQUEST:
+             if (!ctx->writable) {
+                 ret = -EPERM;
+@@ -5202,6 +5501,40 @@ long EC_IOCTL(
+         case EC_IOCTL_SDO_REQUEST_DATA:
+             ret = ec_ioctl_sdo_request_data(master, arg, ctx);
+             break;
++        case EC_IOCTL_FOE_REQUEST_FILE:
++            if (!ctx->writable) {
++                ret = -EPERM;
++                break;
++            }
++            ret = ec_ioctl_foe_request_file(master, arg, ctx);
++            break;
++        case EC_IOCTL_FOE_REQUEST_TIMEOUT:
++            if (!ctx->writable) {
++                ret = -EPERM;
++                break;
++            }
++            ret = ec_ioctl_foe_request_timeout(master, arg, ctx);
++            break;
++        case EC_IOCTL_FOE_REQUEST_STATE:
++            ret = ec_ioctl_foe_request_state(master, arg, ctx);
++            break;
++        case EC_IOCTL_FOE_REQUEST_READ:
++            if (!ctx->writable) {
++                ret = -EPERM;
++                break;
++            }
++            ret = ec_ioctl_foe_request_read(master, arg, ctx);
++            break;
++        case EC_IOCTL_FOE_REQUEST_WRITE:
++            if (!ctx->writable) {
++                ret = -EPERM;
++                break;
++            }
++            ret = ec_ioctl_foe_request_write(master, arg, ctx);
++            break;
++        case EC_IOCTL_FOE_REQUEST_DATA:
++            ret = ec_ioctl_foe_request_data(master, arg, ctx);
++            break;
+         case EC_IOCTL_REG_REQUEST_DATA:
+             ret = ec_ioctl_reg_request_data(master, arg, ctx);
+             break;
+diff --git a/master/ioctl.h b/master/ioctl.h
+--- a/master/ioctl.h
++++ b/master/ioctl.h
+@@ -162,6 +162,13 @@
+ #define EC_IOCTL_DEACTIVATE_SLAVES      EC_IO(0x61)
+ #define EC_IOCTL_64_REF_CLK_TIME_QUEUE  EC_IO(0x62)
+ #define EC_IOCTL_64_REF_CLK_TIME       EC_IOR(0x63, uint64_t)
++#define EC_IOCTL_SC_FOE_REQUEST       EC_IOWR(0x64, ec_ioctl_foe_request_t)
++#define EC_IOCTL_FOE_REQUEST_FILE     EC_IOWR(0x65, ec_ioctl_foe_request_t)
++#define EC_IOCTL_FOE_REQUEST_TIMEOUT  EC_IOWR(0x66, ec_ioctl_foe_request_t)
++#define EC_IOCTL_FOE_REQUEST_STATE    EC_IOWR(0x67, ec_ioctl_foe_request_t)
++#define EC_IOCTL_FOE_REQUEST_READ     EC_IOWR(0x68, ec_ioctl_foe_request_t)
++#define EC_IOCTL_FOE_REQUEST_WRITE    EC_IOWR(0x69, ec_ioctl_foe_request_t)
++#define EC_IOCTL_FOE_REQUEST_DATA     EC_IOWR(0x6a, ec_ioctl_foe_request_t)
+ 
+ /*****************************************************************************/
+ 
+@@ -767,6 +774,25 @@ typedef struct {
+ typedef struct {
+     // inputs
+     uint32_t config_index;
++
++    // inputs/outputs
++    uint32_t request_index;
++    uint32_t password;
++    size_t size;
++    uint8_t *data;
++    uint32_t timeout;
++    ec_request_state_t state;
++    ec_foe_error_t result;
++    uint32_t error_code;
++
++    char file_name[255];
++} ec_ioctl_foe_request_t;
++
++/*****************************************************************************/
++
++typedef struct {
++    // inputs
++    uint32_t config_index;
+     size_t mem_size;
+ 
+     // inputs/outputs
+diff --git a/master/slave_config.c b/master/slave_config.c
+--- a/master/slave_config.c
++++ b/master/slave_config.c
+@@ -87,6 +87,7 @@ void ec_slave_config_init(
+ 
+     INIT_LIST_HEAD(&sc->sdo_configs);
+     INIT_LIST_HEAD(&sc->sdo_requests);
++    INIT_LIST_HEAD(&sc->foe_requests);
+     INIT_LIST_HEAD(&sc->reg_requests);
+     INIT_LIST_HEAD(&sc->voe_handlers);
+     INIT_LIST_HEAD(&sc->soe_configs);
+@@ -106,6 +107,7 @@ void ec_slave_config_clear(
+ {
+     unsigned int i;
+     ec_sdo_request_t *req, *next_req;
++    ec_foe_request_t *foe, *next_foe;
+     ec_voe_handler_t *voe, *next_voe;
+     ec_reg_request_t *reg, *next_reg;
+     ec_soe_request_t *soe, *next_soe;
+@@ -130,6 +132,13 @@ void ec_slave_config_clear(
+         kfree(req);
+     }
+ 
++    // free all FoE requests
++    list_for_each_entry_safe(foe, next_foe, &sc->foe_requests, list) {
++        list_del(&foe->list);
++        ec_foe_request_clear(foe);
++        kfree(foe);
++    }
++
+     // free all register requests
+     list_for_each_entry_safe(reg, next_reg, &sc->reg_requests, list) {
+         list_del(&reg->list);
+@@ -524,6 +533,28 @@ ec_sdo_request_t *ec_slave_config_find_s
+ 
+ /*****************************************************************************/
+ 
++/** Finds an FoE handler via its position in the list.
++ *
++ * \return Search result, or NULL.
++ */
++ec_foe_request_t *ec_slave_config_find_foe_request(
++        ec_slave_config_t *sc, /**< Slave configuration. */
++        unsigned int pos /**< Position in the list. */
++        )
++{
++    ec_foe_request_t *req;
++
++    list_for_each_entry(req, &sc->foe_requests, list) {
++        if (pos--)
++            continue;
++        return req;
++    }
++
++    return NULL;
++}
++
++/*****************************************************************************/
++
+ /** Finds a register handler via its position in the list.
+  *
+  * \return Search result, or NULL.
+@@ -575,10 +606,11 @@ void ec_slave_config_expire_disconnected
+         )
+ {
+     ec_sdo_request_t *sdo_req;
++    ec_foe_request_t *foe_req;
+     ec_reg_request_t *reg_req;
+ 
+     if (sc->slave) { return; }
+-    
++
+     list_for_each_entry(sdo_req, &sc->sdo_requests, list) {
+         if (sdo_req->state == EC_INT_REQUEST_QUEUED ||
+                 sdo_req->state == EC_INT_REQUEST_BUSY) {
+@@ -586,7 +618,15 @@ void ec_slave_config_expire_disconnected
+             sdo_req->state = EC_INT_REQUEST_FAILURE;
+         }
+     }
+-    
++
++    list_for_each_entry(foe_req, &sc->foe_requests, list) {
++        if (foe_req->state == EC_INT_REQUEST_QUEUED ||
++                foe_req->state == EC_INT_REQUEST_BUSY) {
++            EC_CONFIG_DBG(sc, 1, "Aborting FoE request; no slave attached.\n");
++            foe_req->state = EC_INT_REQUEST_FAILURE;
++        }
++    }
++
+     list_for_each_entry(reg_req, &sc->reg_requests, list) {
+         if (reg_req->state == EC_INT_REQUEST_QUEUED ||
+                 reg_req->state == EC_INT_REQUEST_BUSY) {
+@@ -1184,6 +1224,57 @@ ec_sdo_request_t *ecrt_slave_config_crea
+ 
+ /*****************************************************************************/
+ 
++/** Same as ecrt_slave_config_create_foe_request(), but with ERR_PTR() return
++ * value.
++ */
++ec_foe_request_t *ecrt_slave_config_create_foe_request_err(
++        ec_slave_config_t *sc, size_t size)
++{
++    ec_foe_request_t *req;
++    int ret;
++
++    EC_CONFIG_DBG(sc, 1, "%s(sc = 0x%p, size = %zu)\n",
++            __func__, sc, size);
++
++    if (!(req = (ec_foe_request_t *)
++                kmalloc(sizeof(ec_foe_request_t), GFP_KERNEL))) {
++        EC_CONFIG_ERR(sc, "Failed to allocate FoE request memory!\n");
++        return ERR_PTR(-ENOMEM);
++    }
++
++    ec_foe_request_init(req);
++
++    ret = ec_foe_request_alloc(req, size);
++    if (ret < 0) {
++        ec_foe_request_clear(req);
++        kfree(req);
++        EC_CONFIG_ERR(sc, "Failed to allocate FoE request data "
++                "memory (size=%zu)!\n", size);
++        return ERR_PTR(ret);
++    }
++
++    // prepare data for optional writing
++    memset(req->buffer, 0x00, size);
++    req->data_size = size;
++
++    ec_lock_down(&sc->master->master_sem);
++    list_add_tail(&req->list, &sc->foe_requests);
++    ec_lock_up(&sc->master->master_sem);
++
++    return req;
++}
++
++/*****************************************************************************/
++
++ec_foe_request_t *ecrt_slave_config_create_foe_request(
++        ec_slave_config_t *sc, size_t size)
++{
++    ec_foe_request_t *s = ecrt_slave_config_create_foe_request_err(sc, size);
++    return IS_ERR(s) ? NULL : s;
++}
++
++/*****************************************************************************/
++
+ /** Same as ecrt_slave_config_create_reg_request(), but with ERR_PTR() return
+  * value.
+  */
+@@ -1369,6 +1460,7 @@ EXPORT_SYMBOL(ecrt_slave_config_emerg_cl
+ EXPORT_SYMBOL(ecrt_slave_config_emerg_overruns);
+ EXPORT_SYMBOL(ecrt_slave_config_create_sdo_request);
+ EXPORT_SYMBOL(ecrt_slave_config_create_sdo_request_complete);
++EXPORT_SYMBOL(ecrt_slave_config_create_foe_request);
+ EXPORT_SYMBOL(ecrt_slave_config_create_voe_handler);
+ EXPORT_SYMBOL(ecrt_slave_config_create_reg_request);
+ EXPORT_SYMBOL(ecrt_slave_config_state);
+diff --git a/master/slave_config.h b/master/slave_config.h
+--- a/master/slave_config.h
++++ b/master/slave_config.h
+@@ -144,6 +144,7 @@ struct ec_slave_config {
+ 
+     struct list_head sdo_configs; /**< List of SDO configurations. */
+     struct list_head sdo_requests; /**< List of SDO requests. */
++    struct list_head foe_requests; /**< List of FoE requests. */
+     struct list_head voe_handlers; /**< List of VoE handlers. */
+     struct list_head reg_requests; /**< List of register requests. */
+     struct list_head soe_configs; /**< List of SoE configurations. */
+@@ -170,6 +171,8 @@ const ec_soe_request_t *ec_slave_config_
+         const ec_slave_config_t *, unsigned int);
+ ec_sdo_request_t *ec_slave_config_find_sdo_request(ec_slave_config_t *,
+         unsigned int);
++ec_foe_request_t *ec_slave_config_find_foe_request(ec_slave_config_t *,
++        unsigned int);
+ ec_reg_request_t *ec_slave_config_find_reg_request(ec_slave_config_t *,
+         unsigned int);
+ ec_voe_handler_t *ec_slave_config_find_voe_handler(ec_slave_config_t *,
+@@ -178,6 +181,8 @@ void ec_slave_config_expire_disconnected
+ 
+ ec_sdo_request_t *ecrt_slave_config_create_sdo_request_err(
+         ec_slave_config_t *, uint16_t, uint8_t, uint8_t, size_t);
++ec_foe_request_t *ecrt_slave_config_create_foe_request_err(
++        ec_slave_config_t *, size_t);
+ ec_voe_handler_t *ecrt_slave_config_create_voe_handler_err(
+         ec_slave_config_t *, size_t);
+ ec_reg_request_t *ecrt_slave_config_create_reg_request_err(
+diff --git a/tool/CommandFoeRead.cpp b/tool/CommandFoeRead.cpp
+--- a/tool/CommandFoeRead.cpp
++++ b/tool/CommandFoeRead.cpp
+@@ -35,7 +35,6 @@
+ using namespace std;
+ 
+ #include "CommandFoeRead.h"
+-#include "foe.h"
+ #include "MasterDevice.h"
+ 
+ /*****************************************************************************/
+diff --git a/tool/CommandFoeWrite.cpp b/tool/CommandFoeWrite.cpp
+--- a/tool/CommandFoeWrite.cpp
++++ b/tool/CommandFoeWrite.cpp
+@@ -36,7 +36,6 @@
+ using namespace std;
+ 
+ #include "CommandFoeWrite.h"
+-#include "foe.h"
+ #include "MasterDevice.h"
+ 
+ /*****************************************************************************/
+diff --git a/tool/FoeCommand.cpp b/tool/FoeCommand.cpp
+--- a/tool/FoeCommand.cpp
++++ b/tool/FoeCommand.cpp
+@@ -28,7 +28,6 @@
+  ****************************************************************************/
+ 
+ #include "FoeCommand.h"
+-#include "foe.h"
+ 
+ /*****************************************************************************/
+ 

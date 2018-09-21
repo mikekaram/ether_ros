@@ -1,0 +1,24 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1513177243 -3600
+#      Wed Dec 13 16:00:43 2017 +0100
+# Parent  efec92af6482170353b89a04384af6abfba283aa
+Ignore missing SDO entries in output.
+
+diff --git a/tool/CommandSdos.cpp b/tool/CommandSdos.cpp
+--- a/tool/CommandSdos.cpp
++++ b/tool/CommandSdos.cpp
+@@ -145,7 +145,12 @@ void CommandSdos::listSlaveSdos(
+             continue;
+ 
+         for (j = 0; j <= sdo.max_subindex; j++) {
+-            m.getSdoEntry(&entry, slave.position, -i, j);
++            try {
++                m.getSdoEntry(&entry, slave.position, -i, j);
++            }
++            catch (MasterDeviceException &e) {
++                continue;
++            }
+ 
+             cout << "  0x" << hex << setfill('0')
+                 << setw(4) << sdo.sdo_index << ":"

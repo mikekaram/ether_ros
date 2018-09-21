@@ -1,0 +1,168 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Tue, 19 Jul 2016 15:38:04 +1200
+
+Adds progress reporting to async FoE requests.
+
+diff --git a/include/ecrt.h b/include/ecrt.h
+--- a/include/ecrt.h
++++ b/include/ecrt.h
+@@ -2106,6 +2106,16 @@ uint32_t ecrt_foe_request_error_code(
+         const ec_foe_request_t *req /**< FoE request. */
+     );
+ 
++/** Returns the progress of the current @EC_REQUEST_BUSY transfer.
++ *
++ * \attention Must be called after ecrt_foe_request_state().
++ *
++ * \return Progress in bytes.
++ */
++size_t ecrt_foe_request_progress(
++        const ec_foe_request_t *req /**< FoE request. */
++        );
++
+ /** Schedule an FoE write operation.
+  *
+  * \attention This method may not be called while ecrt_foe_request_state()
+diff --git a/lib/foe_request.c b/lib/foe_request.c
+--- a/lib/foe_request.c
++++ b/lib/foe_request.c
+@@ -109,6 +109,13 @@ size_t ecrt_foe_request_data_size(const 
+ 
+ /*****************************************************************************/
+ 
++size_t ecrt_foe_request_progress(const ec_foe_request_t *req)
++{
++    return req->progress;
++}
++
++/*****************************************************************************/
++
+ ec_request_state_t ecrt_foe_request_state(ec_foe_request_t *req)
+ {
+     ec_ioctl_foe_request_t data;
+@@ -144,6 +151,7 @@ ec_request_state_t ecrt_foe_request_stat
+         }
+         req->data_size = data.size;
+     }
++    req->progress = data.progress;
+ 
+     return data.state;
+ }
+diff --git a/lib/foe_request.h b/lib/foe_request.h
+--- a/lib/foe_request.h
++++ b/lib/foe_request.h
+@@ -40,6 +40,7 @@ struct ec_foe_request {
+     uint8_t *data; /**< Pointer to file data. */
+     size_t mem_size; /**< Size of file data memory. */
+     size_t data_size; /**< Size of file data. */
++    size_t progress; /**< Current position of a BUSY request. */
+     ec_foe_error_t result; /**< FoE request abort code. Zero on success. */
+     uint32_t error_code; /**< Error code from an FoE Error Request. */
+ };
+diff --git a/master/foe_request.c b/master/foe_request.c
+--- a/master/foe_request.c
++++ b/master/foe_request.c
+@@ -63,6 +63,7 @@ void ec_foe_request_init(
+     req->password = 0;
+     req->buffer_size = 0;
+     req->data_size = 0;
++    req->progress = 0;
+     req->dir = EC_DIR_INVALID;
+     req->issue_timeout = 0; // no timeout
+     req->response_timeout = EC_FOE_REQUEST_RESPONSE_TIMEOUT;
+@@ -246,6 +247,19 @@ uint32_t ecrt_foe_request_error_code(con
+ 
+ /*****************************************************************************/
+ 
++/** Returns the progress of the current @EC_REQUEST_BUSY transfer.
++ *
++ * \return Progress in bytes.
++ */
++size_t ecrt_foe_request_progress(
++        const ec_foe_request_t *req /**< FoE request. */
++        )
++{
++    return req->progress;
++}
++
++/*****************************************************************************/
++
+ /** Prepares a read request (slave to master).
+  */
+ void ecrt_foe_request_read(
+@@ -253,6 +267,7 @@ void ecrt_foe_request_read(
+         )
+ {
+     req->data_size = 0;
++    req->progress = 0;
+     req->dir = EC_DIR_INPUT;
+     req->state = EC_INT_REQUEST_QUEUED;
+     req->result = FOE_BUSY;
+@@ -275,6 +290,7 @@ void ecrt_foe_request_write(
+         return;
+     }
+     req->data_size = data_size;
++    req->progress = 0;
+     req->dir = EC_DIR_OUTPUT;
+     req->state = EC_INT_REQUEST_QUEUED;
+     req->result = FOE_BUSY;
+@@ -292,6 +308,7 @@ EXPORT_SYMBOL(ecrt_foe_request_data_size
+ EXPORT_SYMBOL(ecrt_foe_request_state);
+ EXPORT_SYMBOL(ecrt_foe_request_result);
+ EXPORT_SYMBOL(ecrt_foe_request_error_code);
++EXPORT_SYMBOL(ecrt_foe_request_progress);
+ EXPORT_SYMBOL(ecrt_foe_request_read);
+ EXPORT_SYMBOL(ecrt_foe_request_write);
+ 
+diff --git a/master/foe_request.h b/master/foe_request.h
+--- a/master/foe_request.h
++++ b/master/foe_request.h
+@@ -52,6 +52,7 @@ struct ec_foe_request {
+     uint8_t *buffer; /**< Pointer to FoE data. */
+     size_t buffer_size; /**< Size of FoE data memory. */
+     size_t data_size; /**< Size of FoE data. */
++    size_t progress; /**< Current position of a BUSY request. */
+ 
+     uint32_t issue_timeout; /**< Maximum time in ms, the processing of the
+                               request may take. */
+diff --git a/master/fsm_foe.c b/master/fsm_foe.c
+--- a/master/fsm_foe.c
++++ b/master/fsm_foe.c
+@@ -508,6 +508,7 @@ void ec_fsm_foe_state_ack_read_data(
+     if (opCode == EC_FOE_OPCODE_ACK) {
+         fsm->packet_no++;
+         fsm->buffer_offset += fsm->current_size;
++        fsm->request->progress = fsm->buffer_offset;
+ 
+         if (fsm->last_packet) {
+             fsm->state = ec_fsm_foe_end;
+@@ -966,6 +967,7 @@ void ec_fsm_foe_state_data_read_data(
+         memcpy(fsm->request->buffer + fsm->buffer_offset,
+                 data + EC_FOE_HEADER_SIZE, rec_size);
+         fsm->buffer_offset += rec_size;
++        fsm->request->progress = fsm->buffer_offset;
+     }
+ 
+     fsm->last_packet =
+diff --git a/master/ioctl.c b/master/ioctl.c
+--- a/master/ioctl.c
++++ b/master/ioctl.c
+@@ -4026,6 +4026,7 @@ static ATTRIBUTES int ec_ioctl_foe_reque
+     }
+ 
+     data.state = ecrt_foe_request_state(req);
++    data.progress = ecrt_foe_request_progress(req);
+     if (data.state == EC_REQUEST_SUCCESS && req->dir == EC_DIR_INPUT)
+         data.size = ecrt_foe_request_data_size(req);
+     else
+diff --git a/master/ioctl.h b/master/ioctl.h
+--- a/master/ioctl.h
++++ b/master/ioctl.h
+@@ -779,6 +779,7 @@ typedef struct {
+     uint32_t request_index;
+     uint32_t password;
+     size_t size;
++    size_t progress;
+     uint8_t *data;
+     uint32_t timeout;
+     ec_request_state_t state;

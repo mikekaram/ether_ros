@@ -1,0 +1,26 @@
+From: Patrick Bruenn <p.bruenn@beckhoff.com>
+Date: Tue, 03 Jan 2017 08:35:25 +0100
+
+Support changed struct vm_fault from kernel 4.10.
+
+vm_fault->virtual_address was renamed into vm_fault->address by
+kernel commit 82b0f8c39a3869b6fd2a10e180a862248736ec6f
+
+diff --git a/master/cdev.c b/master/cdev.c
+--- a/master/cdev.c
++++ b/master/cdev.c
+@@ -282,8 +282,12 @@ static int eccdev_vma_fault(
+     get_page(page);
+     vmf->page = page;
+ 
+-    EC_MASTER_DBG(priv->cdev->master, 1, "Vma fault,"
+-            " offset = %lu, page = %p\n", offset, page);
++    EC_MASTER_DBG(priv->cdev->master, 1, "Vma fault, virtual_address = %p,"
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
++            " offset = %lu, page = %p\n", (void*)vmf->address, offset, page);
++#else
++            " offset = %lu, page = %p\n", vmf->virtual_address, offset, page);
++#endif
+ 
+     return 0;
+ }

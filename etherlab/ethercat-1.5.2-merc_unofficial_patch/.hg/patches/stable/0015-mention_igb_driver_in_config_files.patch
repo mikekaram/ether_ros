@@ -1,0 +1,59 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1509099491 -7200
+#      Fri Oct 27 12:18:11 2017 +0200
+Mention igb driver in config files.
+(grafted from d984f57bef976b3d2091800f61d14f03703c2860)
+
+diff --git a/script/ethercat.conf b/script/ethercat.conf
+--- a/script/ethercat.conf
++++ b/script/ethercat.conf
+@@ -39,18 +39,18 @@ MASTER0_DEVICE=""
+ #
+ # Ethernet driver modules to use for EtherCAT operation.
+ #
+-# Specify a non-empty list of Ethernet drivers, that shall be used for EtherCAT
+-# operation.
++# Specify a non-empty list of Ethernet drivers, that shall be used for
++# EtherCAT operation.
+ #
+ # Except for the generic Ethernet driver module, the init script will try to
+ # unload the usual Ethernet driver modules in the list and replace them with
+ # the EtherCAT-capable ones. If a certain (EtherCAT-capable) driver is not
+ # found, a warning will appear.
+ #
+-# Possible values: 8139too, e100, e1000, e1000e, r8169, generic, ccat.
++# Possible values: 8139too, e100, e1000, e1000e, r8169, generic, ccat, igb.
+ # Separate multiple drivers with spaces.
+ #
+-# Note: The e100, e1000, e1000e, r8169 and ccat drivers are not built by
++# Note: The e100, e1000, e1000e, r8169, ccat and igb drivers are not built by
+ # default. Enable them with the --enable-<driver> configure switches.
+ #
+ # Attention: When using the generic driver, the corresponding Ethernet device
+diff --git a/script/sysconfig/ethercat b/script/sysconfig/ethercat
+--- a/script/sysconfig/ethercat
++++ b/script/sysconfig/ethercat
+@@ -39,18 +39,18 @@ MASTER0_DEVICE=""
+ #
+ # Ethernet driver modules to use for EtherCAT operation.
+ #
+-# Specify a non-empty list of Ethernet drivers, that shall be used for EtherCAT
+-# operation.
++# Specify a non-empty list of Ethernet drivers, that shall be used for
++# EtherCAT operation.
+ #
+ # Except for the generic Ethernet driver module, the init script will try to
+ # unload the usual Ethernet driver modules in the list and replace them with
+ # the EtherCAT-capable ones. If a certain (EtherCAT-capable) driver is not
+ # found, a warning will appear.
+ #
+-# Possible values: 8139too, e100, e1000, e1000e, r8169, generic, ccat.
++# Possible values: 8139too, e100, e1000, e1000e, r8169, generic, ccat, igb.
+ # Separate multiple drivers with spaces.
+ #
+-# Note: The e100, e1000, e1000e, r8169 and ccat drivers are not built by
++# Note: The e100, e1000, e1000e, r8169, ccat and igb drivers are not built by
+ # default. Enable them with the --enable-<driver> configure switches.
+ #
+ # Attention: When using the generic driver, the corresponding Ethernet device

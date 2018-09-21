@@ -1,0 +1,113 @@
+EoE processing requires ecrt_master_callbacks() so that an EoE processing
+thread can ask your application to call ecrt_master_receive() and
+ecrt_master_send_ext() if it is appropriate timing wise.  However for
+RTDM user space applications this function is not available is you are
+unable to supply user space callbacks to a kernel space process.
+
+This patch adds ecrt_master_eoe_is_open(), ecrt_master_eoe_process() and
+makes ecrt_master_send_ext() available to user space applications.  Once
+the master goes active, and no callbacks have been specified your application
+can take over processing the external datagrams with something like this:
+
+# SEM *master_sem;
+# SEM *rt_thread_sem;
+#
+# int wait_on_rt_thread()
+# {
+#   if (((int64_t)(next_wake_time - curr_time)) < CRITICAL_CYCLE_TIME)
+#   {
+#     rt_sem_wait_timed(rt_thread_sem, 1000000000LL);
+#   }
+#   else
+#   {
+#     return 1;
+#   }
+# }
+#
+# int rt_thread_complete()
+# {
+#   // signal that we have completed this scan
+#   rt_sem_broadcast(rt_thread_sem);
+# }
+#
+# int terminate = 0;
+#
+# int run_eoe(void *args)
+# {
+#   ec_master_t *master = args;
+#   int eoe_processing;
+#   int eoe_open;
+#   RT_TASK *task;
+#
+#   // initialise the thread task
+#   if (!(task = rt_thread_init(nam2num("MSTEOE"), 50/*priority*/, 0, SCHED_FIFO, 0x2)))
+#   {
+#     return -1;
+#   }
+#
+#   // run
+#   while (!terminate)
+#   {
+#     eoe_processing = 0;
+#
+#     // check if any EoE handlers are open
+#     if ( ((eoe_open = ecrt_master_eoe_is_open(master)) > 0) &&
+#          wait_on_rt_thread() )
+#     {
+#       // receive any pending datagrams
+#       rt_sem_wait(master_sem);
+#       ecrt_master_receive(master);
+#       rt_sem_signal(master_sem);
+#
+#
+#       // process the eoe handlers and see if there's anything to send
+#       // or handler processing still pending
+#       eoe_processing = ecrt_master_eoe_process(master);
+#
+#
+#       // anything to send?
+#       if ((eoe_processing & EOE_STH_TO_SEND) == EOE_STH_TO_SEND)
+#       {
+#         rt_sem_wait(master_sem);
+#         ecrt_master_send_ext(master);
+#         rt_sem_signal(master_sem);
+#       }
+#     }
+#
+#     if ( unlikely(eoe_open < 0) )
+#     {
+#       // external eoe processing not currently available
+#       // sleep a long period (1s)
+#       rt_sleep(1000000000LL);
+#     }
+#     else if ((eoe_processing & EOE_STH_PENDING) != EOE_STH_PENDING)
+#     {
+#       // nothing to do at the moment sleep a period (1ms)
+#       rt_sleep(1000000);
+#     }
+#     else
+#     {
+#       // still got things to do, yield
+#       rt_task_yield();
+#     }
+#   }
+#
+#   rt_task_delete(task);
+#
+#   return 0;
+# }
+#
+# long start_eoe(ec_master_t *master)
+# {
+#   terminate = 0;
+#   return = rt_thread_create(run_eoe, &master, 10000);
+# }
+#
+# void stop_eoe(long thread_id)
+# {
+#   terminate = 1;
+#   rt_thread_join(thread_id);
+# }
+
+Have also removed some send_cb and receive_cb calls as they
+look like they are creating a loop

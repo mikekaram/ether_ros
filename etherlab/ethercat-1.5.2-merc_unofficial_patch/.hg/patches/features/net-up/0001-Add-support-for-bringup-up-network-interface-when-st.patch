@@ -1,0 +1,40 @@
+From: Esben Haabendal <esben@haabendal.dk>
+Date: Mon, 11 Aug 2014 11:21:40 +0200
+
+Add support for bringing up network interface when starting EtherCAT
+
+Signed-off-by: Esben Haabendal <esben@haabendal.dk>
+
+diff --git a/script/ethercat.conf b/script/ethercat.conf
+--- a/script/ethercat.conf
++++ b/script/ethercat.conf
+@@ -67,4 +67,12 @@ DEVICE_MODULES=""
+ #
+ #MODPROBE_FLAGS="-b"
+ 
++#
++# Ethernet devices to bring up when starting EtherCAT.
++#
++# Specify one or more network devices that you want to control link state of.
++# Listed devices will have set link state to "up" when starting EtherCAT.
++#
++#LINK_DEVICES="eth0"
++
+ #------------------------------------------------------------------------------
+diff --git a/script/init.d/ethercat.in b/script/init.d/ethercat.in
+--- a/script/init.d/ethercat.in
++++ b/script/init.d/ethercat.in
+@@ -165,6 +165,13 @@ start)
+         MASTER_INDEX=$(expr ${MASTER_INDEX} + 1)
+     done
+ 
++    # Set link state UP on selected devices
++    if [ -n "${LINK_DEVICES}" ]; then
++        for LINK_DEVICE in ${LINK_DEVICES}; do
++            ip link set ${LINK_DEVICE} up
++        done
++    fi
++
+     # load master module
+     if ! ${MODPROBE} ${MODPROBE_FLAGS} ec_master ${MASTER_ARGS} \
+             main_devices=${DEVICES} backup_devices=${BACKUPS}; then

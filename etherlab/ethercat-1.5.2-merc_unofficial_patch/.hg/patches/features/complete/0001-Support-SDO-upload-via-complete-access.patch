@@ -1,0 +1,424 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Wed, 1 Jun 2016 10:03:25 +0200
+
+Support SDO upload via complete access.
+
+diff --git a/TODO b/TODO
+--- a/TODO
++++ b/TODO
+@@ -22,7 +22,6 @@ Future issues:
+ * recompile tool/CommandVersion.cpp if revision changes.
+ * Log SoE IDNs with real name ([SP]-x-yyyy).
+ * Only output watchdog config if not default.
+-* Implement CompleteAccess for SDO uploads.
+ * Output warning when send_ext() is called in illegal context.
+ * Implement ecrt_slave_config_request_state().
+ * Remove default buffer size in SDO upload.
+diff --git a/include/ecrt.h b/include/ecrt.h
+--- a/include/ecrt.h
++++ b/include/ecrt.h
+@@ -885,6 +885,25 @@ int ecrt_master_sdo_upload(
+         uint32_t *abort_code /**< Abort code of the SDO upload. */
+         );
+ 
++/** Executes an SDO upload request to read data from a slave via complete access.
++ *
++ * This request is processed by the master state machine. This method blocks,
++ * until the request has been processed and may not be called in realtime
++ * context.
++ *
++ * \retval  0 Success.
++ * \retval <0 Error code.
++ */
++int ecrt_master_sdo_upload_complete(
++        ec_master_t *master, /**< EtherCAT master. */
++        uint16_t slave_position, /**< Slave position. */
++        uint16_t index, /**< Index of the SDO. */
++        uint8_t *target, /**< Target buffer for the upload. */
++        size_t target_size, /**< Size of the target buffer. */
++        size_t *result_size, /**< Uploaded data size. */
++        uint32_t *abort_code /**< Abort code of the SDO upload. */
++        );
++
+ /** Executes an SoE write request.
+  *
+  * Starts writing an IDN and blocks until the request was processed, or an
+diff --git a/lib/master.c b/lib/master.c
+--- a/lib/master.c
++++ b/lib/master.c
+@@ -458,6 +458,37 @@ int ecrt_master_sdo_upload(ec_master_t *
+     upload.slave_position = slave_position;
+     upload.sdo_index = index;
+     upload.sdo_entry_subindex = subindex;
++    upload.complete_access = 0;
++    upload.target_size = target_size;
++    upload.target = target;
++
++    ret = ioctl(master->fd, EC_IOCTL_SLAVE_SDO_UPLOAD, &upload);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        if (EC_IOCTL_ERRNO(ret) == EIO && abort_code) {
++            *abort_code = upload.abort_code;
++        }
++        EC_PRINT_ERR("Failed to execute SDO upload: %s\n",
++                strerror(EC_IOCTL_ERRNO(ret)));
++        return -EC_IOCTL_ERRNO(ret);
++    }
++
++    *result_size = upload.data_size;
++    return 0;
++}
++
++/****************************************************************************/
++
++int ecrt_master_sdo_upload_complete(ec_master_t *master, uint16_t slave_position,
++        uint16_t index, uint8_t *target,
++        size_t target_size, size_t *result_size, uint32_t *abort_code)
++{
++    ec_ioctl_slave_sdo_upload_t upload;
++    int ret;
++
++    upload.slave_position = slave_position;
++    upload.sdo_index = index;
++    upload.sdo_entry_subindex = 0;
++    upload.complete_access = 1;
+     upload.target_size = target_size;
+     upload.target = target;
+ 
+diff --git a/master/fsm_coe.c b/master/fsm_coe.c
+--- a/master/fsm_coe.c
++++ b/master/fsm_coe.c
+@@ -2162,9 +2162,10 @@ int ec_fsm_coe_prepare_up(
+     }
+ 
+     EC_WRITE_U16(data, 0x2 << 12); // SDO request
+-    EC_WRITE_U8 (data + 2, 0x2 << 5); // initiate upload request
++    EC_WRITE_U8 (data + 2, 0x2 << 5	// initiate upload request
++                    | ((request->complete_access ? 1 : 0) << 4));
+     EC_WRITE_U16(data + 3, request->index);
+-    EC_WRITE_U8 (data + 5, request->subindex);
++    EC_WRITE_U8 (data + 5, request->complete_access ? 0x00 : request->subindex);
+     memset(data + 6, 0x00, 4);
+ 
+     if (master->debug_level) {
+@@ -2189,9 +2190,16 @@ void ec_fsm_coe_up_start(
+ {
+     ec_slave_t *slave = fsm->slave;
+     ec_sdo_request_t *request = fsm->request;
+-
+-    EC_SLAVE_DBG(slave, 1, "Uploading SDO 0x%04X:%02X.\n",
+-            request->index, request->subindex);
++    char subidxstr[10];
++
++    if (request->complete_access) {
++        subidxstr[0] = 0x00;
++    } else {
++        sprintf(subidxstr, ":%02X", request->subindex);
++    }
++
++    EC_SLAVE_DBG(slave, 1, "Uploading SDO 0x%04X%s.\n",
++            request->index, subidxstr);
+ 
+     if (!slave->sii_image) {
+         EC_SLAVE_ERR(slave, "Slave cannot process CoE upload request."
+@@ -2229,6 +2237,13 @@ void ec_fsm_coe_up_request(
+ {
+     ec_slave_t *slave = fsm->slave;
+     unsigned long diff_ms;
++    char subidxstr[10];
++
++    if (fsm->request->complete_access) {
++        subidxstr[0] = 0x00;
++    } else {
++        sprintf(subidxstr, ":%02X", fsm->request->subindex);
++    }
+ 
+     if (fsm->datagram->state == EC_DATAGRAM_TIMED_OUT && fsm->retries--) {
+         if (ec_fsm_coe_prepare_up(fsm, datagram)) {
+@@ -2265,16 +2280,16 @@ void ec_fsm_coe_up_request(
+         fsm->request->errno = EIO;
+         fsm->state = ec_fsm_coe_error;
+         EC_SLAVE_ERR(slave, "Reception of CoE upload request for"
+-                " SDO 0x%04x:%x failed with timeout after %lu ms: ",
+-                fsm->request->index, fsm->request->subindex, diff_ms);
++                " SDO 0x%04x%s failed with timeout after %lu ms: ",
++                fsm->request->index, subidxstr, diff_ms);
+         ec_datagram_print_wc_error(fsm->datagram);
+         return;
+     }
+ 
+ #if DEBUG_LONG
+     if (diff_ms > 200) {
+-        EC_SLAVE_WARN(slave, "SDO 0x%04x:%x upload took %lu ms.\n",
+-                fsm->request->index, fsm->request->subindex, diff_ms);
++        EC_SLAVE_WARN(slave, "SDO 0x%04x%s upload took %lu ms.\n",
++                fsm->request->index, subidxstr, diff_ms);
+     }
+ #endif
+ 
+@@ -2343,12 +2358,20 @@ void ec_fsm_coe_up_check(
+         1000 / HZ;
+ 
+         if (diff_ms >= fsm->request->response_timeout) {
++            char subidxstr[10];
++
++            if (fsm->request->complete_access) {
++                subidxstr[0] = 0x00;
++            } else {
++                sprintf(subidxstr, ":%02X", fsm->request->subindex);
++            }
++
+             fsm->request->errno = EIO;
+             fsm->state = ec_fsm_coe_error;
+             ec_read_mbox_lock_clear(slave);
+             EC_SLAVE_ERR(slave, "Timeout after %lu ms while waiting for"
+-                    " SDO 0x%04x:%x upload response.\n", diff_ms,
+-                    fsm->request->index, fsm->request->subindex);
++                    " SDO 0x%04x%s upload response.\n", diff_ms,
++                    fsm->request->index, subidxstr);
+             return;
+         }
+ 
+@@ -2459,6 +2482,13 @@ void ec_fsm_coe_up_response_data(
+     ec_sdo_request_t *request = fsm->request;
+     unsigned int expedited, size_specified;
+     int ret;
++    char subidxstr[10];
++
++    if (request->complete_access) {
++        subidxstr[0] = 0x00;
++    } else {
++        sprintf(subidxstr, ":%02X", request->subindex);
++    }
+ 
+     // process the data available or initiate a new mailbox read check
+     if (slave->mbox_coe_data.payload_size > 0) {
+@@ -2515,8 +2545,8 @@ void ec_fsm_coe_up_response_data(
+ 
+     if (EC_READ_U16(data) >> 12 == 0x2 && // SDO request
+             EC_READ_U8(data + 2) >> 5 == 0x4) { // abort SDO transfer request
+-        EC_SLAVE_ERR(slave, "SDO upload 0x%04X:%02X aborted.\n",
+-               request->index, request->subindex);
++        EC_SLAVE_ERR(slave, "SDO upload 0x%04X%s aborted.\n",
++               request->index, subidxstr);
+         if (rec_size >= 10) {
+             request->abort_code = EC_READ_U32(data + 6);
+             ec_canopen_abort_msg(slave, request->abort_code);
+@@ -2531,8 +2561,8 @@ void ec_fsm_coe_up_response_data(
+     if (EC_READ_U16(data) >> 12 != 0x3 || // SDO response
+             EC_READ_U8(data + 2) >> 5 != 0x2) { // upload response
+         EC_SLAVE_ERR(slave, "Received unknown response while"
+-                " uploading SDO 0x%04X:%02X.\n",
+-                request->index, request->subindex);
++                " uploading SDO 0x%04X%s.\n",
++                request->index, subidxstr);
+         ec_print_data(data, rec_size);
+         request->errno = EIO;
+         fsm->state = ec_fsm_coe_error;
+diff --git a/master/ioctl.c b/master/ioctl.c
+--- a/master/ioctl.c
++++ b/master/ioctl.c
+@@ -933,9 +933,15 @@ static ATTRIBUTES int ec_ioctl_slave_sdo
+         return -ENOMEM;
+     }
+ 
+-    ret = ecrt_master_sdo_upload(master, data.slave_position,
+-            data.sdo_index, data.sdo_entry_subindex, target,
+-            data.target_size, &data.data_size, &data.abort_code);
++    if (data.complete_access) {
++        ret = ecrt_master_sdo_upload_complete(master, data.slave_position,
++                data.sdo_index, target, data.target_size,
++                &data.data_size, &data.abort_code);
++    } else {
++        ret = ecrt_master_sdo_upload(master, data.slave_position,
++                data.sdo_index, data.sdo_entry_subindex, target,
++                data.target_size, &data.data_size, &data.abort_code);
++    }
+ 
+     if (!ret) {
+         if (copy_to_user((void __user *) data.target,
+diff --git a/master/ioctl.h b/master/ioctl.h
+--- a/master/ioctl.h
++++ b/master/ioctl.h
+@@ -393,6 +393,7 @@ typedef struct {
+     uint16_t slave_position;
+     uint16_t sdo_index;
+     uint8_t sdo_entry_subindex;
++    uint8_t complete_access;
+     size_t target_size;
+     uint8_t *target;
+ 
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -3503,6 +3503,90 @@ int ecrt_master_sdo_upload(ec_master_t *
+ 
+ /*****************************************************************************/
+ 
++int ecrt_master_sdo_upload_complete(ec_master_t *master, uint16_t slave_position,
++        uint16_t index, uint8_t *target,
++        size_t target_size, size_t *result_size, uint32_t *abort_code)
++{
++    ec_sdo_request_t request;
++    ec_slave_t *slave;
++    int ret = 0;
++
++    EC_MASTER_DBG(master, 1, "%s(master = 0x%p,"
++            " slave_position = %u, index = 0x%04X,"
++            " target = 0x%p, target_size = %zu, result_size = 0x%p,"
++            " abort_code = 0x%p)\n",
++            __func__, master, slave_position, index,
++            target, target_size, result_size, abort_code);
++
++    ec_sdo_request_init(&request);
++    ecrt_sdo_request_index(&request, index, 0);
++    request.complete_access = 1;
++    ecrt_sdo_request_read(&request);
++
++    if (ec_lock_down_interruptible(&master->master_sem)) {
++        ec_sdo_request_clear(&request);
++        return -EINTR;
++    }
++
++    if (!(slave = ec_master_find_slave(master, 0, slave_position))) {
++        ec_lock_up(&master->master_sem);
++        ec_sdo_request_clear(&request);
++        EC_MASTER_ERR(master, "Slave %u does not exist!\n", slave_position);
++        return -EINVAL;
++    }
++
++    EC_SLAVE_DBG(slave, 1, "Scheduling SDO upload request (complete access).\n");
++
++    // schedule request.
++    list_add_tail(&request.list, &slave->sdo_requests);
++
++    ec_lock_up(&master->master_sem);
++
++    // wait for processing through FSM
++    if (wait_event_interruptible(master->request_queue,
++                request.state != EC_INT_REQUEST_QUEUED)) {
++        // interrupted by signal
++        ec_lock_down(&master->master_sem);
++        if (request.state == EC_INT_REQUEST_QUEUED) {
++            list_del(&request.list);
++            ec_lock_up(&master->master_sem);
++            ec_sdo_request_clear(&request);
++            return -EINTR;
++        }
++        // request already processing: interrupt not possible.
++        ec_lock_up(&master->master_sem);
++    }
++
++    // wait until master FSM has finished processing
++    wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
++
++    *abort_code = request.abort_code;
++
++    if (request.state != EC_INT_REQUEST_SUCCESS) {
++        *result_size = 0;
++        if (request.errno) {
++            ret = -request.errno;
++        } else {
++            ret = -EIO;
++        }
++    } else {
++        if (request.data_size > target_size) {
++            EC_MASTER_ERR(master, "Buffer too small.\n");
++            ret = -EOVERFLOW;
++        }
++        else {
++            memcpy(target, request.data, request.data_size);
++            *result_size = request.data_size;
++            ret = 0;
++        }
++    }
++
++    ec_sdo_request_clear(&request);
++    return ret;
++}
++
++/*****************************************************************************/
++
+ int ecrt_master_write_idn(ec_master_t *master, uint16_t slave_position,
+         uint8_t drive_no, uint16_t idn, uint8_t *data, size_t data_size,
+         uint16_t *error_code)
+@@ -3704,6 +3788,7 @@ EXPORT_SYMBOL(ecrt_master_sync_monitor_p
+ EXPORT_SYMBOL(ecrt_master_sdo_download);
+ EXPORT_SYMBOL(ecrt_master_sdo_download_complete);
+ EXPORT_SYMBOL(ecrt_master_sdo_upload);
++EXPORT_SYMBOL(ecrt_master_sdo_upload_complete);
+ EXPORT_SYMBOL(ecrt_master_write_idn);
+ EXPORT_SYMBOL(ecrt_master_read_idn);
+ EXPORT_SYMBOL(ecrt_master_reset);
+diff --git a/tool/CommandUpload.cpp b/tool/CommandUpload.cpp
+--- a/tool/CommandUpload.cpp
++++ b/tool/CommandUpload.cpp
+@@ -49,6 +49,7 @@ string CommandUpload::helpString(const s
+ 
+     str << binaryBaseName << " " << getName()
+         << " [OPTIONS] <INDEX> <SUBINDEX>" << endl
++        << " [OPTIONS] <INDEX>" << endl
+         << endl
+         << getBriefDescription() << endl
+         << endl
+@@ -60,6 +61,9 @@ string CommandUpload::helpString(const s
+         << "information service or the SDO is not in the dictionary," << endl
+         << "the --type option is mandatory."  << endl
+         << endl
++        << "The second call (without <SUBINDEX>) uses the complete" << endl
++        << "access method." << endl
++        << endl
+         << typeInfo()
+         << endl
+         << "Arguments:" << endl
+@@ -89,10 +93,11 @@ void CommandUpload::execute(const String
+     const DataType *dataType = NULL;
+     unsigned int uval;
+ 
+-    if (args.size() != 2) {
+-        err << "'" << getName() << "' takes two arguments!";
++    if (args.size() != 1 && args.size() != 2) {
++        err << "'" << getName() << "' takes 1 or 2 arguments!";
+         throwInvalidUsageException(err);
+     }
++    data.complete_access = args.size() == 1;
+ 
+     strIndex << args[0];
+     strIndex
+@@ -103,15 +108,19 @@ void CommandUpload::execute(const String
+         throwInvalidUsageException(err);
+     }
+ 
+-    strSubIndex << args[1];
+-    strSubIndex
+-        >> resetiosflags(ios::basefield) // guess base from prefix
+-        >> uval;
+-    if (strSubIndex.fail() || uval > 0xff) {
+-        err << "Invalid SDO subindex '" << args[1] << "'!";
+-        throwInvalidUsageException(err);
++    if (data.complete_access) {
++        data.sdo_entry_subindex = 0;
++    } else {
++        strSubIndex << args[1];
++        strSubIndex
++            >> resetiosflags(ios::basefield) // guess base from prefix
++            >> uval;
++        if (strSubIndex.fail() || uval > 0xff) {
++            err << "Invalid SDO subindex '" << args[1] << "'!";
++            throwInvalidUsageException(err);
++        }
++        data.sdo_entry_subindex = uval;
+     }
+-    data.sdo_entry_subindex = uval;
+ 
+     MasterDevice m(getSingleMasterIndex());
+     m.open(MasterDevice::Read);
+@@ -126,6 +135,9 @@ void CommandUpload::execute(const String
+             err << "Invalid data type '" << getDataType() << "'!";
+             throwInvalidUsageException(err);
+         }
++    } else if (data.complete_access) { // no data type specified
++        // and complete access: assume octet_string type
++        dataType = findDataType("octet_string");
+     } else { // no data type specified: fetch from dictionary
+         ec_ioctl_slave_sdo_entry_t entry;
+ 

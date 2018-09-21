@@ -1,0 +1,131 @@
+From: Christoph Permes <christoph.permes@knapp.com>
+Date: Wed, 6 Jul 2016 11:12:42 +0200
+
+Fixed link detection in e1000e driver for 3.10-3.16.
+
+diff --git a/devices/e1000e/netdev-3.10-ethercat.c b/devices/e1000e/netdev-3.10-ethercat.c
+--- a/devices/e1000e/netdev-3.10-ethercat.c
++++ b/devices/e1000e/netdev-3.10-ethercat.c
+@@ -5066,15 +5066,11 @@ static void e1000_watchdog_task(struct w
+ 							round_jiffies(jiffies + 2 * HZ));
+ 			}
+ 
+-			/* The link is lost so the controller stops DMA.
+-			 * If there is queued Tx work that cannot be done
+-			 * or if on an 8000ES2LAN which requires a Rx packet
+-			 * buffer work-around on link down event, reset the
+-			 * controller to flush the Tx/Rx packet buffers.
+-			 * (Do the reset outside of interrupt context).
++			/* 8000ES2LAN requires a Rx packet buffer work-around
++			 * on link down event; reset the controller to flush
++			 * the Rx packet buffer.
+ 			 */
+-			if ((adapter->flags & FLAG_RX_NEEDS_RESTART) ||
+-			    (e1000_desc_unused(tx_ring) + 1 < tx_ring->count))
++			if (adapter->flags & FLAG_RX_NEEDS_RESTART)
+ 				adapter->flags |= FLAG_RESTART_NOW;
+ 			else
+ 				pm_schedule_suspend(netdev->dev.parent,
+@@ -5097,6 +5093,14 @@ link_up:
+ 	adapter->gotc_old = adapter->stats.gotc;
+ 	spin_unlock(&adapter->stats64_lock);
+ 
++	/* If the link is lost the controller stops DMA, but
++	 * if there is queued Tx work it cannot be done.  So
++	 * reset the controller to flush the Tx packet buffers.
++	 */
++	if (!adapter->ecdev && !netif_carrier_ok(netdev) &&
++	    (e1000_desc_unused(tx_ring) + 1 < tx_ring->count))
++		adapter->flags |= FLAG_RESTART_NOW;
++
+ 	if (adapter->flags & FLAG_RESTART_NOW) {
+ 		schedule_work(&adapter->reset_task);
+ 		/* return immediately since reset is imminent */
+diff --git a/devices/e1000e/netdev-3.12-ethercat.c b/devices/e1000e/netdev-3.12-ethercat.c
+--- a/devices/e1000e/netdev-3.12-ethercat.c
++++ b/devices/e1000e/netdev-3.12-ethercat.c
+@@ -5074,15 +5074,11 @@ static void e1000_watchdog_task(struct w
+ 							round_jiffies(jiffies + 2 * HZ));
+ 			}
+ 
+-			/* The link is lost so the controller stops DMA.
+-			 * If there is queued Tx work that cannot be done
+-			 * or if on an 8000ES2LAN which requires a Rx packet
+-			 * buffer work-around on link down event, reset the
+-			 * controller to flush the Tx/Rx packet buffers.
+-			 * (Do the reset outside of interrupt context).
++			/* 8000ES2LAN requires a Rx packet buffer work-around
++			 * on link down event; reset the controller to flush
++			 * the Rx packet buffer.
+ 			 */
+-			if ((adapter->flags & FLAG_RX_NEEDS_RESTART) ||
+-			    (e1000_desc_unused(tx_ring) + 1 < tx_ring->count))
++			if (adapter->flags & FLAG_RX_NEEDS_RESTART)
+ 				adapter->flags |= FLAG_RESTART_NOW;
+ 			else
+ 				pm_schedule_suspend(netdev->dev.parent,
+@@ -5105,6 +5101,14 @@ link_up:
+ 	adapter->gotc_old = adapter->stats.gotc;
+ 	spin_unlock(&adapter->stats64_lock);
+ 
++	/* If the link is lost the controller stops DMA, but
++	 * if there is queued Tx work it cannot be done.  So
++	 * reset the controller to flush the Tx packet buffers.
++	 */
++	if (!adapter->ecdev && !netif_carrier_ok(netdev) &&
++	    (e1000_desc_unused(tx_ring) + 1 < tx_ring->count))
++		adapter->flags |= FLAG_RESTART_NOW;
++
+ 	if (adapter->flags & FLAG_RESTART_NOW) {
+ 		schedule_work(&adapter->reset_task);
+ 		/* return immediately since reset is imminent */
+diff --git a/devices/e1000e/netdev-3.14-ethercat.c b/devices/e1000e/netdev-3.14-ethercat.c
+--- a/devices/e1000e/netdev-3.14-ethercat.c
++++ b/devices/e1000e/netdev-3.14-ethercat.c
+@@ -5076,15 +5076,11 @@ static void e1000_watchdog_task(struct w
+ 							round_jiffies(jiffies + 2 * HZ));
+ 			}
+ 
+-			/* The link is lost so the controller stops DMA.
+-			 * If there is queued Tx work that cannot be done
+-			 * or if on an 8000ES2LAN which requires a Rx packet
+-			 * buffer work-around on link down event, reset the
+-			 * controller to flush the Tx/Rx packet buffers.
+-			 * (Do the reset outside of interrupt context).
++			/* 8000ES2LAN requires a Rx packet buffer work-around
++			 * on link down event; reset the controller to flush
++			 * the Rx packet buffer.
+ 			 */
+-			if ((adapter->flags & FLAG_RX_NEEDS_RESTART) ||
+-			    (e1000_desc_unused(tx_ring) + 1 < tx_ring->count))
++			if (adapter->flags & FLAG_RX_NEEDS_RESTART)
+ 				adapter->flags |= FLAG_RESTART_NOW;
+ 			else
+ 				pm_schedule_suspend(netdev->dev.parent,
+@@ -5107,6 +5103,14 @@ link_up:
+ 	adapter->gotc_old = adapter->stats.gotc;
+ 	spin_unlock(&adapter->stats64_lock);
+ 
++	/* If the link is lost the controller stops DMA, but
++	 * if there is queued Tx work it cannot be done.  So
++	 * reset the controller to flush the Tx packet buffers.
++	 */
++	if (!adapter->ecdev && !netif_carrier_ok(netdev) &&
++	    (e1000_desc_unused(tx_ring) + 1 < tx_ring->count))
++		adapter->flags |= FLAG_RESTART_NOW;
++
+ 	if (adapter->flags & FLAG_RESTART_NOW) {
+ 		schedule_work(&adapter->reset_task);
+ 		/* return immediately since reset is imminent */
+diff --git a/devices/e1000e/netdev-3.16-ethercat.c b/devices/e1000e/netdev-3.16-ethercat.c
+--- a/devices/e1000e/netdev-3.16-ethercat.c
++++ b/devices/e1000e/netdev-3.16-ethercat.c
+@@ -5201,7 +5201,7 @@ link_up:
+ 	 * if there is queued Tx work it cannot be done.  So
+ 	 * reset the controller to flush the Tx packet buffers.
+ 	 */
+-	if (!netif_carrier_ok(netdev) &&
++	if (!adapter->ecdev && !netif_carrier_ok(netdev) &&
+ 	    (e1000_desc_unused(tx_ring) + 1 < tx_ring->count))
+ 		adapter->flags |= FLAG_RESTART_NOW;
+ 

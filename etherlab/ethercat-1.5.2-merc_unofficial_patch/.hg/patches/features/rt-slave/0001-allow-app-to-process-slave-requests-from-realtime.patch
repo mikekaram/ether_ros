@@ -1,0 +1,380 @@
+From: Graeme Foot <Graeme.Foot@touchcut.com>
+Date: Wed Apr 05 14:39:54 2017 +1200
+
+Allow the application to explicitly process slave requests cyclically from the
+applications context.  ecrt_master_exec_slave_requests() can take some time to
+return so should be called from a separate thread from you realtime application.
+
+For example (in RTAI) create a soft rt thread that loops, waiting on the main
+RT thread to complete its cycle before calling ecrt_master_exec_slave_requests()
+
+diff --git a/include/ecrt.h b/include/ecrt.h
+--- a/include/ecrt.h
++++ b/include/ecrt.h
+@@ -1210,6 +1210,34 @@ uint32_t ecrt_master_sync_monitor_proces
+         ec_master_t *master /**< EtherCAT master. */
+         );
+ 
++/** Selects whether to process slave requests by the application or the master
++ *
++ * if rt_slave_requests \a True, slave requests are to be handled by calls to 
++ * ecrt_master_exec_requests() from the applications realtime context,
++ * otherwise the master will handle them from its operation thread
++ *
++ * \return 0 on success, otherwise negative error code.
++ */
++int ecrt_master_rt_slave_requests(
++        ec_master_t *master, /**< EtherCAT master. */
++        unsigned int rt_slave_requests /**< if \a True, slave requests are
++                                       to be handled by calls to 
++                                      ecrt_master_exec_requests() from
++                                      the applications realtime context. */
++        );
++
++/** Explicit call to process slave requests.
++ *
++ * This needs to be called on a cyclical period by the applications
++ * realtime context if ecrt_master_rt_slave_requests() has been called
++ * with rt_slave_requests set to true.  If rt_slave_requests is \a False
++ * (the default) slave requests will be processed within the master and
++ * this call will be ignored.
++ */
++void ecrt_master_exec_slave_requests(
++        ec_master_t *master /**< EtherCAT master. */
++        );
++
+ /** Retry configuring slaves.
+  *
+  * Via this method, the application can tell the master to bring all slaves to
+diff --git a/lib/master.c b/lib/master.c
+--- a/lib/master.c
++++ b/lib/master.c
+@@ -893,6 +893,37 @@ uint32_t ecrt_master_sync_monitor_proces
+ 
+ /****************************************************************************/
+ 
++int ecrt_master_rt_slave_requests(ec_master_t *master,
++        unsigned int rt_slave_requests)
++{
++    int ret;
++
++    ret = ioctl(master->fd, EC_IOCTL_RT_SLAVE_REQUESTS, rt_slave_requests);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        EC_PRINT_ERR("Failed to set rt slave request (%s): %s\n",
++                (rt_slave_requests) ? "True" : "False",
++                strerror(EC_IOCTL_ERRNO(ret)));
++        return -EC_IOCTL_ERRNO(ret);
++    }
++
++    return 0;
++}
++
++/****************************************************************************/
++
++void ecrt_master_exec_slave_requests(ec_master_t *master)
++{
++    int ret;
++
++    ret = ioctl(master->fd, EC_IOCTL_EXEC_SLAVE_REQUESTS, NULL);
++    if (EC_IOCTL_IS_ERROR(ret)) {
++        EC_PRINT_ERR("Failed to process slave requests: %s\n",
++                strerror(EC_IOCTL_ERRNO(ret)));
++    }
++}
++
++/****************************************************************************/
++
+ void ecrt_master_reset(ec_master_t *master)
+ {
+     int ret;
+diff --git a/master/fsm_master.c b/master/fsm_master.c
+--- a/master/fsm_master.c
++++ b/master/fsm_master.c
+@@ -286,6 +286,7 @@ void ec_fsm_master_state_broadcast(
+                 "link down on %s device. Clearing slave list.\n",
+                 ec_device_names[fsm->dev_idx != 0]);
+ 
++        ec_master_slaves_not_available(master);
+ #ifdef EC_EOE
+         ec_master_eoe_stop(master);
+         ec_master_clear_eoe_handlers(master);
+@@ -345,6 +346,7 @@ void ec_fsm_master_state_broadcast(
+             fsm->idle = 0;
+             fsm->scan_jiffies = jiffies;
+ 
++            ec_master_slaves_not_available(master);
+ #ifdef EC_EOE
+             ec_master_eoe_stop(master);
+             ec_master_clear_eoe_handlers(master);
+@@ -403,6 +405,7 @@ void ec_fsm_master_state_broadcast(
+             master->slave_count = count;
+             master->fsm_slave = master->slaves;
+ 
++            ec_master_slaves_available(master);
+             ec_fsm_master_enter_dc_read_old_times(fsm);
+             return;
+         }
+diff --git a/master/ioctl.c b/master/ioctl.c
+--- a/master/ioctl.c
++++ b/master/ioctl.c
+@@ -2547,6 +2547,61 @@ static ATTRIBUTES int ec_ioctl_sync_mon_
+ 
+ /*****************************************************************************/
+ 
++/** Call to set whether processing slave requests explicitly from the
++ * application is active or not.
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_rt_slave_requests(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    unsigned long rt_slave_requests = (unsigned long) arg;
++    int ret = 0;
++
++    if (unlikely(!ctx->requested)) {
++        ret = -EPERM;
++        goto out_return;
++    }
++
++    if (ec_lock_down_interruptible(&master->master_sem)) {
++        ret = -EINTR;
++        goto out_return;
++    }
++
++    ecrt_master_rt_slave_requests(master, rt_slave_requests);
++
++    ec_lock_up(&master->master_sem);
++    
++out_return:
++    return ret;
++}
++
++/*****************************************************************************/
++
++/** Call to process slave requests explicitly from application.
++ *
++ * \return Always zero (success).
++ */
++static ATTRIBUTES int ec_ioctl_exec_slave_requests(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg, /**< ioctl() argument. */
++        ec_ioctl_context_t *ctx /**< Private data structure of file handle. */
++        )
++{
++    if (unlikely(!ctx->requested)) {
++        return -EPERM;
++    }
++
++    ecrt_master_exec_slave_requests(master);
++    
++    return 0;
++}
++
++/*****************************************************************************/
++
+ /** Reset configuration.
+  *
+  * \return Always zero (success).
+@@ -5300,6 +5355,20 @@ long EC_IOCTL(
+             }
+             ret = ec_ioctl_sync_mon_process(master, arg, ctx);
+             break;
++        case EC_IOCTL_RT_SLAVE_REQUESTS:
++            if (!ctx->writable) {
++                ret = -EPERM;
++                break;
++            }
++            ret = ec_ioctl_rt_slave_requests(master, arg, ctx);
++            break;
++        case EC_IOCTL_EXEC_SLAVE_REQUESTS:
++            if (!ctx->writable) {
++                ret = -EPERM;
++                break;
++            }
++            ret = ec_ioctl_exec_slave_requests(master, arg, ctx);
++            break;
+         case EC_IOCTL_RESET:
+             if (!ctx->writable) {
+                 ret = -EPERM;
+diff --git a/master/ioctl.h b/master/ioctl.h
+--- a/master/ioctl.h
++++ b/master/ioctl.h
+@@ -169,6 +169,8 @@
+ #define EC_IOCTL_FOE_REQUEST_READ     EC_IOWR(0x68, ec_ioctl_foe_request_t)
+ #define EC_IOCTL_FOE_REQUEST_WRITE    EC_IOWR(0x69, ec_ioctl_foe_request_t)
+ #define EC_IOCTL_FOE_REQUEST_DATA     EC_IOWR(0x6a, ec_ioctl_foe_request_t)
++#define EC_IOCTL_RT_SLAVE_REQUESTS     EC_IOW(0x6b, uint32_t)
++#define EC_IOCTL_EXEC_SLAVE_REQUESTS    EC_IO(0x6c)
+ 
+ /*****************************************************************************/
+ 
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -209,6 +209,8 @@ int ec_master_init(ec_master_t *master, 
+ 
+     master->ext_ring_idx_rt = 0;
+     master->ext_ring_idx_fsm = 0;
++    master->rt_slave_requests = 0;
++    master->rt_slaves_available = 0;
+ 
+     // init external datagram ring
+     for (i = 0; i < EC_EXT_RING_SIZE; i++) {
+@@ -423,6 +425,7 @@ void ec_master_clear(
+ 
+     ec_cdev_clear(&master->cdev);
+ 
++    ec_master_slaves_not_available(master);
+ #ifdef EC_EOE
+     ec_master_clear_eoe_handlers(master);
+ #endif
+@@ -547,6 +550,30 @@ void ec_master_clear_sii_images(
+ 
+ /*****************************************************************************/
+ 
++/** Set flag to say that the slaves are not available for slave request
++ * processing.
++ *
++ * Called from master fsm, which is processed inside the master_sem lock
++ */
++void ec_master_slaves_not_available(ec_master_t *master)
++{
++    master->rt_slaves_available = 0;
++}
++
++/*****************************************************************************/
++
++/** Set flag to say that the slaves are now available for slave request
++ * processing.
++ *
++ * Called from master fsm, which is processed inside the master_sem lock
++ */
++void ec_master_slaves_available(ec_master_t *master)
++{
++    master->rt_slaves_available = 1;
++}
++
++/*****************************************************************************/
++
+ /** Clear all slaves.
+  */
+ void ec_master_clear_slaves(ec_master_t *master)
+@@ -746,6 +773,7 @@ void ec_master_leave_idle_phase(ec_maste
+ 
+     master->phase = EC_ORPHANED;
+ 
++    ec_master_slaves_not_available(master);
+ #ifdef EC_EOE
+     ec_master_eoe_stop(master);
+ #endif
+@@ -1773,6 +1801,7 @@ static int ec_master_idle_thread(void *p
+ 
+         fsm_exec = ec_fsm_master_exec(&master->fsm);
+ 
++        // idle thread will still be in charge of calling the slave requests
+         ec_master_exec_slave_fsms(master);
+ 
+         ec_lock_up(&master->master_sem);
+@@ -1837,7 +1866,12 @@ static int ec_master_operation_thread(vo
+                 master->injection_seq_fsm++;
+             }
+ 
+-            ec_master_exec_slave_fsms(master);
++            // if rt_slave_requests is true and the slaves are available
++            // this will be handled by the app explicitly calling
++            // ecrt_master_exec_slave_request()
++            if (!master->rt_slave_requests || !master->rt_slaves_available) {
++                ec_master_exec_slave_fsms(master);
++            }
+ 
+             ec_lock_up(&master->master_sem);
+         }
+@@ -3746,6 +3780,46 @@ int ecrt_master_read_idn(ec_master_t *ma
+ 
+ /*****************************************************************************/
+ 
++int ecrt_master_rt_slave_requests(ec_master_t *master, 
++        unsigned int rt_slave_requests)
++{
++    // set flag as to whether the master or the external application
++    // should be handling processing the slave request
++    master->rt_slave_requests = rt_slave_requests;
++    
++    if (master->rt_slave_requests) {
++        EC_MASTER_INFO(master, "Application selected to process"
++                " slave request by the application.\n");
++    }
++    else {
++        EC_MASTER_INFO(master, "Application selected to process"
++                " slave request by the master.\n");
++    }
++    
++    return 0;
++}
++
++/*****************************************************************************/
++
++void ecrt_master_exec_slave_requests(ec_master_t *master)
++{
++    // execute slave state machines
++    if (ec_lock_down_interruptible(&master->master_sem)) {
++        return;
++    }
++
++    // ignore this call if the master is not operational or not set to
++    // handle the slave requests from the application
++    if (master->rt_slave_requests && master->rt_slaves_available &&
++        (master->phase == EC_OPERATION)) {
++        ec_master_exec_slave_fsms(master);
++    }
++
++    ec_lock_up(&master->master_sem);
++}
++
++/*****************************************************************************/
++
+ void ecrt_master_reset(ec_master_t *master)
+ {
+     ec_slave_config_t *sc;
+@@ -3790,6 +3864,8 @@ EXPORT_SYMBOL(ecrt_master_sdo_upload);
+ EXPORT_SYMBOL(ecrt_master_sdo_upload_complete);
+ EXPORT_SYMBOL(ecrt_master_write_idn);
+ EXPORT_SYMBOL(ecrt_master_read_idn);
++EXPORT_SYMBOL(ecrt_master_rt_slave_requests);
++EXPORT_SYMBOL(ecrt_master_exec_slave_requests);
+ EXPORT_SYMBOL(ecrt_master_reset);
+ 
+ /** \endcond */
+diff --git a/master/master.h b/master/master.h
+--- a/master/master.h
++++ b/master/master.h
+@@ -281,6 +281,16 @@ struct ec_master {
+     unsigned int send_interval; /**< Interval between two calls to
+                                   ecrt_master_send(). */
+     size_t max_queue_size; /**< Maximum size of datagram queue */
++    unsigned int rt_slave_requests; /**< if \a True, slave requests are to be
++                                      handled by calls to 
++                                      ecrt_master_exec_requests() from
++                                      the applications realtime context. */
++    unsigned int rt_slaves_available; /**< if \a True, slave requests
++                                        can be handled by calls to 
++                                        ecrt_master_exec_requests() from
++                                        the applications realtime context.
++                                        Otherwise the master is currently
++                                        configuring the slaves */
+ 
+     ec_slave_t *fsm_slave; /**< Slave that is queried next for FSM exec. */
+     struct list_head fsm_exec_list; /**< Slave FSM execution list. */
+@@ -364,6 +374,8 @@ void ec_master_output_stats(ec_master_t 
+ #ifdef EC_EOE
+ void ec_master_clear_eoe_handlers(ec_master_t *);
+ #endif
++void ec_master_slaves_not_available(ec_master_t *);
++void ec_master_slaves_available(ec_master_t *);
+ void ec_master_clear_slaves(ec_master_t *);
+ void ec_master_clear_sii_images(ec_master_t *);
+ void ec_master_reboot_slaves(ec_master_t *);

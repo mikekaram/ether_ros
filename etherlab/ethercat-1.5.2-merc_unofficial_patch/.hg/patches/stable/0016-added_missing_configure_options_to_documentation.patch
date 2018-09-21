@@ -1,0 +1,78 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1509100410 -7200
+#      Fri Oct 27 12:33:30 2017 +0200
+Added missing configure options to documentation.
+(grafted from 9149adda56ed7bc600a263f9a7639918eeb6d117)
+
+diff --git a/documentation/ethercat_doc.tex b/documentation/ethercat_doc.tex
+--- a/documentation/ethercat_doc.tex
++++ b/documentation/ethercat_doc.tex
+@@ -94,7 +94,7 @@
+     \rule{\textwidth}{1.5mm}
+ 
+     \vspace{\fill} {\Large Dipl.-Ing. (FH) Florian Pose,
+-    \url{fp@igh-essen.com}\\[1ex] Ingenieurgemeinschaft \IgH}
++    \url{fp@igh.de}\\[1ex] Ingenieurgemeinschaft \IgH}
+ 
+     \vspace{\fill}
+     {\Large Essen, \rcsInfoLongDate\\[1ex]
+@@ -758,7 +758,7 @@ position is now 1, so slave 3 is attache
+ 
+ \end{enumerate}
+ 
+-If the master sources are configured with \lstinline+--enable-wildcards+, then
++f the master sources are configured with \lstinline+--enable-wildcards+, then
+ \lstinline+0xffffffff+ matches every vendor ID and/or product code.
+ 
+ %------------------------------------------------------------------------------
+@@ -3211,8 +3211,17 @@ the EtherCAT kernel modules shall be ins
+ 
+ \lstinline+--with-r8169-kernel+ & r8169 kernel & $\dagger$\\
+ 
++\lstinline+--enable-ccat+ & Enable ccat driver (independent of kernel version)
++& no\\
++
++\lstinline+--enable-igb+ & Enable igb driver & no\\
++
++\lstinline+--with-igb-kernel+ & igb kernel & $\dagger$\\
++
+ \hline
+ 
++\lstinline+--enable-kernel+ & Build the master kernel modules & yes\\
++
+ \lstinline+--enable-rtdm+ & Create the RTDM interface (RTAI or Xenomai
+ directory needed, see below) & no\\
+ 
+@@ -3237,20 +3246,23 @@ architecture to get finer timing calcula
+ \lstinline+--enable-hrtimer+ & Use high-resolution timer to let the master
+ state machine sleep between sending frames. & no\\
+ 
+-\lstinline+--enable-regalias+ & Read alias address from register. & no\\
++\lstinline+--enable-regalias+ & Read alias address from register & no\\
+ 
+ \lstinline+--enable-tool+ & Build the command-line tool ``ethercat'' (see
+-\autoref{sec:tool}). & yes\\
+-
+-\lstinline+--enable-userlib+ & Build the userspace library. & yes\\
+-
+-\lstinline+--enable-tty+ & Build the TTY driver. & no\\
++\autoref{sec:tool}) & yes\\
++
++\lstinline+--enable-userlib+ & Build the userspace library & yes\\
++
++\lstinline+--enable-tty+ & Build the TTY driver & no\\
+ 
+ \lstinline+--enable-wildcards+ & Enable \textit{0xffffffff} to be wildcards
+-for vendor ID and product code. & no\\
++for vendor ID and product code & no\\
+ 
+ \lstinline+--enable-sii-assign+ & Enable assigning SII access to the PDI layer
+-during slave configuration. & no\\
++during slave configuration & no\\
++
++\lstinline+--enable-rt-syslog+ & Enable syslog statements in realtime context &
++yes\\
+ 
+ \hline
+ 

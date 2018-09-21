@@ -1,0 +1,141 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Tue, 21 Jun 2016 11:10:16 +1200
+
+Since ec_master_exec_slave_fsms checks the datagram state, these are redundant.
+
+diff --git a/master/fsm_change.c b/master/fsm_change.c
+--- a/master/fsm_change.c
++++ b/master/fsm_change.c
+@@ -126,15 +126,6 @@ int ec_fsm_change_exec(
+ {
+     if (fsm->state == ec_fsm_change_state_end || fsm->state == ec_fsm_change_state_error)
+         return 0;
+-    if (fsm->datagram &&
+-            (fsm->datagram->state == EC_DATAGRAM_INIT ||
+-             fsm->datagram->state == EC_DATAGRAM_QUEUED ||
+-             fsm->datagram->state == EC_DATAGRAM_SENT)) {
+-        // datagram not received yet
+-        if (datagram != fsm->datagram)
+-            datagram->state = EC_DATAGRAM_INVALID;
+-        return 1;
+-    }
+ 
+     fsm->state(fsm, datagram);
+ 
+diff --git a/master/fsm_coe.c b/master/fsm_coe.c
+--- a/master/fsm_coe.c
++++ b/master/fsm_coe.c
+@@ -239,15 +239,6 @@ int ec_fsm_coe_exec(
+ {
+     if (fsm->state == ec_fsm_coe_end || fsm->state == ec_fsm_coe_error)
+         return 0;
+-    if (fsm->datagram &&
+-            (fsm->datagram->state == EC_DATAGRAM_INIT ||
+-             fsm->datagram->state == EC_DATAGRAM_QUEUED ||
+-             fsm->datagram->state == EC_DATAGRAM_SENT)) {
+-        // datagram not received yet
+-        if (datagram != fsm->datagram)
+-            datagram->state = EC_DATAGRAM_INVALID;
+-        return 1;
+-    }
+ 
+     fsm->state(fsm, datagram);
+ 
+diff --git a/master/fsm_eoe.c b/master/fsm_eoe.c
+--- a/master/fsm_eoe.c
++++ b/master/fsm_eoe.c
+@@ -111,16 +111,6 @@ int ec_fsm_eoe_exec(
+     if (fsm->state == ec_fsm_eoe_end || fsm->state == ec_fsm_eoe_error)
+         return 0;
+ 
+-    if (fsm->datagram &&
+-            (fsm->datagram->state == EC_DATAGRAM_INIT ||
+-             fsm->datagram->state == EC_DATAGRAM_QUEUED ||
+-             fsm->datagram->state == EC_DATAGRAM_SENT)) {
+-        // datagram not received yet
+-        if (datagram != fsm->datagram)
+-            datagram->state = EC_DATAGRAM_INVALID;
+-        return 1;
+-    }
+-
+     fsm->state(fsm, datagram);
+ 
+     if (fsm->state == ec_fsm_eoe_end || fsm->state == ec_fsm_eoe_error) {
+diff --git a/master/fsm_foe.c b/master/fsm_foe.c
+--- a/master/fsm_foe.c
++++ b/master/fsm_foe.c
+@@ -132,16 +132,6 @@ int ec_fsm_foe_exec(
+     if (fsm->state == ec_fsm_foe_end || fsm->state == ec_fsm_foe_error)
+         return 0;
+ 
+-    if (fsm->datagram &&
+-            (fsm->datagram->state == EC_DATAGRAM_INIT ||
+-             fsm->datagram->state == EC_DATAGRAM_QUEUED ||
+-             fsm->datagram->state == EC_DATAGRAM_SENT)) {
+-        // datagram not received yet
+-        if (datagram != fsm->datagram)
+-            datagram->state = EC_DATAGRAM_INVALID;
+-        return 1;
+-    }
+-
+     fsm->state(fsm, datagram);
+ 
+     if (fsm->state == ec_fsm_foe_end || fsm->state == ec_fsm_foe_error) {
+diff --git a/master/fsm_slave_config.c b/master/fsm_slave_config.c
+--- a/master/fsm_slave_config.c
++++ b/master/fsm_slave_config.c
+@@ -202,15 +202,6 @@ int ec_fsm_slave_config_exec(
+ {
+     if (!ec_fsm_slave_config_running(fsm))
+         return 0;
+-    if (fsm->datagram &&
+-            (fsm->datagram->state == EC_DATAGRAM_INIT ||
+-             fsm->datagram->state == EC_DATAGRAM_QUEUED ||
+-             fsm->datagram->state == EC_DATAGRAM_SENT)) {
+-        // datagram not received yet
+-        if (datagram != fsm->datagram)
+-            datagram->state = EC_DATAGRAM_INVALID;
+-        return 1;
+-    }
+ 
+     fsm->state(fsm, datagram);
+ 
+diff --git a/master/fsm_slave_scan.c b/master/fsm_slave_scan.c
+--- a/master/fsm_slave_scan.c
++++ b/master/fsm_slave_scan.c
+@@ -163,15 +163,6 @@ int ec_fsm_slave_scan_exec(
+ {
+     if (!ec_fsm_slave_scan_running(fsm))
+         return 0;
+-    if (fsm->datagram &&
+-            (fsm->datagram->state == EC_DATAGRAM_INIT ||
+-             fsm->datagram->state == EC_DATAGRAM_QUEUED ||
+-             fsm->datagram->state == EC_DATAGRAM_SENT)) {
+-        // datagram not received yet
+-        if (datagram != fsm->datagram)
+-            datagram->state = EC_DATAGRAM_INVALID;
+-        return 1;
+-    }
+ 
+     fsm->state(fsm, datagram);
+ 
+diff --git a/master/fsm_soe.c b/master/fsm_soe.c
+--- a/master/fsm_soe.c
++++ b/master/fsm_soe.c
+@@ -159,16 +159,6 @@ int ec_fsm_soe_exec(
+     if (fsm->state == ec_fsm_soe_end || fsm->state == ec_fsm_soe_error)
+         return 0;
+ 
+-    if (fsm->datagram &&
+-            (fsm->datagram->state == EC_DATAGRAM_INIT ||
+-             fsm->datagram->state == EC_DATAGRAM_QUEUED ||
+-             fsm->datagram->state == EC_DATAGRAM_SENT)) {
+-        // datagram not received yet
+-        if (datagram != fsm->datagram)
+-            datagram->state = EC_DATAGRAM_INVALID;
+-        return 1;
+-    }
+-
+     fsm->state(fsm, datagram);
+ 
+     if (fsm->state == ec_fsm_soe_end || fsm->state == ec_fsm_soe_error) {

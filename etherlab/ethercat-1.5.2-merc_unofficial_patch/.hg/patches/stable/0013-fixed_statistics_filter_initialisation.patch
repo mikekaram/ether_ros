@@ -1,0 +1,24 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1507807326 -7200
+#      Thu Oct 12 13:22:06 2017 +0200
+Fixed statistics filter initialisation.
+(grafted from adcbb2ad12e386ba16ff7d603ca833bdc9a347e7)
+
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -1298,9 +1298,13 @@ void ec_master_clear_device_stats(
+ 
+     for (i = 0; i < EC_RATE_COUNT; i++) {
+         master->device_stats.tx_frame_rates[i] = 0;
++        master->device_stats.rx_frame_rates[i] = 0;
+         master->device_stats.tx_byte_rates[i] = 0;
++        master->device_stats.rx_byte_rates[i] = 0;
+         master->device_stats.loss_rates[i] = 0;
+     }
++
++    master->device_stats.jiffies = 0;
+ }
+ 
+ /*****************************************************************************/

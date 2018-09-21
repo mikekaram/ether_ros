@@ -1,0 +1,19 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1507806592 -7200
+#      Thu Oct 12 13:09:52 2017 +0200
+Doc.
+(grafted from ac94c7ec73e62339aac0e3d777d459bfe19d7d43)
+
+diff --git a/master/device.c b/master/device.c
+--- a/master/device.c
++++ b/master/device.c
+@@ -629,6 +629,8 @@ void ecdev_close(ec_device_t *device /**
+  * Forwards the received data to the master. The master will analyze the frame
+  * and dispatch the received commands to the sending instances.
+  *
++ * The data have to begin with the Ethernet header (target MAC address).
++ *
+  * \ingroup DeviceInterface
+  */
+ void ecdev_receive(

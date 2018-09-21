@@ -1,0 +1,36 @@
+From: Knud Baastrup <kba@deif.com>
+Date: Fri, 10 Jul 2015 12:46:37 +0200
+
+EoE processing is now only allowed in state PREOP, SAFEOP and OP
+
+Previously EoE processing were also ongoing in state BOOT (and as well
+in undefined states) where it just takes uneccessary bandwidth and in
+some cases can block mailbox buffers in EtherCAT slaves and prevent a
+successful FoE transfer.
+
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -1861,12 +1861,16 @@ static int ec_master_eoe_thread(void *pr
+         // actual EoE processing
+         sth_to_send = 0;
+         list_for_each_entry(eoe, &master->eoe_handlers, list) {
+-            ec_eoe_run(eoe);
+-            if (eoe->queue_datagram) {
+-                sth_to_send = 1;
+-            }
+-            if (!ec_eoe_is_idle(eoe)) {
+-                all_idle = 0;
++            if ((eoe->slave->current_state == EC_SLAVE_STATE_PREOP) ||
++                (eoe->slave->current_state == EC_SLAVE_STATE_SAFEOP) ||
++                (eoe->slave->current_state == EC_SLAVE_STATE_OP)) {
++                ec_eoe_run(eoe);
++                if (eoe->queue_datagram) {
++                    sth_to_send = 1;
++                }
++                if (!ec_eoe_is_idle(eoe)) {
++                    all_idle = 0;
++                }
+             }
+         }
+ 

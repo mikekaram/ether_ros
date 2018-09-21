@@ -291,6 +291,14 @@ void *EthercatCommunicator::run(void *arg)
 
             // calculate new process data
         }
+        //move the data from process_data_buf to domain1_pd buf carefuly
+        utilities::copy_process_data_buffer_to_buf(domain1_pd);
+
+        //send the raw data to the raw data topic
+        EthercatCommunicator::publish_raw_data();
+
+        //queue the EtherCAT data to domain buffer
+        ecrt_domain_queue(domain1);
 
         // write application time to master
         clock_gettime(CLOCK_TO_USE, &current_time);
@@ -299,14 +307,7 @@ void *EthercatCommunicator::run(void *arg)
         ecrt_master_sync_reference_clock(master);
         ecrt_master_sync_slave_clocks(master);
 
-        //move the data from process_data_buf to domain1_pd buf carefuly
-        utilities::copy_process_data_buffer_to_buf(domain1_pd);
-
-        //send the raw data to the raw data topic
-        EthercatCommunicator::publish_raw_data();
-
         // send process data
-        ecrt_domain_queue(domain1);
         ecrt_master_send(master);
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //set the cancel state to ENABLE
         if (ret != 0)
@@ -369,6 +370,8 @@ void EthercatCommunicator::stop()
     /* Join with thread to see what its exit status was */
 
     ret = pthread_join(communicator_thread_, &res);
+    ecrt_master_deactivate_slaves(master);
+
     memset(process_data_buf, 0, total_process_data); // fill the buffer with zeros
     if (ret != 0)
         handle_error_en(ret, "pthread_join");

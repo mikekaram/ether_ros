@@ -1,0 +1,30 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Thu, 2 Nov 2017 12:42:06 +1300
+
+When an ext_ring (slave FSM) datagram does not fit in the current cycle, it
+is checked for timeout based on how long it has been since the datagram was
+populated -- except that this origin time was never actually set, resulting
+in checking the time since that datagram *slot* was last used to send some
+other datagram.  This results in all such datagrams being timed out instead
+of being deferred to the next cycle as expected.
+
+(Triggered by having a large domain and lots of outstanding slave requests,
+combined with a fast enough send_interval to not be able to queue all of
+them; this is also affected by the slave mailbox size.)
+
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -933,6 +933,12 @@ ec_datagram_t *ec_master_get_external_da
+             master->ext_ring_idx_rt) {
+         ec_datagram_t *datagram =
+             &master->ext_datagram_ring[master->ext_ring_idx_fsm];
++        /* Record the queued time for ec_master_inject_external_datagrams */
++#ifdef EC_HAVE_CYCLES
++        datagram->cycles_sent = get_cycles();
++#endif
++        datagram->jiffies_sent = jiffies;
++
+         return datagram;
+     }
+     else {

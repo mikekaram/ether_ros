@@ -1,0 +1,26 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1504537979 -7200
+#      Mon Sep 04 17:12:59 2017 +0200
+Adapted vm_operations_struct for kernels >= 4.11
+(grafted from 9953c0d372ab935b23c56c14fe02e6e9694d50bc)
+
+diff --git a/master/cdev.c b/master/cdev.c
+--- a/master/cdev.c
++++ b/master/cdev.c
+@@ -253,10 +253,15 @@ int eccdev_mmap(
+  * \return Zero on success, otherwise a negative error code.
+  */
+ static int eccdev_vma_fault(
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 11, 0)
+         struct vm_area_struct *vma, /**< Virtual memory area. */
++#endif
+         struct vm_fault *vmf /**< Fault data. */
+         )
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
++    struct vm_area_struct *vma = vmf->vma;
++#endif
+     unsigned long offset = vmf->pgoff << PAGE_SHIFT;
+     ec_cdev_priv_t *priv = (ec_cdev_priv_t *) vma->vm_private_data;
+     struct page *page;

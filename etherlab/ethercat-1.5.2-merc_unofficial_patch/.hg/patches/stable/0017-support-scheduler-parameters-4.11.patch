@@ -1,0 +1,22 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1512551390 -3600
+#      Wed Dec 06 10:09:50 2017 +0100
+# Parent  49d00496946b633333384ee8985a5aa193a3ba55
+Support scheduler parameters in kernels >= 4.11.
+
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -44,6 +44,11 @@
+ #include <linux/device.h>
+ #include <linux/version.h>
+ #include <linux/hrtimer.h>
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
++#include <linux/sched/types.h> // struct sched_param
++#endif
++
+ #include "globals.h"
+ #include "slave.h"
+ #include "slave_config.h"

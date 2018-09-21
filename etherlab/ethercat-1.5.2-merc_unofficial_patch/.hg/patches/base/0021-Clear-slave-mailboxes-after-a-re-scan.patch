@@ -1,0 +1,225 @@
+From: Knud Baastrup <kba@deif.com>
+Date: Mon, 11 Aug 2014 08:06:36 +0200
+
+Clear slave mailboxes after a re-scan
+* * *
+The slaves mailbox data is now assumed valid even if the slave scanning
+skip the states concerning clearing of slave mailboxes (e.g. if the slave
+refuses to enter state INIT due to a corrupted slave application firmware).
+The previously assumption could prevent a new upgrade of valid firmware
+using FOE.
+
+diff --git a/master/fsm_master.c b/master/fsm_master.c
+--- a/master/fsm_master.c
++++ b/master/fsm_master.c
+@@ -1104,6 +1104,9 @@ void ec_fsm_master_state_scan_slave(
+     if (ec_fsm_slave_scan_exec(&fsm->fsm_slave_scan)) {
+         return;
+     }
++    // Assume that the slaves mailbox data is valid even if the slave scanning skipped
++    // the clear mailbox state, e.g. if the slave refused to enter state INIT.
++    fsm->slave->valid_mbox_data = 1;
+ 
+ #ifdef EC_EOE
+     if (slave->sii.mailbox_protocols & EC_MBOX_EOE) {
+diff --git a/master/fsm_slave_scan.c b/master/fsm_slave_scan.c
+--- a/master/fsm_slave_scan.c
++++ b/master/fsm_slave_scan.c
+@@ -55,6 +55,7 @@ void ec_fsm_slave_scan_state_assign_sii(
+ #endif
+ void ec_fsm_slave_scan_state_sii_size(ec_fsm_slave_scan_t *);
+ void ec_fsm_slave_scan_state_sii_data(ec_fsm_slave_scan_t *);
++void ec_fsm_slave_scan_state_mailbox_cleared(ec_fsm_slave_scan_t *);
+ #ifdef EC_REGALIAS
+ void ec_fsm_slave_scan_state_regalias(ec_fsm_slave_scan_t *);
+ #endif
+@@ -70,6 +71,7 @@ void ec_fsm_slave_scan_enter_datalink(ec
+ void ec_fsm_slave_scan_enter_regalias(ec_fsm_slave_scan_t *);
+ #endif
+ void ec_fsm_slave_scan_enter_preop(ec_fsm_slave_scan_t *);
++void ec_fsm_slave_scan_enter_clear_mailbox(ec_fsm_slave_scan_t *);
+ void ec_fsm_slave_scan_enter_pdos(ec_fsm_slave_scan_t *);
+ 
+ /*****************************************************************************/
+@@ -907,7 +909,7 @@ void ec_fsm_slave_scan_state_preop(
+         return;
+     }
+ 
+-    ec_fsm_slave_scan_enter_pdos(fsm);
++    ec_fsm_slave_scan_enter_clear_mailbox(fsm);
+ }
+ 
+ /*****************************************************************************/
+@@ -956,6 +958,51 @@ void ec_fsm_slave_scan_state_sync(
+     // allocate memory for mailbox response data for supported mailbox protocols
+     ec_mbox_prot_data_prealloc(slave, slave->sii.mailbox_protocols, slave->configured_tx_mailbox_size);
+ 
++    ec_fsm_slave_scan_enter_clear_mailbox(fsm);
++}
++
++/*****************************************************************************/
++
++/** Enter slave scan state: Clear Mailbox.
++ */
++void ec_fsm_slave_scan_enter_clear_mailbox(
++        ec_fsm_slave_scan_t *fsm /**< slave state machine */
++        )
++{
++    ec_slave_t *slave = fsm->slave;
++
++    // If there is some old data in the slave's mailbox, read it out and
++    // discard it. We don't need to check the mailbox first, we just ignore
++    // an error or empty mailbox response.
++    ec_datagram_t *datagram = fsm->datagram;
++    ec_slave_mbox_prepare_fetch(fsm->slave, datagram);
++    fsm->retries = EC_FSM_RETRIES;
++    fsm->state = ec_fsm_slave_scan_state_mailbox_cleared;
++
++    slave->valid_mbox_data = 0;
++}
++
++/*****************************************************************************/
++
++/** Slave scan state: Mailbox cleared.
++ */
++void ec_fsm_slave_scan_state_mailbox_cleared(ec_fsm_slave_scan_t *fsm /**< slave state machine */)
++{
++    ec_slave_t *slave = fsm->slave;
++    ec_datagram_t *datagram = fsm->datagram;
++
++    if (fsm->datagram->state == EC_DATAGRAM_TIMED_OUT && fsm->retries--) {
++        ec_slave_mbox_prepare_fetch(fsm->slave, datagram);
++        return;
++    }
++
++    if (unlikely(slave->master->debug_level > 0)
++        && datagram->state == EC_DATAGRAM_RECEIVED
++        && datagram->working_counter == 1)
++        EC_SLAVE_INFO(slave, "Cleared old data from the mailbox\n");
++
++    slave->valid_mbox_data = 1;
++
+     ec_fsm_slave_scan_enter_pdos(fsm);
+ }
+ 
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -1282,45 +1282,50 @@ void ec_master_receive_datagrams(
+                         if (slave->station_address == datagram_slave_addr) {
+                             if (slave->configured_tx_mailbox_offset != 0) {
+                                 if (datagram_offset_addr == slave->configured_tx_mailbox_offset) {
+-                                    datagram_mbox_prot = EC_READ_U8(cur_data + 5) & 0x0F;
+-                                    switch (datagram_mbox_prot) {
++                                    if (slave->valid_mbox_data) {
++                                        datagram_mbox_prot = EC_READ_U8(cur_data + 5) & 0x0F;
++                                        switch (datagram_mbox_prot) {
+ #ifdef EC_EOE
+-                                    case EC_MBOX_TYPE_EOE:
+-                                        if ((slave->mbox_eoe_data.data) && (data_size <= slave->mbox_eoe_data.data_size)) {
+-                                            memcpy(slave->mbox_eoe_data.data, cur_data, data_size);
+-                                            slave->mbox_eoe_data.payload_size = data_size;
++                                        case EC_MBOX_TYPE_EOE:
++                                            if ((slave->mbox_eoe_data.data) && (data_size <= slave->mbox_eoe_data.data_size)) {
++                                                memcpy(slave->mbox_eoe_data.data, cur_data, data_size);
++                                                slave->mbox_eoe_data.payload_size = data_size;
++                                            }
++                                            break;
++#endif
++                                        case EC_MBOX_TYPE_COE:
++                                            if ((slave->mbox_coe_data.data) && (data_size <= slave->mbox_coe_data.data_size)) {
++                                                memcpy(slave->mbox_coe_data.data, cur_data, data_size);
++                                                slave->mbox_coe_data.payload_size = data_size;
++                                            }
++                                            break;
++                                        case EC_MBOX_TYPE_FOE:
++                                            if ((slave->mbox_foe_data.data) && (data_size <= slave->mbox_foe_data.data_size)) {
++                                                memcpy(slave->mbox_foe_data.data, cur_data, data_size);
++                                                slave->mbox_foe_data.payload_size = data_size;
++                                            }
++                                            break;
++                                        case EC_MBOX_TYPE_SOE:
++                                            if ((slave->mbox_soe_data.data) && (data_size <= slave->mbox_soe_data.data_size)) {
++                                                memcpy(slave->mbox_soe_data.data, cur_data, data_size);
++                                                slave->mbox_soe_data.payload_size = data_size;
++                                            }
++                                            break;
++                                        case EC_MBOX_TYPE_VOE:
++                                            if ((slave->mbox_voe_data.data) && (data_size <= slave->mbox_voe_data.data_size)) {
++                                                memcpy(slave->mbox_voe_data.data, cur_data, data_size);
++                                                slave->mbox_voe_data.payload_size = data_size;
++                                            }
++                                            break;
++                                        default:
++                                            EC_MASTER_DBG(master, 1, "Unknown mailbox protocol from slave: %u Protocol: %u\n", datagram_slave_addr, datagram_mbox_prot);
++                                            // copy instead received data into the datagram memory.
++                                            memcpy(datagram->data, cur_data, data_size);
++                                            break;
+                                         }
+-                                        break;
+-#endif
+-                                    case EC_MBOX_TYPE_COE:
+-                                        if ((slave->mbox_coe_data.data) && (data_size <= slave->mbox_coe_data.data_size)) {
+-                                            memcpy(slave->mbox_coe_data.data, cur_data, data_size);
+-                                            slave->mbox_coe_data.payload_size = data_size;
+-                                        }
+-                                        break;
+-                                    case EC_MBOX_TYPE_FOE:
+-                                        if ((slave->mbox_foe_data.data) && (data_size <= slave->mbox_foe_data.data_size)) {
+-                                            memcpy(slave->mbox_foe_data.data, cur_data, data_size);
+-                                            slave->mbox_foe_data.payload_size = data_size;
+-                                        }
+-                                        break;
+-                                    case EC_MBOX_TYPE_SOE:
+-                                        if ((slave->mbox_soe_data.data) && (data_size <= slave->mbox_soe_data.data_size)) {
+-                                            memcpy(slave->mbox_soe_data.data, cur_data, data_size);
+-                                            slave->mbox_soe_data.payload_size = data_size;
+-                                        }
+-                                        break;
+-                                    case EC_MBOX_TYPE_VOE:
+-                                        if ((slave->mbox_voe_data.data) && (data_size <= slave->mbox_voe_data.data_size)) {
+-                                            memcpy(slave->mbox_voe_data.data, cur_data, data_size);
+-                                            slave->mbox_voe_data.payload_size = data_size;
+-                                        }
+-                                        break;
+-                                    default:
+-                                        EC_MASTER_DBG(master, 1, "Unknown mailbox protocol from slave: %u Protocol: %u\n", datagram_slave_addr, datagram_mbox_prot);
++                                    } else {
+                                         // copy instead received data into the datagram memory.
+                                         memcpy(datagram->data, cur_data, data_size);
+-                                        break;
+                                     }
+                                 } else {
+                                     // copy instead received data into the datagram memory.
+@@ -1379,7 +1384,6 @@ void ec_master_output_stats(ec_master_t 
+ {
+     if (unlikely(jiffies - master->stats.output_jiffies >= HZ)) {
+         master->stats.output_jiffies = jiffies;
+-
+         if (master->stats.timeouts) {
+             EC_MASTER_WARN(master, "%u datagram%s TIMED OUT!\n",
+                     master->stats.timeouts,
+diff --git a/master/slave.c b/master/slave.c
+--- a/master/slave.c
++++ b/master/slave.c
+@@ -175,6 +175,8 @@ void ec_slave_init(
+     ec_mbox_data_init(&slave->mbox_foe_data);
+     ec_mbox_data_init(&slave->mbox_soe_data);
+     ec_mbox_data_init(&slave->mbox_voe_data);
++
++    slave->valid_mbox_data = 0;
+ }
+ 
+ 
+diff --git a/master/slave.h b/master/slave.h
+--- a/master/slave.h
++++ b/master/slave.h
+@@ -267,6 +267,8 @@ struct ec_slave
+     ec_mbox_data_t mbox_foe_data; /**< Received mailbox data for FoE. */
+     ec_mbox_data_t mbox_soe_data; /**< Received mailbox data for SoE. */
+     ec_mbox_data_t mbox_voe_data; /**< Received mailbox data for VoE. */
++
++    uint8_t valid_mbox_data; /**< Received mailbox data is valid. */
+ };
+ 
+ /*****************************************************************************/

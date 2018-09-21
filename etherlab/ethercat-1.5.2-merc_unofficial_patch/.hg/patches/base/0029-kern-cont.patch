@@ -1,0 +1,310 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Thu, 14 Sep 2017 19:58:30 +1200
+
+Use KERN_CONT to avoid improper newlines in newer kernels.
+
+diff --git a/master/datagram.c b/master/datagram.c
+--- a/master/datagram.c
++++ b/master/datagram.c
+@@ -567,34 +567,34 @@ void ec_datagram_print_state(
+         const ec_datagram_t *datagram /**< EtherCAT datagram */
+         )
+ {
+-    printk("Datagram ");
++    printk(KERN_CONT "Datagram ");
+     switch (datagram->state) {
+         case EC_DATAGRAM_INIT:
+-            printk("initialized");
++            printk(KERN_CONT "initialized");
+             break;
+         case EC_DATAGRAM_QUEUED:
+-            printk("queued");
++            printk(KERN_CONT "queued");
+             break;
+         case EC_DATAGRAM_SENT:
+-            printk("sent");
++            printk(KERN_CONT "sent");
+             break;
+         case EC_DATAGRAM_RECEIVED:
+-            printk("received");
++            printk(KERN_CONT "received");
+             break;
+         case EC_DATAGRAM_TIMED_OUT:
+-            printk("timed out");
++            printk(KERN_CONT "timed out");
+             break;
+         case EC_DATAGRAM_ERROR:
+-            printk("error");
++            printk(KERN_CONT "error");
+             break;
+         case EC_DATAGRAM_INVALID:
+-            printk("invalid");
++            printk(KERN_CONT "invalid");
+             break;
+         default:
+-            printk("???");
++            printk(KERN_CONT "???");
+     }
+ 
+-    printk(".\n");
++    printk(KERN_CONT ".\n");
+ }
+ 
+ /*****************************************************************************/
+@@ -608,12 +608,12 @@ void ec_datagram_print_wc_error(
+         )
+ {
+     if (datagram->working_counter == 0)
+-        printk("No response.");
++        printk(KERN_CONT "No response.");
+     else if (datagram->working_counter > 1)
+-        printk("%u slaves responded!", datagram->working_counter);
++        printk(KERN_CONT "%u slaves responded!", datagram->working_counter);
+     else
+-        printk("Success.");
+-    printk("\n");
++        printk(KERN_CONT "Success.");
++    printk(KERN_CONT "\n");
+ }
+ 
+ /*****************************************************************************/
+diff --git a/master/domain.c b/master/domain.c
+--- a/master/domain.c
++++ b/master/domain.c
+@@ -698,19 +698,19 @@ void ecrt_domain_process(ec_domain_t *do
+         }
+ #if EC_MAX_NUM_DEVICES > 1
+         if (ec_master_num_devices(domain->master) > 1) {
+-            printk(" (");
++            printk(KERN_CONT " (");
+             for (dev_idx = EC_DEVICE_MAIN;
+                     dev_idx < ec_master_num_devices(domain->master);
+                     dev_idx++) {
+-                printk("%u", domain->working_counter[dev_idx]);
++                printk(KERN_CONT "%u", domain->working_counter[dev_idx]);
+                 if (dev_idx + 1 < ec_master_num_devices(domain->master)) {
+-                    printk("+");
++                    printk(KERN_CONT "+");
+                 }
+             }
+-            printk(")");
++            printk(KERN_CONT ")");
+         }
+ #endif
+-        printk(".\n");
++        printk(KERN_CONT ".\n");
+ 
+         domain->working_counter_changes = 0;
+     }
+diff --git a/master/ethernet.c b/master/ethernet.c
+--- a/master/ethernet.c
++++ b/master/ethernet.c
+@@ -381,13 +381,13 @@ int ec_eoe_send(ec_eoe_t *eoe /**< EoE h
+ #if EOE_DEBUG_LEVEL >= 3
+     EC_SLAVE_DBG(eoe->slave, 0, "");
+     for (i = 0; i < current_size; i++) {
+-        printk("%02X ", eoe->tx_frame->skb->data[eoe->tx_offset + i]);
++        printk(KERN_CONT "%02X ", eoe->tx_frame->skb->data[eoe->tx_offset + i]);
+         if ((i + 1) % 16 == 0) {
+-            printk("\n");
++            printk(KERN_CONT "\n");
+             EC_SLAVE_DBG(eoe->slave, 0, "");
+         }
+     }
+-    printk("\n");
++    printk(KERN_CONT "\n");
+ #endif
+ 
+     data = ec_slave_mbox_prepare_send(eoe->slave, &eoe->datagram,
+@@ -657,13 +657,13 @@ void ec_eoe_state_rx_fetch_data(ec_eoe_t
+ #if EOE_DEBUG_LEVEL >= 3
+     EC_SLAVE_DBG(eoe->slave, 0, "");
+     for (i = 0; i < rec_size - 4; i++) {
+-        printk("%02X ", data[i + 4]);
++        printk(KERN_CONT "%02X ", data[i + 4]);
+         if ((i + 1) % 16 == 0) {
+-            printk("\n");
++            printk(KERN_CONT "\n");
+             EC_SLAVE_DBG(eoe->slave, 0, "");
+         }
+     }
+-    printk("\n");
++    printk(KERN_CONT "\n");
+ #endif
+ 
+     data_size = time_appended ? rec_size - 8 : rec_size - 4;
+diff --git a/master/fsm_pdo.c b/master/fsm_pdo.c
+--- a/master/fsm_pdo.c
++++ b/master/fsm_pdo.c
+@@ -105,11 +105,11 @@ void ec_fsm_pdo_print(
+         ec_fsm_pdo_t *fsm /**< PDO configuration state machine. */
+         )
+ {
+-    printk("Currently assigned PDOs: ");
++    printk(KERN_CONT "Currently assigned PDOs: ");
+     ec_pdo_list_print(&fsm->sync->pdos);
+-    printk(". PDOs to assign: ");
++    printk(KERN_CONT ". PDOs to assign: ");
+     ec_pdo_list_print(&fsm->pdos);
+-    printk("\n");
++    printk(KERN_CONT "\n");
+ }
+ 
+ /*****************************************************************************/
+@@ -544,11 +544,11 @@ void ec_fsm_pdo_conf_action_check_mappin
+         EC_SLAVE_WARN(fsm->slave, "Slave does not support"
+                 " changing the PDO mapping!\n");
+         EC_SLAVE_WARN(fsm->slave, "");
+-        printk("Currently mapped PDO entries: ");
++        printk(KERN_CONT "Currently mapped PDO entries: ");
+         ec_pdo_print_entries(&fsm->slave_pdo);
+-        printk(". Entries to map: ");
++        printk(KERN_CONT ". Entries to map: ");
+         ec_pdo_print_entries(fsm->pdo);
+-        printk("\n");
++        printk(KERN_CONT "\n");
+     }
+ 
+     ec_fsm_pdo_conf_action_next_pdo_mapping(fsm, datagram);
+diff --git a/master/fsm_pdo_entry.c b/master/fsm_pdo_entry.c
+--- a/master/fsm_pdo_entry.c
++++ b/master/fsm_pdo_entry.c
+@@ -93,11 +93,11 @@ void ec_fsm_pdo_entry_print(
+         ec_fsm_pdo_entry_t *fsm /**< PDO mapping state machine. */
+         )
+ {
+-    printk("Currently mapped PDO entries: ");
++    printk(KERN_CONT "Currently mapped PDO entries: ");
+     ec_pdo_print_entries(fsm->cur_pdo);
+-    printk(". Entries to map: ");
++    printk(KERN_CONT ". Entries to map: ");
+     ec_pdo_print_entries(fsm->source_pdo);
+-    printk("\n");
++    printk(KERN_CONT "\n");
+ }
+ 
+ /*****************************************************************************/
+diff --git a/master/fsm_soe.c b/master/fsm_soe.c
+--- a/master/fsm_soe.c
++++ b/master/fsm_soe.c
+@@ -202,12 +202,12 @@ void ec_fsm_soe_print_error(ec_fsm_soe_t
+     EC_SLAVE_ERR(fsm->slave, "");
+ 
+     if (request->dir == EC_DIR_OUTPUT) {
+-        printk("Writing");
++        printk(KERN_CONT "Writing");
+     } else {
+-        printk("Reading");
++        printk(KERN_CONT "Reading");
+     }
+ 
+-    printk(" IDN 0x%04X failed.\n", request->idn);
++    printk(KERN_CONT " IDN 0x%04X failed.\n", request->idn);
+ }
+ 
+ /******************************************************************************
+diff --git a/master/mailbox.c b/master/mailbox.c
+--- a/master/mailbox.c
++++ b/master/mailbox.c
+@@ -203,13 +203,13 @@ uint8_t *ec_slave_mbox_fetch(const ec_sl
+         for (mbox_msg = mbox_error_messages; mbox_msg->code; mbox_msg++) {
+             if (mbox_msg->code != code)
+                 continue;
+-            printk("Code 0x%04X: \"%s\".\n",
++            printk(KERN_CONT "Code 0x%04X: \"%s\".\n",
+                     mbox_msg->code, mbox_msg->message);
+             break;
+         }
+ 
+         if (!mbox_msg->code) {
+-            printk("Unknown error reply code 0x%04X.\n", code);
++            printk(KERN_CONT "Unknown error reply code 0x%04X.\n", code);
+         }
+ 
+         if (slave->master->debug_level && data_size > 0) {
+diff --git a/master/module.c b/master/module.c
+--- a/master/module.c
++++ b/master/module.c
+@@ -346,20 +346,20 @@ void ec_print_data(const uint8_t *data, 
+ 
+     EC_DBG("");
+     for (i = 0; i < size; i++) {
+-        printk("%02X ", data[i]);
++        printk(KERN_CONT "%02X ", data[i]);
+ 
+         if ((i + 1) % 16 == 0 && i < size - 1) {
+-            printk("\n");
++            printk(KERN_CONT "\n");
+             EC_DBG("");
+         }
+ 
+         if (i + 1 == 128 && size > 256) {
+-            printk("dropped %zu bytes\n", size - 128 - i);
++            printk(KERN_CONT "dropped %zu bytes\n", size - 128 - i);
+             i = size - 128;
+             EC_DBG("");
+         }
+     }
+-    printk("\n");
++    printk(KERN_CONT "\n");
+ }
+ 
+ /*****************************************************************************/
+@@ -375,14 +375,14 @@ void ec_print_data_diff(const uint8_t *d
+ 
+     EC_DBG("");
+     for (i = 0; i < size; i++) {
+-        if (d1[i] == d2[i]) printk(".. ");
+-        else printk("%02X ", d2[i]);
++        if (d1[i] == d2[i]) printk(KERN_CONT ".. ");
++        else printk(KERN_CONT "%02X ", d2[i]);
+         if ((i + 1) % 16 == 0) {
+-            printk("\n");
++            printk(KERN_CONT "\n");
+             EC_DBG("");
+         }
+     }
+-    printk("\n");
++    printk(KERN_CONT "\n");
+ }
+ 
+ /*****************************************************************************/
+diff --git a/master/pdo.c b/master/pdo.c
+--- a/master/pdo.c
++++ b/master/pdo.c
+@@ -303,13 +303,13 @@ void ec_pdo_print_entries(
+     const ec_pdo_entry_t *entry;
+ 
+     if (list_empty(&pdo->entries)) {
+-        printk("(none)");
++        printk(KERN_CONT "(none)");
+     } else {
+         list_for_each_entry(entry, &pdo->entries, list) {
+-            printk("0x%04X:%02X/%u",
++            printk(KERN_CONT "0x%04X:%02X/%u",
+                     entry->index, entry->subindex, entry->bit_length);
+             if (entry->list.next != &pdo->entries)
+-                printk(" ");
++                printk(KERN_CONT " ");
+         }
+     }
+ }
+diff --git a/master/pdo_list.c b/master/pdo_list.c
+--- a/master/pdo_list.c
++++ b/master/pdo_list.c
+@@ -333,12 +333,12 @@ void ec_pdo_list_print(
+     const ec_pdo_t *pdo;
+ 
+     if (list_empty(&pl->list)) {
+-        printk("(none)");
++        printk(KERN_CONT "(none)");
+     } else {
+         list_for_each_entry(pdo, &pl->list, list) {
+-            printk("0x%04X", pdo->index);
++            printk(KERN_CONT "0x%04X", pdo->index);
+             if (pdo->list.next != &pl->list)
+-                printk(" ");
++                printk(KERN_CONT " ");
+         }
+     }
+ }

@@ -1,0 +1,49 @@
+From: Graeme Foot <graeme.foot@touchcut.com>
+Date: Mon, 21 May 2018 11:07:00 +1200
+
+Allow DC Sync1 offset to function
+
+diff --git a/master/fsm_slave_config.c b/master/fsm_slave_config.c
+--- a/master/fsm_slave_config.c
++++ b/master/fsm_slave_config.c
+@@ -1305,7 +1305,8 @@ void ec_fsm_slave_config_enter_dc_cycle(
+         // set DC cycle times
+         ec_datagram_fpwr(datagram, slave->station_address, 0x09A0, 8);
+         EC_WRITE_U32(datagram->data, config->dc_sync[0].cycle_time);
+-        EC_WRITE_U32(datagram->data + 4, config->dc_sync[1].cycle_time);
++        EC_WRITE_U32(datagram->data + 4, config->dc_sync[1].cycle_time + 
++                config->dc_sync[1].shift_time);
+         fsm->retries = EC_FSM_RETRIES;
+         fsm->state = ec_fsm_slave_config_state_dc_cycle;
+     } else {
+diff --git a/master/slave_config.c b/master/slave_config.c
+--- a/master/slave_config.c
++++ b/master/slave_config.c
+@@ -950,8 +950,25 @@ void ecrt_slave_config_dc(ec_slave_confi
+     sc->dc_assign_activate = assign_activate;
+     sc->dc_sync[0].cycle_time = sync0_cycle_time;
+     sc->dc_sync[0].shift_time = sync0_shift_time;
+-    sc->dc_sync[1].cycle_time = sync1_cycle_time;
+-    sc->dc_sync[1].shift_time = sync1_shift_time;
++    if (sync0_cycle_time > 0)
++    {
++        sc->dc_sync[1].shift_time = (sync1_cycle_time + sync1_shift_time) %
++                sync0_cycle_time;
++              
++        if ((sync1_cycle_time + sync1_shift_time) < sc->dc_sync[1].shift_time) {
++            EC_CONFIG_ERR(sc, "Slave Config DC results in a negative "
++                    "sync1 cycle.  Resetting to zero cycle and shift time\n");
++
++            sc->dc_sync[1].cycle_time = 0;
++            sc->dc_sync[1].shift_time = 0;
++        } else {
++            sc->dc_sync[1].cycle_time = (sync1_cycle_time + sync1_shift_time) -
++                    sc->dc_sync[1].shift_time;
++        }
++    } else {
++        sc->dc_sync[1].cycle_time = 0;
++        sc->dc_sync[1].shift_time = 0;
++    }
+ }
+ 
+ /*****************************************************************************/

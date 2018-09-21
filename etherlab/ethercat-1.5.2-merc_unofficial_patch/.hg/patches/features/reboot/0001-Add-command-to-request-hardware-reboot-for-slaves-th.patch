@@ -1,0 +1,1025 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Wed, 1 Jun 2016 10:02:27 +0200
+
+Add command to request hardware reboot for slaves that support this.
+
+diff --git a/master/Kbuild.in b/master/Kbuild.in
+--- a/master/Kbuild.in
++++ b/master/Kbuild.in
+@@ -47,6 +47,7 @@ ec_master-objs := \
+ 	fsm_coe.o \
+ 	fsm_eoe.o \
+ 	fsm_foe.o \
++	fsm_reboot.o \
+ 	fsm_master.o \
+ 	fsm_pdo.o \
+ 	fsm_pdo_entry.o \
+diff --git a/master/Makefile.am b/master/Makefile.am
+--- a/master/Makefile.am
++++ b/master/Makefile.am
+@@ -46,6 +46,7 @@ noinst_HEADERS = \
+ 	fsm_coe.c fsm_coe.h \
+ 	fsm_eoe.c fsm_eoe.h \
+ 	fsm_foe.c fsm_foe.h \
++	fsm_reboot.c fsm_reboot.h \
+ 	fsm_master.c fsm_master.h \
+ 	fsm_pdo.c fsm_pdo.h \
+ 	fsm_pdo_entry.c fsm_pdo_entry.h \
+diff --git a/master/fsm_master.c b/master/fsm_master.c
+--- a/master/fsm_master.c
++++ b/master/fsm_master.c
+@@ -73,6 +73,7 @@ void ec_fsm_master_state_dc_reset_filter
+ void ec_fsm_master_state_write_sii(ec_fsm_master_t *);
+ void ec_fsm_master_state_sdo_dictionary(ec_fsm_master_t *);
+ void ec_fsm_master_state_sdo_request(ec_fsm_master_t *);
++void ec_fsm_master_state_reboot_slave(ec_fsm_master_t *);
+ 
+ void ec_fsm_master_enter_clear_addresses(ec_fsm_master_t *);
+ void ec_fsm_master_enter_write_system_times(ec_fsm_master_t *);
+@@ -97,6 +98,7 @@ void ec_fsm_master_init(
+     ec_fsm_soe_init(&fsm->fsm_soe);
+     ec_fsm_pdo_init(&fsm->fsm_pdo, &fsm->fsm_coe);
+     ec_fsm_change_init(&fsm->fsm_change, fsm->datagram);
++    ec_fsm_reboot_init(&fsm->fsm_reboot, fsm->datagram);
+     ec_fsm_slave_config_init(&fsm->fsm_slave_config, fsm->datagram,
+             &fsm->fsm_change, &fsm->fsm_coe, &fsm->fsm_soe, &fsm->fsm_pdo);
+     ec_fsm_slave_scan_init(&fsm->fsm_slave_scan, fsm->datagram,
+@@ -117,6 +119,7 @@ void ec_fsm_master_clear(
+     ec_fsm_soe_clear(&fsm->fsm_soe);
+     ec_fsm_pdo_clear(&fsm->fsm_pdo);
+     ec_fsm_change_clear(&fsm->fsm_change);
++    ec_fsm_reboot_clear(&fsm->fsm_reboot);
+     ec_fsm_slave_config_clear(&fsm->fsm_slave_config);
+     ec_fsm_slave_scan_clear(&fsm->fsm_slave_scan);
+     ec_fsm_sii_clear(&fsm->fsm_sii);
+@@ -250,6 +253,17 @@ void ec_fsm_master_state_start(
+     // check for detached config requests
+     ec_master_expire_slave_config_requests(fsm->master);
+ 
++    if (master->reboot) {
++        // A reboot of all slaves was requested
++        master->reboot = 0;
++        fsm->idle = 0;
++        fsm->state = ec_fsm_master_state_reboot_slave;
++        fsm->slave = NULL;
++        ec_fsm_reboot_all(&fsm->fsm_reboot, master);
++        fsm->state(fsm); // execute immediately
++        return;
++    }
++
+     ec_datagram_brd(fsm->datagram, 0x0130, 2);
+     ec_datagram_zero(fsm->datagram);
+     fsm->datagram->device_index = fsm->dev_idx;
+@@ -872,6 +886,16 @@ void ec_fsm_master_state_read_al_status(
+     // A single slave responded
+     ec_slave_set_al_status(slave, EC_READ_U8(datagram->data));
+ 
++    if (slave->reboot) {
++        // A reboot of this slave was requested
++        slave->reboot = 0;
++        fsm->idle = 0;
++        fsm->state = ec_fsm_master_state_reboot_slave;
++        ec_fsm_reboot_single(&fsm->fsm_reboot, slave);
++        fsm->state(fsm); // execute immediately
++        return;
++    }
++
+     if (!slave->error_flag) {
+         // Check, if new slave state has to be acknowledged
+         if (slave->current_state & EC_SLAVE_STATE_ACK_ERR) {
+@@ -898,6 +922,31 @@ void ec_fsm_master_state_read_al_status(
+ 
+ /*****************************************************************************/
+ 
++/** Master state: REBOOT SLAVE.
++ */
++void ec_fsm_master_state_reboot_slave(
++        ec_fsm_master_t *fsm /**< Master state machine. */
++        )
++{
++    ec_slave_t *slave = fsm->slave;
++
++    if (ec_fsm_reboot_exec(&fsm->fsm_reboot)) {
++        return;
++    }
++
++    if (!ec_fsm_reboot_success(&fsm->fsm_reboot)) {
++        if (slave) {
++            EC_SLAVE_ERR(slave, "Failed to reboot.\n");
++        } else {
++            EC_MASTER_ERR(fsm->master, "Failed to reboot.\n");
++        }
++    }
++
++    ec_fsm_master_restart(fsm);
++}
++
++/*****************************************************************************/
++
+ /** Master state: ACKNOWLEDGE.
+  */
+ void ec_fsm_master_state_acknowledge(
+diff --git a/master/fsm_master.h b/master/fsm_master.h
+--- a/master/fsm_master.h
++++ b/master/fsm_master.h
+@@ -45,6 +45,7 @@
+ #include "fsm_slave_config.h"
+ #include "fsm_slave_scan.h"
+ #include "fsm_pdo.h"
++#include "fsm_reboot.h"
+ 
+ /*****************************************************************************/
+ 
+@@ -93,6 +94,7 @@ struct ec_fsm_master {
+     ec_fsm_soe_t fsm_soe; /**< SoE state machine */
+     ec_fsm_pdo_t fsm_pdo; /**< PDO configuration state machine. */
+     ec_fsm_change_t fsm_change; /**< State change state machine */
++    ec_fsm_reboot_t fsm_reboot; /**< Slave reboot state machine */
+     ec_fsm_slave_config_t fsm_slave_config; /**< slave state machine */
+     ec_fsm_slave_scan_t fsm_slave_scan; /**< slave state machine */
+     ec_fsm_sii_t fsm_sii; /**< SII state machine */
+diff --git a/master/fsm_reboot.c b/master/fsm_reboot.c
+new file mode 100644
+--- /dev/null
++++ b/master/fsm_reboot.c
+@@ -0,0 +1,336 @@
++/******************************************************************************
++ *
++ *  $Id$
++ *
++ *  Copyright (C) 2014  Gavin Lambert
++ *
++ *  This file is part of the IgH EtherCAT Master.
++ *
++ *  The IgH EtherCAT Master is free software; you can redistribute it and/or
++ *  modify it under the terms of the GNU General Public License version 2, as
++ *  published by the Free Software Foundation.
++ *
++ *  The IgH EtherCAT Master is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
++ *  Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with the IgH EtherCAT Master; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ *  ---
++ *
++ *  The license mentioned above concerns the source code only. Using the
++ *  EtherCAT technology and brand is only permitted in compliance with the
++ *  industrial property and similar rights of Beckhoff Automation GmbH.
++ *
++ *****************************************************************************/
++
++/**
++   \file
++   EtherCAT slave reboot FSM.
++*/
++
++/*****************************************************************************/
++
++#include "globals.h"
++#include "master.h"
++#include "fsm_reboot.h"
++
++/*****************************************************************************/
++
++#define EC_FSM_ERR(fsm, fmt, args...) \
++    do { \
++        if (fsm->slave) { \
++            EC_SLAVE_ERR(fsm->slave, fmt, ##args); \
++        } else { \
++            EC_MASTER_ERR(fsm->master, fmt, ##args); \
++        } \
++    } while (0)
++
++/*****************************************************************************/
++
++void ec_fsm_reboot_state_start(ec_fsm_reboot_t *);
++void ec_fsm_reboot_state_one(ec_fsm_reboot_t *);
++void ec_fsm_reboot_state_two(ec_fsm_reboot_t *);
++void ec_fsm_reboot_state_three(ec_fsm_reboot_t *);
++void ec_fsm_reboot_state_wait(ec_fsm_reboot_t *);
++void ec_fsm_reboot_state_end(ec_fsm_reboot_t *);
++void ec_fsm_reboot_state_error(ec_fsm_reboot_t *);
++
++/*****************************************************************************/
++
++/**
++   Constructor.
++*/
++
++void ec_fsm_reboot_init(ec_fsm_reboot_t *fsm, /**< finite state machine */
++                        ec_datagram_t *datagram /**< datagram */
++                        )
++{
++    fsm->state = NULL;
++    fsm->datagram = datagram;
++}
++
++/*****************************************************************************/
++
++/**
++   Destructor.
++*/
++
++void ec_fsm_reboot_clear(ec_fsm_reboot_t *fsm /**< finite state machine */)
++{
++}
++
++/*****************************************************************************/
++
++/**
++   Starts the reboot state machine for a single slave.
++*/
++
++void ec_fsm_reboot_single(ec_fsm_reboot_t *fsm, /**< finite state machine */
++                         ec_slave_t *slave /**< EtherCAT slave */
++                         )
++{
++    fsm->master = slave->master;
++    fsm->slave = slave;
++    fsm->state = ec_fsm_reboot_state_start;
++}
++
++/*****************************************************************************/
++
++/**
++   Starts the reboot state machine for all slaves on a master.
++*/
++
++void ec_fsm_reboot_all(ec_fsm_reboot_t *fsm, /**< finite state machine */
++                         ec_master_t *master /**< EtherCAT master */
++                         )
++{
++    fsm->master = master;
++    fsm->slave = NULL;
++    fsm->state = ec_fsm_reboot_state_start;
++}
++
++/*****************************************************************************/
++
++/**
++   Executes the current state of the state machine.
++   \return false, if the state machine has terminated
++*/
++
++int ec_fsm_reboot_exec(ec_fsm_reboot_t *fsm /**< finite state machine */)
++{
++    fsm->state(fsm);
++
++    return fsm->state != ec_fsm_reboot_state_end
++        && fsm->state != ec_fsm_reboot_state_error;
++}
++
++/*****************************************************************************/
++
++/**
++   Returns, if the state machine terminated with success.
++   \return non-zero if successful.
++*/
++
++int ec_fsm_reboot_success(ec_fsm_reboot_t *fsm /**< Finite state machine */)
++{
++    return fsm->state == ec_fsm_reboot_state_end;
++}
++
++/******************************************************************************
++ *  slave reboot state machine
++ *****************************************************************************/
++
++/**
++   Reboot state: START.
++*/
++
++void ec_fsm_reboot_state_start(ec_fsm_reboot_t *fsm
++                               /**< finite state machine */)
++{
++    ec_datagram_t *datagram = fsm->datagram;
++    ec_slave_t *slave = fsm->slave;
++
++    if (slave) {
++        EC_SLAVE_INFO(slave, "Requesting slave reboot\n");
++        ec_datagram_fpwr(datagram, slave->station_address, 0x0040, 1);
++    } else {
++        EC_MASTER_INFO(fsm->master, "Requesting global reboot\n");
++        ec_datagram_bwr(datagram, 0x0040, 1);
++    }
++    EC_WRITE_U8(datagram->data, 'R');
++    fsm->retries = EC_FSM_RETRIES;
++    fsm->state = ec_fsm_reboot_state_one;
++}
++
++/*****************************************************************************/
++
++/**
++   Reboot state: ONE.
++*/
++
++void ec_fsm_reboot_state_one(ec_fsm_reboot_t *fsm
++                               /**< finite state machine */)
++{
++    ec_datagram_t *datagram = fsm->datagram;
++    ec_slave_t *slave = fsm->slave;
++
++    if (datagram->state == EC_DATAGRAM_TIMED_OUT && fsm->retries--)
++        return;
++
++    if (datagram->state != EC_DATAGRAM_RECEIVED) {
++        fsm->state = ec_fsm_reboot_state_error;
++        EC_FSM_ERR(fsm, "Failed to receive reboot 1 datagram: ");
++        ec_datagram_print_state(datagram);
++        return;
++    }
++
++    if (datagram->working_counter == 0) {
++        if (slave && fsm->retries--) {
++            ec_datagram_fpwr(datagram, slave->station_address, 0x0040, 1);
++            EC_WRITE_U8(datagram->data, 'R');
++            return;
++        }
++
++        fsm->state = ec_fsm_reboot_state_error;
++        EC_FSM_ERR(fsm, "Failed to reboot 1\n");
++        ec_datagram_print_wc_error(datagram);
++        return;
++    }
++
++    if (slave) {
++        ec_datagram_fpwr(datagram, slave->station_address, 0x0040, 1);
++    } else {
++        ec_datagram_bwr(datagram, 0x0040, 1);
++    }
++    EC_WRITE_U8(datagram->data, 'E');
++    fsm->retries = EC_FSM_RETRIES;
++    fsm->state = ec_fsm_reboot_state_two;
++}
++
++/*****************************************************************************/
++
++/**
++   Reboot state: TWO.
++*/
++
++void ec_fsm_reboot_state_two(ec_fsm_reboot_t *fsm
++                               /**< finite state machine */)
++{
++    ec_datagram_t *datagram = fsm->datagram;
++    ec_slave_t *slave = fsm->slave;
++
++    if (datagram->state == EC_DATAGRAM_TIMED_OUT && fsm->retries--)
++        return;
++
++    if (datagram->state != EC_DATAGRAM_RECEIVED) {
++        fsm->state = ec_fsm_reboot_state_error;
++        EC_FSM_ERR(fsm, "Failed to receive reboot 2 datagram: ");
++        ec_datagram_print_state(datagram);
++        return;
++    }
++
++    if (datagram->working_counter == 0) {
++        fsm->state = ec_fsm_reboot_state_error;
++        EC_FSM_ERR(fsm, "Failed to reboot 2\n");
++        ec_datagram_print_wc_error(datagram);
++        return;
++    }
++
++    if (slave) {
++        ec_datagram_fpwr(datagram, slave->station_address, 0x0040, 1);
++    } else {
++        ec_datagram_bwr(datagram, 0x0040, 1);
++    }
++    EC_WRITE_U8(datagram->data, 'S');
++    fsm->retries = EC_FSM_RETRIES;
++    fsm->state = ec_fsm_reboot_state_three;
++}
++
++/*****************************************************************************/
++
++/**
++   Reboot state: THREE.
++*/
++
++void ec_fsm_reboot_state_three(ec_fsm_reboot_t *fsm
++                               /**< finite state machine */)
++{
++    ec_datagram_t *datagram = fsm->datagram;
++
++    if (datagram->state == EC_DATAGRAM_TIMED_OUT && fsm->retries--)
++        return;
++
++    if (datagram->state != EC_DATAGRAM_RECEIVED) {
++        fsm->state = ec_fsm_reboot_state_error;
++        EC_FSM_ERR(fsm, "Failed to receive reboot 3 datagram: ");
++        ec_datagram_print_state(datagram);
++        return;
++    }
++
++    if (datagram->working_counter == 0) {
++        fsm->state = ec_fsm_reboot_state_error;
++        EC_FSM_ERR(fsm, "Failed to reboot 3\n");
++        ec_datagram_print_wc_error(datagram);
++        return;
++    }
++
++    // we must delay for a minimum of 1ms before allowing *any* datagram to be
++    // sent on the network, or the slaves may not actually reboot (due to a
++    // hardware bug).  we must wait at least 2 cycles to guarantee no undershoot.
++    fsm->jiffies_timeout = datagram->jiffies_received + max(2, HZ/1000);
++    datagram->state = EC_DATAGRAM_INVALID; // do not send a new datagram
++    fsm->state = ec_fsm_reboot_state_wait;
++}
++
++/*****************************************************************************/
++
++/**
++   Reboot state: WAIT.
++*/
++
++void ec_fsm_reboot_state_wait(ec_fsm_reboot_t *fsm
++                               /**< finite state machine */)
++{
++    ec_datagram_t *datagram = fsm->datagram;
++
++    if (time_after(jiffies, fsm->jiffies_timeout)) {
++        // slave should have rebooted by now, if it supports this.  if it
++        // does, the master FSM will detect a topology change (unless it
++        // finished reset already).
++        fsm->state = ec_fsm_reboot_state_end;
++        return;
++    }
++
++    // we cannot allow any datagrams to be sent while we're waiting, or the
++    // slaves might fail to reboot.  this will not absolutely block datagrams
++    // without a bit wider cooperation but it should work in most cases.
++    datagram->state = EC_DATAGRAM_INVALID;
++}
++
++/*****************************************************************************/
++
++/**
++   State: ERROR.
++*/
++
++void ec_fsm_reboot_state_error(ec_fsm_reboot_t *fsm
++                               /**< finite state machine */)
++{
++}
++
++/*****************************************************************************/
++
++/**
++   State: END.
++*/
++
++void ec_fsm_reboot_state_end(ec_fsm_reboot_t *fsm
++                             /**< finite state machine */)
++{
++}
++
++/*****************************************************************************/
+diff --git a/master/fsm_reboot.h b/master/fsm_reboot.h
+new file mode 100644
+--- /dev/null
++++ b/master/fsm_reboot.h
+@@ -0,0 +1,77 @@
++/******************************************************************************
++ *
++ *  $Id$
++ *
++ *  Copyright (C) 2014  Gavin Lambert
++ *
++ *  This file is part of the IgH EtherCAT Master.
++ *
++ *  The IgH EtherCAT Master is free software; you can redistribute it and/or
++ *  modify it under the terms of the GNU General Public License version 2, as
++ *  published by the Free Software Foundation.
++ *
++ *  The IgH EtherCAT Master is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
++ *  Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with the IgH EtherCAT Master; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ *  ---
++ *
++ *  The license mentioned above concerns the source code only. Using the
++ *  EtherCAT technology and brand is only permitted in compliance with the
++ *  industrial property and similar rights of Beckhoff Automation GmbH.
++ *
++ *****************************************************************************/
++
++/**
++   \file
++   EtherCAT slave reboot FSM.
++*/
++
++/*****************************************************************************/
++
++#ifndef __EC_FSM_REBOOT_H__
++#define __EC_FSM_REBOOT_H__
++
++#include "globals.h"
++#include "datagram.h"
++#include "master.h"
++#include "slave.h"
++
++/*****************************************************************************/
++
++typedef struct ec_fsm_reboot ec_fsm_reboot_t; /**< \see ec_fsm_reboot */
++
++/**
++   EtherCAT slave reboot FSM.
++*/
++
++struct ec_fsm_reboot
++{
++    ec_master_t *master; /**< master the FSM runs on, if "all" */
++    ec_slave_t *slave; /**< slave the FSM runs on, if "single" */
++    ec_datagram_t *datagram; /**< datagram used in the state machine */
++    unsigned int retries; /**< retries upon datagram timeout */
++    unsigned long jiffies_timeout; /**< pause timer */
++
++    void (*state)(ec_fsm_reboot_t *); /**< slave reboot state function */
++};
++
++/*****************************************************************************/
++
++void ec_fsm_reboot_init(ec_fsm_reboot_t *, ec_datagram_t *);
++void ec_fsm_reboot_clear(ec_fsm_reboot_t *);
++
++void ec_fsm_reboot_single(ec_fsm_reboot_t *, ec_slave_t *);
++void ec_fsm_reboot_all(ec_fsm_reboot_t *, ec_master_t *);
++
++int ec_fsm_reboot_exec(ec_fsm_reboot_t *);
++int ec_fsm_reboot_success(ec_fsm_reboot_t *);
++
++/*****************************************************************************/
++
++#endif
+diff --git a/master/ioctl.c b/master/ioctl.c
+--- a/master/ioctl.c
++++ b/master/ioctl.c
+@@ -738,6 +738,46 @@ static ATTRIBUTES int ec_ioctl_slave_sta
+ 
+ /*****************************************************************************/
+ 
++/** Reboot a slave (if supported).
++ *
++ * \return Zero on success, otherwise a negative error code.
++ */
++static ATTRIBUTES int ec_ioctl_slave_reboot(
++        ec_master_t *master, /**< EtherCAT master. */
++        void *arg /**< ioctl() argument. */
++        )
++{
++    ec_ioctl_slave_reboot_t io;
++    ec_slave_t *slave;
++
++    if (copy_from_user(&io, (void __user *) arg, sizeof(io))) {
++        return -EFAULT;
++    }
++
++    if (ec_lock_down_interruptible(&master->master_sem)) {
++        return -EINTR;
++    }
++
++    if (io.broadcast) {
++        ec_master_reboot_slaves(master);
++    } else {
++        if (!(slave = ec_master_find_slave(master, 0, io.slave_position))) {
++            ec_lock_up(&master->master_sem);
++            EC_MASTER_ERR(master, "Slave %u does not exist!\n",
++                    io.slave_position);
++            return -EINVAL;
++        }
++
++        ec_slave_request_reboot(slave);
++    }
++
++    ec_lock_up(&master->master_sem);
++
++    return 0;
++}
++
++/*****************************************************************************/
++
+ /** Get slave SDO information.
+  *
+  * \return Zero on success, otherwise a negative error code.
+@@ -4584,6 +4624,13 @@ long EC_IOCTL(
+             }
+             ret = ec_ioctl_slave_state(master, arg);
+             break;
++        case EC_IOCTL_SLAVE_REBOOT:
++            if (!ctx->writable) {
++                ret = -EPERM;
++                break;
++            }
++            ret = ec_ioctl_slave_reboot(master, arg);
++            break;
+         case EC_IOCTL_SLAVE_SDO:
+             ret = ec_ioctl_slave_sdo(master, arg);
+             break;
+diff --git a/master/ioctl.h b/master/ioctl.h
+--- a/master/ioctl.h
++++ b/master/ioctl.h
+@@ -155,6 +155,7 @@
+ #define EC_IOCTL_VOE_DATA             EC_IOWR(0x59, ec_ioctl_voe_t)
+ #define EC_IOCTL_SET_SEND_INTERVAL     EC_IOW(0x5a, size_t)
+ #define EC_IOCTL_SC_OVERLAPPING_IO     EC_IOW(0x5b, ec_ioctl_config_t)
++#define EC_IOCTL_SLAVE_REBOOT         EC_IOW(0x5c, ec_ioctl_slave_reboot_t)
+ #define EC_IOCTL_SETUP_DOMAIN_MEMORY   EC_IOR(0x60, ec_ioctl_master_activate_t)
+ #define EC_IOCTL_DEACTIVATE_SLAVES      EC_IO(0x61)
+ #define EC_IOCTL_64_REF_CLK_TIME_QUEUE  EC_IO(0x62)
+@@ -437,6 +438,14 @@ typedef struct {
+ typedef struct {
+     // inputs
+     uint16_t slave_position;
++    uint8_t broadcast;
++} ec_ioctl_slave_reboot_t;
++
++/*****************************************************************************/
++
++typedef struct {
++    // inputs
++    uint16_t slave_position;
+     uint16_t offset;
+     size_t buffer_size;
+     uint8_t *buffer;
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -178,6 +178,7 @@ int ec_master_init(ec_master_t *master, 
+     master->config_changed = 0;
+     master->injection_seq_fsm = 0;
+     master->injection_seq_rt = 0;
++    master->reboot = 0;
+ 
+     master->slaves = NULL;
+     master->slave_count = 0;
+@@ -985,6 +986,17 @@ void ec_master_set_send_interval(
+ 
+ /*****************************************************************************/
+ 
++/** Requests that all slaves on this master be rebooted (if supported).
++ */
++void ec_master_reboot_slaves(
++        ec_master_t *master /**< EtherCAT master */
++        )
++{
++    master->reboot = 1;
++}
++
++/*****************************************************************************/
++
+ /** Searches for a free datagram in the external datagram ring.
+  *
+  * \return Next free datagram, or NULL.
+diff --git a/master/master.h b/master/master.h
+--- a/master/master.h
++++ b/master/master.h
+@@ -250,6 +250,7 @@ struct ec_master {
+                                         clock slave config. */
+     ec_slave_t *dc_ref_clock; /**< DC reference clock slave. */
+ 
++    unsigned int reboot; /**< Reboot requested. */
+     unsigned int scan_busy; /**< Current scan state. */
+     unsigned int allow_scan; /**< \a True, if slave scanning is allowed. */
+     ec_lock_t scan_sem; /**< Semaphore protecting the \a scan_busy
+@@ -365,6 +366,7 @@ void ec_master_clear_eoe_handlers(ec_mas
+ #endif
+ void ec_master_clear_slaves(ec_master_t *);
+ void ec_master_clear_sii_images(ec_master_t *);
++void ec_master_reboot_slaves(ec_master_t *);
+ 
+ unsigned int ec_master_config_count(const ec_master_t *);
+ ec_slave_config_t *ec_master_get_config(
+diff --git a/master/slave.c b/master/slave.c
+--- a/master/slave.c
++++ b/master/slave.c
+@@ -86,6 +86,7 @@ void ec_slave_init(
+     slave->current_state = EC_SLAVE_STATE_UNKNOWN;
+     slave->error_flag = 0;
+     slave->force_config = 0;
++    slave->reboot = 0;
+     slave->configured_rx_mailbox_offset = 0x0000;
+     slave->configured_rx_mailbox_size = 0x0000;
+     slave->configured_tx_mailbox_offset = 0x0000;
+@@ -420,6 +421,18 @@ void ec_slave_request_state(ec_slave_t *
+ /*****************************************************************************/
+ 
+ /**
++ * Request a slave reboot (some slaves will ignore this).
++ */
++
++void ec_slave_request_reboot(ec_slave_t *slave /**< EtherCAT slave */
++                            )
++{
++    slave->reboot = 1;
++}
++
++/*****************************************************************************/
++
++/**
+    Fetches data from a STRING category.
+    \todo range checking
+    \return 0 in case of success, else < 0
+diff --git a/master/slave.h b/master/slave.h
+--- a/master/slave.h
++++ b/master/slave.h
+@@ -236,6 +236,7 @@ struct ec_slave
+     ec_slave_state_t current_state; /**< Current application state. */
+     unsigned int error_flag; /**< Stop processing after an error. */
+     unsigned int force_config; /**< Force (re-)configuration. */
++    unsigned int reboot; /**< Request reboot */
+     uint16_t configured_rx_mailbox_offset; /**< Configured receive mailbox
+                                              offset. */
+     uint16_t configured_rx_mailbox_size; /**< Configured receive mailbox size.
+@@ -304,6 +305,7 @@ void ec_slave_clear_sync_managers(ec_sla
+ void ec_slave_request_state(ec_slave_t *, ec_slave_state_t);
+ void ec_slave_set_dl_status(ec_slave_t *, uint16_t);
+ void ec_slave_set_al_status(ec_slave_t *, ec_slave_state_t);
++void ec_slave_request_reboot(ec_slave_t *);
+ 
+ // SII categories
+ int ec_slave_fetch_sii_strings(ec_slave_t *, const uint8_t *, size_t);
+diff --git a/tool/CommandReboot.cpp b/tool/CommandReboot.cpp
+new file mode 100644
+--- /dev/null
++++ b/tool/CommandReboot.cpp
+@@ -0,0 +1,118 @@
++/*****************************************************************************
++ *
++ *  $Id$
++ *
++ *  Copyright (C) 2014  Gavin Lambert
++ *
++ *  This file is part of the IgH EtherCAT Master.
++ *
++ *  The IgH EtherCAT Master is free software; you can redistribute it and/or
++ *  modify it under the terms of the GNU General Public License version 2, as
++ *  published by the Free Software Foundation.
++ *
++ *  The IgH EtherCAT Master is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
++ *  Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with the IgH EtherCAT Master; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ *  ---
++ *
++ *  The license mentioned above concerns the source code only. Using the
++ *  EtherCAT technology and brand is only permitted in compliance with the
++ *  industrial property and similar rights of Beckhoff Automation GmbH.
++ *
++ ****************************************************************************/
++
++#include <iostream>
++#include <algorithm>
++using namespace std;
++
++#include "CommandReboot.h"
++#include "MasterDevice.h"
++
++/*****************************************************************************/
++
++CommandReboot::CommandReboot():
++    Command("reboot", "Request device hardware reboot.")
++{
++}
++
++/*****************************************************************************/
++
++string CommandReboot::helpString(const string &binaryBaseName) const
++{
++    stringstream str;
++
++    str << binaryBaseName << " " << getName() << " [OPTIONS] [all]" << endl
++        << endl
++        << getBriefDescription() << endl
++        << endl
++        << "Arguments:" << endl
++        << "  If \"all\" is specified then a broadcast reboot request will be sent." << endl
++        << "  Otherwise a single-slave request will be sent." << endl
++        << "  Slaves will only be rebooted if their hardware supports this." << endl
++        << endl
++        << "Command-specific options:" << endl
++        << "  --alias    -a <alias>" << endl
++        << "  --position -p <pos>    Slave selection. See the help of" << endl
++        << "                         the 'slaves' command." << endl
++        << endl
++        << numericInfo();
++
++    return str.str();
++}
++
++/****************************************************************************/
++
++void CommandReboot::execute(const StringVector &args)
++{
++    MasterIndexList masterIndices;
++    SlaveList slaves;
++    uint8_t broadcast = 0;
++    string argStr;
++    stringstream err;
++
++    if (args.size() > 1) {
++        err << "Too many arguments.";
++        throwInvalidUsageException(err);
++    } else if (args.size() == 1) {
++        argStr = args[0];
++        transform(argStr.begin(), argStr.end(),
++                argStr.begin(), (int (*) (int)) std::toupper);
++        if (argStr != "ALL") {
++            err << "Unexpected argument '" << args[0] << "'!";
++            throwInvalidUsageException(err);
++        }
++        broadcast = 1;
++    }
++
++    masterIndices = getMasterIndices();
++    MasterIndexList::const_iterator mi;
++    for (mi = masterIndices.begin();
++            mi != masterIndices.end(); mi++) {
++        MasterDevice m(*mi);
++        m.open(MasterDevice::ReadWrite);
++
++        if (broadcast) {
++            m.requestRebootAll();
++        } else {
++            slaves = selectedSlaves(m);
++            if (slaves.empty())
++                continue;
++
++            if (slaves.size() > 1) {
++                // only one slave can be rebooted at a time because it
++                // will trigger a network topology change if successful.
++                cerr << "More than one slave selected; ignoring extras."
++                     << endl;
++            }
++            m.requestReboot(slaves.front().position);
++        }
++    }
++}
++
++/*****************************************************************************/
+diff --git a/tool/CommandReboot.h b/tool/CommandReboot.h
+new file mode 100644
+--- /dev/null
++++ b/tool/CommandReboot.h
+@@ -0,0 +1,49 @@
++/*****************************************************************************
++ *
++ *  $Id$
++ *
++ *  Copyright (C) 2014  Gavin Lambert
++ *
++ *  This file is part of the IgH EtherCAT Master.
++ *
++ *  The IgH EtherCAT Master is free software; you can redistribute it and/or
++ *  modify it under the terms of the GNU General Public License version 2, as
++ *  published by the Free Software Foundation.
++ *
++ *  The IgH EtherCAT Master is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
++ *  Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with the IgH EtherCAT Master; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ *  ---
++ *
++ *  The license mentioned above concerns the source code only. Using the
++ *  EtherCAT technology and brand is only permitted in compliance with the
++ *  industrial property and similar rights of Beckhoff Automation GmbH.
++ *
++ ****************************************************************************/
++
++#ifndef __COMMANDREBOOT_H__
++#define __COMMANDREBOOT_H__
++
++#include "Command.h"
++
++/****************************************************************************/
++
++class CommandReboot:
++    public Command
++{
++    public:
++        CommandReboot();
++
++        string helpString(const string &) const;
++        void execute(const StringVector &);
++};
++
++/****************************************************************************/
++
++#endif
+diff --git a/tool/Makefile.am b/tool/Makefile.am
+--- a/tool/Makefile.am
++++ b/tool/Makefile.am
+@@ -54,6 +54,7 @@ ethercat_SOURCES = \
+ 	CommandPdos.cpp \
+ 	CommandRegRead.cpp \
+ 	CommandRegWrite.cpp \
++	CommandReboot.cpp \
+ 	CommandRescan.cpp \
+ 	CommandSdos.cpp \
+ 	CommandSiiRead.cpp \
+@@ -98,6 +99,7 @@ noinst_HEADERS = \
+ 	CommandPdos.h \
+ 	CommandRegRead.h \
+ 	CommandRegWrite.h \
++	CommandReboot.h \
+ 	CommandRescan.h \
+ 	CommandSdos.h \
+ 	CommandSiiRead.h \
+diff --git a/tool/MasterDevice.cpp b/tool/MasterDevice.cpp
+--- a/tool/MasterDevice.cpp
++++ b/tool/MasterDevice.cpp
+@@ -548,6 +548,44 @@ void MasterDevice::requestState(
+ 
+ /****************************************************************************/
+ 
++void MasterDevice::requestReboot(
++        uint16_t slavePosition
++        )
++{
++    ec_ioctl_slave_reboot_t data;
++
++    data.slave_position = slavePosition;
++    data.broadcast = 0;
++
++    if (ioctl(fd, EC_IOCTL_SLAVE_REBOOT, &data)) {
++        stringstream err;
++        err << "Failed to request slave reboot: ";
++        if (errno == EINVAL)
++            err << "Slave " << slavePosition << " does not exist!";
++        else
++            err << strerror(errno);
++        throw MasterDeviceException(err);
++    }
++}
++
++/****************************************************************************/
++
++void MasterDevice::requestRebootAll()
++{
++    ec_ioctl_slave_reboot_t data;
++
++    data.slave_position = 0;
++    data.broadcast = 1;
++
++    if (ioctl(fd, EC_IOCTL_SLAVE_REBOOT, &data)) {
++        stringstream err;
++        err << "Failed to request global reboot: " << strerror(errno);
++        throw MasterDeviceException(err);
++    }
++}
++
++/****************************************************************************/
++
+ #ifdef EC_EOE
+ 
+ void MasterDevice::getEoeHandler(
+diff --git a/tool/MasterDevice.h b/tool/MasterDevice.h
+--- a/tool/MasterDevice.h
++++ b/tool/MasterDevice.h
+@@ -154,6 +154,8 @@ class MasterDevice
+         void sdoDownload(ec_ioctl_slave_sdo_download_t *);
+         void sdoUpload(ec_ioctl_slave_sdo_upload_t *);
+         void requestState(uint16_t, uint8_t);
++        void requestReboot(uint16_t);
++        void requestRebootAll();
+         void readFoe(ec_ioctl_slave_foe_t *);
+         void writeFoe(ec_ioctl_slave_foe_t *);
+ #ifdef EC_EOE
+diff --git a/tool/main.cpp b/tool/main.cpp
+--- a/tool/main.cpp
++++ b/tool/main.cpp
+@@ -54,6 +54,7 @@ using namespace std;
+ #include "CommandPdos.h"
+ #include "CommandRegRead.h"
+ #include "CommandRegWrite.h"
++#include "CommandReboot.h"
+ #include "CommandRescan.h"
+ #include "CommandSdos.h"
+ #include "CommandSiiRead.h"
+@@ -296,6 +297,7 @@ int main(int argc, char **argv)
+     commandList.push_back(new CommandPdos());
+     commandList.push_back(new CommandRegRead());
+     commandList.push_back(new CommandRegWrite());
++    commandList.push_back(new CommandReboot());
+     commandList.push_back(new CommandRescan());
+     commandList.push_back(new CommandSdos());
+     commandList.push_back(new CommandSiiRead());

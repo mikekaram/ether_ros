@@ -1,0 +1,23 @@
+# HG changeset patch
+# User Patrick Bruenn <p.bruenn@beckhoff.com>
+# Date 1445844490 -3600
+#      Mon Oct 26 08:28:10 2015 +0100
+fix ccat startup stall. In case the dma memory was allocated above 4 GB limit, CCAT is unable to access it.
+    -> limit the dma_mask to 32-bit to omit this situation
+(grafted from 1d9be5716deec3c7e6a21dae85a8ad2ef8825b92)
+
+diff --git a/devices/ccat/module.c b/devices/ccat/module.c
+--- a/devices/ccat/module.c
++++ b/devices/ccat/module.c
+@@ -288,9 +288,8 @@ static int ccat_pci_probe(struct pci_dev
+ 		goto cleanup_pci_device;
+ 	}
+ 
+-	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
+-		pr_debug("64 bit DMA supported, pci rev: %u\n", revision);
+-	} else if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32))) {
++	/* CCAT is unable to access memory above 4 GB */
++	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32))) {
+ 		pr_debug("32 bit DMA supported, pci rev: %u\n", revision);
+ 	} else {
+ 		pr_warn("No suitable DMA available, pci rev: %u\n", revision);

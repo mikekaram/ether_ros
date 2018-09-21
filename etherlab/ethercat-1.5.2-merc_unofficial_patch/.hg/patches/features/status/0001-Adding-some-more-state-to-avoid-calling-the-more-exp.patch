@@ -1,0 +1,94 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Wed, 1 Jun 2016 10:00:11 +0200
+
+Adding some more state, to avoid calling the more expensive versions.
+
+diff --git a/include/ecrt.h b/include/ecrt.h
+--- a/include/ecrt.h
++++ b/include/ecrt.h
+@@ -273,6 +273,7 @@ typedef struct {
+                                   - Bit 3: \a OP */
+     unsigned int link_up : 1; /**< \a true, if at least one Ethernet link is
+                                 up. */
++    unsigned int scan_busy : 1; /**< \a true, if a slave rescan is in progress */
+ } ec_master_state_t;
+ 
+ /*****************************************************************************/
+@@ -319,6 +320,8 @@ typedef struct  {
+ 
+                                  Note that each state is coded in a different
+                                  bit! */
++    unsigned int error_flag : 1; /**< The slave has an unrecoverable error. */
++    unsigned int ready : 1; /**< The slave is ready for external requests. */
+ } ec_slave_config_state_t;
+ 
+ /*****************************************************************************/
+@@ -384,6 +387,7 @@ typedef struct {
+     } ports[EC_MAX_PORTS]; /**< Port information. */
+     uint8_t al_state; /**< Current state of the slave. */
+     uint8_t error_flag; /**< Error flag for that slave. */
++    uint8_t ready; /**< The slave is ready for external requests. */
+     uint8_t sync_count; /**< Number of sync managers. */
+     uint16_t sdo_count; /**< Number of SDOs. */
+     char name[EC_MAX_STRING_LENGTH]; /**< Name of the slave. */
+diff --git a/lib/master.c b/lib/master.c
+--- a/lib/master.c
++++ b/lib/master.c
+@@ -283,6 +283,7 @@ int ecrt_master_get_slave(ec_master_t *m
+     }
+     slave_info->al_state = data.al_state;
+     slave_info->error_flag = data.error_flag;
++    slave_info->ready = data.ready;
+     slave_info->sync_count = data.sync_count;
+     slave_info->sdo_count = data.sdo_count;
+     strncpy(slave_info->name, data.name, EC_MAX_STRING_LENGTH);
+diff --git a/master/ioctl.c b/master/ioctl.c
+--- a/master/ioctl.c
++++ b/master/ioctl.c
+@@ -310,6 +310,7 @@ static ATTRIBUTES int ec_ioctl_slave(
+     data.al_state = slave->current_state;
+     data.error_flag = slave->error_flag;
+     data.sdo_count = ec_slave_sdo_count(slave);
++    data.ready = ec_fsm_slave_is_ready(&slave->fsm);
+ 
+     ec_lock_up(&master->master_sem);
+ 
+diff --git a/master/ioctl.h b/master/ioctl.h
+--- a/master/ioctl.h
++++ b/master/ioctl.h
+@@ -252,6 +252,7 @@ typedef struct {
+     uint32_t transmission_delay;
+     uint8_t al_state;
+     uint8_t error_flag;
++    uint8_t ready;
+     uint8_t sync_count;
+     uint16_t sdo_count;
+     uint32_t sii_nwords;
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -3102,6 +3102,7 @@ void ecrt_master_state(const ec_master_t
+     state->slaves_responding = 0U;
+     state->al_states = 0;
+     state->link_up = 0U;
++    state->scan_busy = master->scan_busy ? 1U : 0U;
+ 
+     for (dev_idx = EC_DEVICE_MAIN; dev_idx < ec_master_num_devices(master);
+             dev_idx++) {
+diff --git a/master/slave_config.c b/master/slave_config.c
+--- a/master/slave_config.c
++++ b/master/slave_config.c
+@@ -1265,9 +1265,13 @@ void ecrt_slave_config_state(const ec_sl
+             sc->slave->current_state == EC_SLAVE_STATE_OP
+             && !sc->slave->force_config;
+         state->al_state = sc->slave->current_state;
++        state->error_flag = sc->slave->error_flag ? 1 : 0;
++        state->ready = ec_fsm_slave_is_ready(&sc->slave->fsm) ? 1 : 0;
+     } else {
+         state->operational = 0;
+         state->al_state = EC_SLAVE_STATE_UNKNOWN;
++        state->error_flag = 0;
++        state->ready = 0;
+     }
+ }
+ 

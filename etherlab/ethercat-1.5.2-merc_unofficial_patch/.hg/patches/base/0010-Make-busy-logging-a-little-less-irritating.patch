@@ -1,0 +1,29 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Wed, 1 Jun 2016 09:58:23 +0200
+
+Make busy logging a little less irritating.
+
+diff --git a/master/fsm_master.c b/master/fsm_master.c
+--- a/master/fsm_master.c
++++ b/master/fsm_master.c
+@@ -496,7 +496,7 @@ int ec_fsm_master_action_process_sdo(
+         }
+ 
+         if (!ec_fsm_slave_is_ready(&slave->fsm)) {
+-            EC_SLAVE_DBG(slave, 1, "Busy - processing external request!\n");
++            EC_SLAVE_DBG(slave, 2, "Busy - processing external request!\n");
+             continue;
+         }
+ 
+diff --git a/master/fsm_slave.c b/master/fsm_slave.c
+--- a/master/fsm_slave.c
++++ b/master/fsm_slave.c
+@@ -207,7 +207,7 @@ void ec_fsm_slave_state_ready(
+     if (slave->config) {
+         list_for_each_entry(req, &slave->config->sdo_requests, list) {
+             if (req->state == EC_INT_REQUEST_QUEUED || req->state == EC_INT_REQUEST_BUSY) {
+-                EC_SLAVE_DBG(slave, 1, "Busy - processing internal SDO request!\n");
++                EC_SLAVE_DBG(slave, 2, "Busy - processing internal SDO request %04X:%02X!\n", req->index, req->subindex);
+                 return;
+             }
+         }

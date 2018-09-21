@@ -1,0 +1,19 @@
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 6 Nov 2017 13:33:08 +0100
+
+master: Fix build on kernel 4.11
+
+master/master.c:1664:25: error: implicit declaration of function 'signal_pending' [-Werror=implicit-function-declaration]
+|      } while (t.task && !signal_pending(current));
+
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -47,6 +47,7 @@
+ 
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+ #include <linux/sched/types.h> // struct sched_param
++#include <linux/sched/signal.h> // signal_pending
+ #endif
+ 
+ #include "globals.h"

@@ -1,0 +1,16 @@
+# HG changeset patch
+# User Florian Pose <fp@igh.de>
+# Date 1507813303 -7200
+#      Thu Oct 12 15:01:43 2017 +0200
+Respect bashisms.
+(grafted from 61c7f06812478cffee6531d5a9ae2028539e9111)
+
+diff --git a/script/ethercatctl.in b/script/ethercatctl.in
+--- a/script/ethercatctl.in
++++ b/script/ethercatctl.in
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/bin/bash
+ 
+ #------------------------------------------------------------------------------
+ #

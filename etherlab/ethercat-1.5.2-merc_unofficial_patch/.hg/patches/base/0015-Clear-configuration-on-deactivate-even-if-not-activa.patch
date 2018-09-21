@@ -1,0 +1,16 @@
+From: Gavin Lambert <gavinl@compacsort.com>
+Date: Wed, 1 Jun 2016 09:59:22 +0200
+
+Clear configuration on deactivate, even if not activated.
+
+diff --git a/master/master.c b/master/master.c
+--- a/master/master.c
++++ b/master/master.c
+@@ -2490,6 +2490,7 @@ void ecrt_master_deactivate(ec_master_t 
+ 
+     if (!master->active) {
+         EC_MASTER_WARN(master, "%s: Master not active.\n", __func__);
++        ec_master_clear_config(master);
+         return;
+     }
+ 

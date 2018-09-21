@@ -1,0 +1,30 @@
+# HG changeset patch
+# User Florian Pose <fp@igh-essen.com>
+# Date 1456410222 -3600
+#      Thu Feb 25 15:23:42 2016 +0100
+Prevent CCAT auto-loading.
+(grafted from b11e1014edfe704684103991dad143658b540897)
+
+diff --git a/devices/ccat/module.c b/devices/ccat/module.c
+--- a/devices/ccat/module.c
++++ b/devices/ccat/module.c
+@@ -348,7 +348,8 @@ static const struct pci_device_id pci_id
+ 	{0,},
+ };
+ 
+-MODULE_DEVICE_TABLE(pci, pci_ids);
++/* prevent auto-loading. */
++/* MODULE_DEVICE_TABLE(pci, pci_ids); */
+ 
+ static struct pci_driver ccat_pci_driver = {
+ 	.name = KBUILD_MODNAME,
+@@ -408,7 +409,8 @@ static const struct of_device_id bhf_eim
+ 	{}
+ };
+ 
+-MODULE_DEVICE_TABLE(of, bhf_eim_ccat_ids);
++/* prevent auto-loading. */
++/* MODULE_DEVICE_TABLE(of, bhf_eim_ccat_ids); */
+ 
+ static struct platform_driver ccat_eim_driver = {
+ 	.driver = {

@@ -5,3 +5,4 @@ hg clone http://hg.code.sf.net/u/uecasm/etherlab-patches ethercat-1.5.2-merc/.hg
 cd ethercat-1.5.2-merc
 hg qpush -a
 cd ..; make ethercatMasterInstallWithAutoStart
+rm -rf ethercat-1.5.2-merc

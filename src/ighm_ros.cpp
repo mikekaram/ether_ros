@@ -201,6 +201,7 @@ int main(int argc, char **argv)
     pdo_out_publisher.init(n);
     modify_pdo_variables_listener.init(n);
     process_data_buffer_publishing_timer.init(n);
+    
 
     /******************************************
     *    Launch the ROS services              *

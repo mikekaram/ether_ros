@@ -370,7 +370,7 @@ void EthercatCommunicator::stop()
     /* Join with thread to see what its exit status was */
 
     ret = pthread_join(communicator_thread_, &res);
-    ecrt_master_deactivate_slaves(master);
+    // ecrt_master_deactivate_slaves(master);
 
     memset(process_data_buf, 0, total_process_data); // fill the buffer with zeros
     if (ret != 0)

@@ -129,13 +129,13 @@ void EthercatSlave::init(std::string slave, ros::NodeHandle& n)
     }
     ROS_INFO("Offset pdo in is: %d\n", pdo_in_);
 
-    if (n.getParam("sync0_shift", sync0_shift_))
+    if (n.getParam("/ethercat_slaves/sync0_shift", sync0_shift_))
     {
-        ROS_INFO("Got param: sync0_shift = %2.2x\n", sync0_shift_);
+        ROS_INFO("Got param: /ethercat_slaves/sync0_shift = %2.2x\n", sync0_shift_);
     }
     else
     {
-        ROS_FATAL("Failed to get param 'sync0_shift'\n");
+        ROS_FATAL("Failed to get param '/ethercat_slaves/sync0_shift'\n");
     }
     // configure SYNC signals for this slave
     //For XMC use: 0x0300

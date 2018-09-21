@@ -87,14 +87,14 @@ class ethercat_controller(Cmd):
     # \param subindex The subindex inside the index.
     # \param value The value to set.
 
-    def modify_output_publisher(self, slave_id, index, subindex, value, type):
+    def modify_output_publisher(self, slave_id, index, subindex, value, var_type):
         if(not rospy.is_shutdown()):
             new_msg = ModifyPDOVariables()
             new_msg.slave_id = slave_id
             new_msg.index = index
             new_msg.subindex = subindex
             new_msg.value = value
-            new_msg.type = type
+            new_msg.type = var_type
             modify_pdo_pub.publish(new_msg)
 
 

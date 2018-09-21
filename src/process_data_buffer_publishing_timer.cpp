@@ -51,17 +51,16 @@
 void ProcessDataBufferPublishingTimer::timer_callback(const ros::TimerEvent &event)
 {
     size_t pos;
-    uint8_t * data_ptr;
+    uint8_t *data_ptr;
     using namespace utilities;
     copy_process_data_buffer_to_buf(data_ptr_);
-
+    
     for (int i = 0; i < master_info.slave_count; i++)
     {
         pos = i * num_process_data_out; //The size of every entry is num_process_data_out
-        data_ptr = (uint8_t *) (data_ptr_ + pos);
+        data_ptr = (uint8_t *)(data_ptr_ + pos);
         ighm_ros::PDOOut pdo_out;
         pdo_out.slave_id = i;
-
 
         // change the following code to match your needs
         /*
@@ -111,8 +110,27 @@ void ProcessDataBufferPublishingTimer::init(ros::NodeHandle &n)
     //Create  ROS publisher for the Ethercat formatted data
     process_data_buffer_pub_ = n.advertise<ighm_ros::PDOOut>("pdo_out_timer", 1000);
 
-    //Create  ROS subscriber for the Ethercat RAW data
+    if (!process_data_buffer_pub_)
+    {
+        ROS_FATAL("Unable to start publisher in ProcessDataTimer\n");
+        exit(1);
+    }
+    else
+    {
+        ROS_INFO("Started ProcessDataTimer publisher\n");
+    }
+    pdo_out_timer_ = n.createTimer(ros::Duration(5), &ProcessDataBufferPublishingTimer::timer_callback, &process_data_buffer_publishing_timer);
+    //Create  ROS timer
     //first parameter is in seconds...
-    ros::Timer pdo_out_timer_ = n.createTimer(ros::Duration(5), &ProcessDataBufferPublishingTimer::timer_callback, &process_data_buffer_publishing_timer);
-
+    
+    if (!pdo_out_timer_)
+    {
+        ROS_FATAL("Unable to start ProcessDataTimer\n");
+        exit(1);
+    }
+    else
+    {
+        ROS_INFO("Started ProcessDataTimer\n");
+    }
+    // ros::spinOnce();
 }

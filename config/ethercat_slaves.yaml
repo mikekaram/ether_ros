@@ -35,4 +35,4 @@ ethercat_slaves :
         output_port: 0x7000
     frequency: 3000
     run_time: 1200
-    sync0_shift: 100000
+    sync0_shift: 150000

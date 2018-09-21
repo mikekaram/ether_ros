@@ -40,7 +40,7 @@ ec_tty_example-objs := \
 CFLAGS_tty.o := -I$(src)
 
 KBUILD_EXTRA_SYMBOLS := \
-	/home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/$(LINUX_SYMVERS) \
-	/home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/master/$(LINUX_SYMVERS)
+	/home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/$(LINUX_SYMVERS) \
+	/home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/master/$(LINUX_SYMVERS)
 
 #------------------------------------------------------------------------------

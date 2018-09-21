@@ -153,13 +153,13 @@ am__can_run_installinfo = \
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 am__DIST_COMMON = $(srcdir)/Kbuild.in $(srcdir)/Makefile.in README
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/autoconf/missing aclocal-1.15
+ACLOCAL = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/autoconf/missing aclocal-1.15
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
 AR = ar
-AUTOCONF = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/autoconf/missing autoconf
-AUTOHEADER = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/autoconf/missing autoheader
-AUTOMAKE = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/autoconf/missing automake-1.15
+AUTOCONF = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/autoconf/missing autoconf
+AUTOHEADER = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/autoconf/missing autoheader
+AUTOMAKE = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/autoconf/missing automake-1.15
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -204,22 +204,22 @@ INSTALL_MOD_DIR = ethercat
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
-KERNEL_8139TOO = 4.8
-KERNEL_E100 = 4.8
-KERNEL_E1000 = 4.8
-KERNEL_E1000E = 3.16
-KERNEL_R8169 = 4.8
+KERNEL_8139TOO = 4.15
+KERNEL_E100 = 4.15
+KERNEL_E1000 = 4.15
+KERNEL_E1000E = 4.9
+KERNEL_R8169 = 4.15
 LD = /usr/bin/ld -m elf_x86_64
 LDFLAGS = 
 LIBOBJS = 
 LIBS = 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
-LINUX_SOURCE_DIR = /usr/src/linux-headers-4.8.0-58-generic
+LINUX_SOURCE_DIR = /usr/src/linux-headers-4.15.0-34-generic
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS = 
 LT_SYS_LIBRARY_PATH = 
-MAKEINFO = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/autoconf/missing makeinfo
+MAKEINFO = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/autoconf/missing makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /bin/mkdir -p
 NM = /usr/bin/nm -B
@@ -252,10 +252,10 @@ XENOMAI_POSIX_CFLAGS =
 XENOMAI_POSIX_LDFLAGS = 
 XENOMAI_RTDM_CFLAGS = 
 XENOMAI_RTDM_LDFLAGS = 
-abs_builddir = /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/examples/rtai
-abs_srcdir = /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/examples/rtai
-abs_top_builddir = /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc
-abs_top_srcdir = /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc
+abs_builddir = /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/examples/rtai
+abs_srcdir = /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/examples/rtai
+abs_top_builddir = /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc
+abs_top_srcdir = /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -285,7 +285,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/autoconf/install-sh
+install_sh = ${SHELL} /home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/autoconf/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -512,14 +512,14 @@ uninstall-am:
 
 
 modules:
-	$(MAKE) -C "$(LINUX_SOURCE_DIR)" M="/home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/examples/rtai" modules
+	$(MAKE) -C "$(LINUX_SOURCE_DIR)" M="/home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/examples/rtai" modules
 
 modules_install:
-	$(MAKE) -C "$(LINUX_SOURCE_DIR)" M="/home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/examples/rtai" \
+	$(MAKE) -C "$(LINUX_SOURCE_DIR)" M="/home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/examples/rtai" \
 		INSTALL_MOD_DIR="$(INSTALL_MOD_DIR)" modules_install
 
 clean-local:
-	$(MAKE) -C "$(LINUX_SOURCE_DIR)" M="/home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/examples/rtai" clean
+	$(MAKE) -C "$(LINUX_SOURCE_DIR)" M="/home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/examples/rtai" clean
 
 #------------------------------------------------------------------------------
 

@@ -41,17 +41,17 @@ REV := $(shell if test -s $(TOPDIR)/revision; then \
 
 ifeq (0,1)
 	EC_E1000_OBJ := \
-		e1000_main-4.8-ethercat.o \
-		e1000_hw-4.8-ethercat.o \
-		e1000_ethtool-4.8-ethercat.o \
-		e1000_param-4.8-ethercat.o
+		e1000_main-4.15-ethercat.o \
+		e1000_hw-4.15-ethercat.o \
+		e1000_ethtool-4.15-ethercat.o \
+		e1000_param-4.15-ethercat.o
 	obj-m += ec_e1000.o
 	ec_e1000-objs := $(EC_E1000_OBJ)
-	CFLAGS_e1000_main-4.8-ethercat.o = -DREV=$(REV)
+	CFLAGS_e1000_main-4.15-ethercat.o = -DREV=$(REV)
 endif
 
 KBUILD_EXTRA_SYMBOLS := \
-	/home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/$(LINUX_SYMVERS) \
-	/home/mike/catkin_ws/src/ighm_ros/etherlabmaster-code-mercurial/ethercat-1.5.2-merc/master/$(LINUX_SYMVERS)
+	/home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/$(LINUX_SYMVERS) \
+	/home/mike/catkin_ws/src/ighm_ros/etherlab/ethercat-1.5.2-merc/master/$(LINUX_SYMVERS)
 
 #------------------------------------------------------------------------------

@@ -62,9 +62,9 @@ class ethercat_controller(Cmd):
 
     def call_modify_publisher(self, slave_id, variable_name, value):
         [index, subindex] =  self.variables2indeces[variable_name][0]
-        type = self.variables2indeces[variable_name][1]
+        var_type = self.variables2indeces[variable_name][1]
         value = bytearray(value)
-        self.modify_output_publisher(slave_id, index, subindex, value, type)
+        self.modify_output_publisher(slave_id, index, subindex, value, var_type)
 
     ## \fn call_service(self, name, *data)
     # \brief call service  mux.
@@ -89,12 +89,39 @@ class ethercat_controller(Cmd):
 
     def modify_output_publisher(self, slave_id, index, subindex, value, var_type):
         if(not rospy.is_shutdown()):
+            value = int(value)
             new_msg = ModifyPDOVariables()
             new_msg.slave_id = slave_id
             new_msg.index = index
             new_msg.subindex = subindex
-            new_msg.value = value
             new_msg.type = var_type
+            new_msg.bool_value = False
+            new_msg.uint8_value = 0
+            new_msg.int8_value = 0
+            new_msg.uint16_value = 0
+            new_msg.int16_value = 0
+            new_msg.uint32_value = 0
+            new_msg.int32_value = 0
+            new_msg.uint64_value = 0
+            new_msg.int64_value = 0
+            if(var_type == "bool"):
+                new_msg.bool_value = value
+            elif(var_type == "uint8"):
+                new_msg.uint8_value = value
+            elif(var_type == "int8"):
+                new_msg.int8_value = value
+            elif(var_type == "uint16"):
+                new_msg.uint16_value = value
+            elif(var_type == "int16"):
+                new_msg.int16_value = value
+            elif(var_type == "uint32"):
+                new_msg.uint32_value = value
+            elif(var_type == "int32"):
+                new_msg.int32_value = value
+            elif(var_type == "uint64"):
+                new_msg.uint64_value = value  
+            elif(var_type == "int64"):
+                new_msg.int64_value = value                                                                                                
             modify_pdo_pub.publish(new_msg)
 
 
@@ -318,7 +345,7 @@ if __name__ == '__main__':
     print(intro_message)
     print(help_message)
     modify_pdo_pub = rospy.Publisher('pdo_listener', ModifyPDOVariables, queue_size=10)
-    rospy.init_node('modify_pdo_publisher', anonymous=True)
+    rospy.init_node('modify_pdo_publisher')
     prompt = ethercat_controller()
     prompt.prompt = '[{}]> '.format("ethercat controller")
     prompt.intro = help_message

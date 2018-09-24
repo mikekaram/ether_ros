@@ -57,7 +57,7 @@ void ProcessDataBufferPublishingTimer::timer_callback(const ros::TimerEvent &eve
     
     for (int i = 0; i < master_info.slave_count; i++)
     {
-        pos = i * num_process_data_out; //The size of every entry is num_process_data_out
+        pos = i * (num_process_data_out + num_process_data_in); //The size of every entry is num_process_data_out
         data_ptr = (uint8_t *)(data_ptr_ + pos);
         ighm_ros::PDOOut pdo_out;
         pdo_out.slave_id = i;

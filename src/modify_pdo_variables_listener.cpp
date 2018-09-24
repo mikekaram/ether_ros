@@ -67,6 +67,7 @@ void ModifyPDOVariablesListener::modify_pdo_variables_callback(const ighm_ros::M
     //check if we are broadcasting a variable's value to all slaves
     if (slave_id == 255)
     {
+        ROS_INFO("slave_id is 255\n");
         for (int i = 0; i < master_info.slave_count; i++)
         {
             modify_pdo_variable(i, new_var);
@@ -90,7 +91,8 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ro
 
     {
         uint8_t *new_data_ptr = (process_data_buf + slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        bool value = utilities::process_input_bit((uint8_t *)& new_var->value[0], new_var->index, new_var->subindex);
+        bool value = new_var->bool_value;
+        ROS_INFO("New value will be: %d\n", value);
         EC_WRITE_BIT(new_data_ptr, new_var->subindex, value);
         break;
     }
@@ -99,7 +101,8 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ro
 
     {
         uint8_t *new_data_ptr = (uint8_t *)(process_data_buf + slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        uint8_t value = utilities::process_input_uint8((uint8_t *)&new_var->value[0], new_var->index);
+        uint8_t value = new_var->uint8_value;
+        ROS_INFO("New value will be: %d\n", value);
         EC_WRITE_U8(new_data_ptr, value);
         break;
     }
@@ -108,7 +111,8 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ro
 
     {
         int8_t *new_data_ptr = (int8_t *)(process_data_buf + slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        int8_t value = utilities::process_input_int8((uint8_t *)&new_var->value[0], new_var->index);
+        int8_t value = new_var->int8_value;
+        ROS_INFO("New value will be: %d\n", value);
         EC_WRITE_S8(new_data_ptr, value);
         break;
     }
@@ -117,7 +121,12 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ro
 
     {
         uint16_t *new_data_ptr = (uint16_t *)(process_data_buf + slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        uint16_t value = utilities::process_input_uint16((uint8_t *)&new_var->value[0], new_var->index);
+        // printf("O:");
+        // for(int j = 0 ; j < 24; j++)
+        //     printf(" %2.2x", *(new_var->value[j]);
+        // printf("\n");
+        uint16_t value = new_var->uint16_value;
+        ROS_INFO("New value will be: %d\n", value);
         EC_WRITE_U16(new_data_ptr, value);
         break;
     }
@@ -125,7 +134,8 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ro
     case 4:
     {
         int16_t *new_data_ptr = (int16_t *)(process_data_buf + slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        int16_t value = utilities::process_input_int16((uint8_t *)&new_var->value[0], new_var->index);
+        int16_t value = new_var->int16_value;
+        ROS_INFO("New value will be: %d\n", value);
         EC_WRITE_S16(new_data_ptr, value);
         break;
     }
@@ -134,14 +144,16 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ro
 
     {
         uint32_t *new_data_ptr = (uint32_t *)(process_data_buf + slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        uint32_t value = utilities::process_input_uint32((uint8_t *)&new_var->value[0], new_var->index);
+        uint32_t value = new_var->uint32_value;
+        ROS_INFO("New value will be: %d\n", value);
         EC_WRITE_U32(new_data_ptr, value);
         break;
     }
     case 6:
     {
         int32_t *new_data_ptr = (int32_t *)(process_data_buf + slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        int32_t value = utilities::process_input_int32((uint8_t *)&new_var->value[0], new_var->index);
+        int32_t value = new_var->int32_value;
+        ROS_INFO("New value will be: %d\n", value);
         EC_WRITE_S32(new_data_ptr, value);
         break;
     }
@@ -149,7 +161,7 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ro
 
     {
         uint64_t *new_data_ptr = (uint64_t *)(process_data_buf + new_var->slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        uint64_t value = utilities::process_input_uint64((uint8_t *)&new_var->value[0], new_var->index);
+        uint64_t value = new_var->uint64_value;
         EC_WRITE_U64(new_data_ptr, value);
         break;
     }
@@ -158,7 +170,7 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ro
 
     {
         int64_t *new_data_ptr = (int64_t *)(process_data_buf + slave_id * (num_process_data_out + num_process_data_in) + new_var->index);
-        int64_t value = utilities::process_input_int64((uint8_t *)&new_var->value[0], new_var->index);
+        int64_t value = new_var->int64_value;
         EC_WRITE_S64(new_data_ptr, value);
         break;
     }

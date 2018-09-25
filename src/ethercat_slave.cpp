@@ -42,7 +42,7 @@
 #include "ethercat_slave.h"
 #include "ighm_ros.h"
 
-void EthercatSlave::init(std::string slave, ros::NodeHandle& n)
+void EthercatSlave::init(std::string slave, ros::NodeHandle &n)
 {
 
     slave_id_ = slave;
@@ -152,4 +152,8 @@ int EthercatSlave::get_pdo_in()
 int EthercatSlave::get_pdo_out()
 {
     return pdo_out_;
+}
+ec_slave_config_t *EthercatSlave::get_slave_config()
+{
+    return ighm_slave_;
 }

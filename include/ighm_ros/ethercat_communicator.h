@@ -48,6 +48,7 @@
     from our application to the Ethercat slaves, via IgH Master module.
     The class uses the POSIX API for gaining realtime attributes.
 */
+#define DC_FILTER_CNT 1024
 
 class EthercatCommunicator
 {
@@ -60,10 +61,26 @@ private:
   static pthread_t communicator_thread_;
   static ros::Publisher pdo_raw_pub_;
   static bool running_thread_;
+  static uint64_t dc_start_time_ns_ = 0LL;
+  static uint64_t dc_time_ns_ = 0;
+  static int64_t system_time_base_ = 0LL;
+
+#if SYNC_MASTER_TO_REF
+  static uint8_t dc_started_ = 0;
+  static int32_t dc_diff_ns_ = 0;
+  static int32_t prev_dc_diff_ns_ = 0;
+  static int64_t dc_diff_total_ns_ = 0LL;
+  static int64_t dc_delta_total_ns_ = 0LL;
+  static int dc_filter_idx_ = 0;
+  static int64_t dc_adjust_ns_;
+#endif
   static void *run(void *arg);
   static void cleanup_handler(void *arg);
   static void copy_data_to_domain_buf();
   static void publish_raw_data();
+  void sync_distributed_clocks(void);
+  void update_master_clock(void);
+  uint64_t system_time_ns(void);
 
 public:
 /** \fn static bool has_running_thread()

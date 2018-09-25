@@ -44,13 +44,18 @@
 #include "ighm_ros/PDORaw.h"
 #include "deadline_scheduler.h"
 
-
-
 int EthercatCommunicator::cleanup_pop_arg_ = 0;
 bool EthercatCommunicator::running_thread_ = false;
 pthread_t EthercatCommunicator::communicator_thread_ = {};
 ros::Publisher EthercatCommunicator::pdo_raw_pub_;
 
+#ifndef SYNC_MASTER_TO_REF
+#ifndef SYNC_REF_TO_MASTER
+
+#define SYNC_MASTER_TO_REF //the default synchronization will be the master to ref
+
+#endif
+#endif
 /*****************************************************************************/
 
 #if MEASURE_TIMING == 1
@@ -66,7 +71,133 @@ uint32_t latency_ns[RUN_TIME * FREQUENCY] = {0},
 #endif
 /*****************************************************************************/
 
+/** Get the time in ns for the current cpu, adjusted by system_time_base_.
+ *
+ * \attention Rather than calling rt_get_time_ns() directly, all application
+ * time calls should use this method instead.
+ *
+ * \ret The time in ns.
+ */
+uint64_t EthercatCommunicator::system_time_ns(void)
+{
+    struct timespec time;
+    uint64_t time_ns;
+    time_ns = TIMESPEC2NS(clock_gettime(CLOCK_TO_USE, &time));
 
+    if (system_time_base_ > time_ns)
+    {
+        ROS_ERROR(" system_time_ns error: system_time_base_ greater than"
+                  " system time (system_time_base_: %lld, time: %llu\n",
+                  system_time_base_, time_ns);
+        return time_ns;
+    }
+    else
+    {
+        return time_ns - system_time_base_;
+    }
+}
+
+/****************************************************************************/
+
+/** Synchronise the distributed clocks
+ */
+void EthercatCommunicator::sync_distributed_clocks(void)
+{
+#if SYNC_MASTER_TO_REF
+    uint32_t ref_time = 0;
+    uint64_t prev_app_time = dc_time_ns_;
+#endif
+
+    dc_time_ns_ = system_time_ns();
+
+    // set master time in nano-seconds
+    ecrt_master_application_time(master, dc_time_ns_);
+
+#if SYNC_MASTER_TO_REF
+    // get reference clock time to synchronize master cycle
+    ecrt_master_reference_clock_time(master, &ref_time);
+    dc_diff_ns_ = (uint32_t)prev_app_time - ref_time;
+#elif SYNC_REF_TO_MASTER
+    // sync reference clock to master
+    ecrt_master_sync_reference_clock(master);
+#endif
+
+    // call to sync slaves to ref slave
+    ecrt_master_sync_slave_clocks(master);
+}
+
+/*****************************************************************************/
+
+/** Update the master time based on ref slaves time diff
+ *
+ * called after the ethercat frame is sent to avoid time jitter in
+ * sync_distributed_clocks()
+ */
+void EthercatCommunicator::update_master_clock(void)
+{
+#if SYNC_MASTER_TO_REF
+    // calc drift (via un-normalised time diff)
+    int32_t delta = dc_diff_ns_ - prev_dc_diff_ns_;
+    prev_dc_diff_ns_ = dc_diff_ns_;
+
+    // normalise the time diff
+    dc_diff_ns_ =
+        ((dc_diff_ns_ + (PERIOD_NS / 2)) % PERIOD_NS) - (PERIOD_NS / 2);
+
+    // only update if primary master
+    if (dc_started_)
+    {
+
+        // add to totals
+        dc_diff_total_ns_ += dc_diff_ns_;
+        dc_delta_total_ns_ += delta;
+        dc_filter_idx_++;
+
+        if (dc_filter_idx_ >= DC_FILTER_CNT)
+        {
+            // add rounded delta average
+            dc_adjust_ns_ +=
+                ((dc_delta_total_ns_ + (DC_FILTER_CNT / 2)) / DC_FILTER_CNT);
+
+            // and add adjustment for general diff (to pull in drift)
+            dc_adjust_ns_ += sign(dc_diff_total_ns_ / DC_FILTER_CNT);
+
+            // limit crazy numbers (0.1% of std cycle time)
+            if (dc_adjust_ns_ < -1000)
+            {
+                dc_adjust_ns_ = -1000;
+            }
+            if (dc_adjust_ns_ > 1000)
+            {
+                dc_adjust_ns_ = 1000;
+            }
+
+            // reset
+            dc_diff_total_ns_ = 0LL;
+            dc_delta_total_ns_ = 0LL;
+            dc_filter_idx_ = 0;
+        }
+
+        // add cycles adjustment to time base (including a spot adjustment)
+        system_time_base_ += dc_adjust_ns_ + sign(dc_diff_ns_);
+    }
+    else
+    {
+        dc_started_ = (dc_diff_ns_ != 0);
+
+        if (dc_started_)
+        {
+            // output first diff
+            ROS_INFO("First master diff: %d.\n", dc_diff_ns_);
+
+            // record the time of this initial cycle
+            dc_start_time_ns_ = dc_time_ns_;
+        }
+    }
+#endif
+}
+
+/****************************************************************************/
 
 bool EthercatCommunicator::has_running_thread()
 {
@@ -125,6 +256,27 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
 
     //Create  ROS publisher for the Ethercat RAW data
     pdo_raw_pub_ = n.advertise<ighm_ros::PDORaw>("pdo_raw", 1000);
+
+    /* Set the initial master time and select a slave to use as the DC
+     * reference clock, otherwise pass NULL to auto select the first capable
+     * slave. Note: This can be used whether the master or the ref slave will
+     * be used as the systems master DC clock.
+     */
+    dc_start_time_ns_ = system_time_ns();
+    dc_time_ns_ = dc_start_time_ns_;
+
+    /* Attention: The initial application time is also used for phase
+     * calculation for the SYNC0/1 interrupts. Please be sure to call it at
+     * the correct phase to the realtime cycle.
+     */
+    ecrt_master_application_time(master, dc_start_time_ns_);
+
+    ret = ecrt_master_select_reference_clock(master, ethercat_slaves[0].slave.get_slave_config());
+    if (ret < 0)
+    {
+        handle_error_en(ret, "Failed to select reference clock. \n");
+        return ret;
+    }
 }
 
 void EthercatCommunicator::start()
@@ -160,7 +312,6 @@ void EthercatCommunicator::cleanup_handler(void *arg)
 
 void *EthercatCommunicator::run(void *arg)
 {
-    ros::Rate loop_rate(FREQUENCY);
     pthread_cleanup_push(EthercatCommunicator::cleanup_handler, NULL);
 #ifdef MEASURE_TIMING
     struct timespec start_time, end_time, last_start_time = {};
@@ -300,15 +451,22 @@ void *EthercatCommunicator::run(void *arg)
         //queue the EtherCAT data to domain buffer
         ecrt_domain_queue(domain1);
 
-        // write application time to master
-        clock_gettime(CLOCK_TO_USE, &current_time);
-        ecrt_master_application_time(master, TIMESPEC2NS(current_time));
+        // sync distributed clock just before master_send to set
+        // most accurate master clock time
+        EthercatCommunicator::sync_distributed_clocks();
 
-        ecrt_master_sync_reference_clock(master);
-        ecrt_master_sync_slave_clocks(master);
+        // // write application time to master
+        // clock_gettime(CLOCK_TO_USE, &current_time);
+        // ecrt_master_application_time(master, TIMESPEC2NS(current_time));
+
+        // ecrt_master_sync_reference_clock(master);
+        // ecrt_master_sync_slave_clocks(master);
 
         // send process data
         ecrt_master_send(master);
+
+        EthercatCommunicator::update_master_clock();
+
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //set the cancel state to ENABLE
         if (ret != 0)
         {
@@ -384,8 +542,6 @@ void EthercatCommunicator::stop()
     else
         ROS_INFO("stop(): communicator thread wasn't canceled (shouldn't happen!)\n");
 }
-
-
 
 void EthercatCommunicator::publish_raw_data()
 {

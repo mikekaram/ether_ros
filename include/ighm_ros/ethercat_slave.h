@@ -35,7 +35,6 @@
 
 /*****************************************************************************/
 
-
 #ifndef ETH_SLAVE_LIB_H
 #define ETH_SLAVE_LIB_H
 
@@ -66,25 +65,26 @@ class EthercatSlave
     int32_t sync0_shift_;
 
   public:
-/** \fn void init(std::string slave, ros::NodeHandle& n)
+    /** \fn void init(std::string slave, ros::NodeHandle& n)
     \brief Initialization Method.
 
     Used for initializing the EthercatSlave entity. It's basically
     the main method in the class.
 */
-/** \fn int get_pdo_out()
+    /** \fn int get_pdo_out()
     \brief Getter Method.
 
     Used for getting the number of bytes of the output PDO of the single slave.
 */
-/** \fn int get_pdo_in()
+    /** \fn int get_pdo_in()
     \brief Getter Method.
 
     Used for getting the number of bytes of the input PDO of the single slave.
 */
-    void init(std::string slave, ros::NodeHandle& n);
+    void init(std::string slave, ros::NodeHandle &n);
     int get_pdo_out();
     int get_pdo_in();
+    ec_slave_config_t *get_slave_config()
 };
 
 #endif /* ETH_SLAVE_LIB_H */

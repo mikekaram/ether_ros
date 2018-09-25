@@ -212,6 +212,16 @@
 
 #define TIMESPEC2NS(T) ((uint64_t)(T).tv_sec * NSEC_PER_SEC + (T).tv_nsec)
 
+/** Return the sign of a number
+ *
+ * ie -1 for -ve value, 0 for 0, +1 for +ve value
+ *
+ * \retval the sign of the value
+ */
+#define sign(val) \
+    ({ typeof (val) _val = (val); \
+    ((_val > 0) - (_val < 0)); })
+
 #define handle_error_en(en, msg) \
     do                           \
     {                            \

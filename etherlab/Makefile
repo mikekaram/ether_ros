@@ -14,7 +14,7 @@ ethercatMaster: $(udevRulesFile)
 	# tar -xvf $(ethercatMasterZip)
 	cd $(ethercatMasterDirectory);\
 	./bootstrap;\
-	./configure --disable-8139too --with-e1000e-kernel=4.9;\
+	./configure --enable-generic --disable-8139too --with-e1000e-kernel=4.9;\
 	make all modules;
 
 ethercatMasterInstall: ethercatMaster

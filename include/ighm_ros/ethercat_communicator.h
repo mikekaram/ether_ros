@@ -65,7 +65,7 @@ private:
   static uint64_t dc_time_ns_ = 0;
   static int64_t system_time_base_ = 0LL;
 
-#if SYNC_MASTER_TO_REF
+#ifdef SYNC_MASTER_TO_REF
   static uint8_t dc_started_ = 0;
   static int32_t dc_diff_ns_ = 0;
   static int32_t prev_dc_diff_ns_ = 0;
@@ -78,9 +78,9 @@ private:
   static void cleanup_handler(void *arg);
   static void copy_data_to_domain_buf();
   static void publish_raw_data();
-  void sync_distributed_clocks(void);
-  void update_master_clock(void);
-  uint64_t system_time_ns(void);
+  static void sync_distributed_clocks(void);
+  static void update_master_clock(void);
+  static uint64_t system_time_ns(void);
 
 public:
 /** \fn static bool has_running_thread()

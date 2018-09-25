@@ -84,7 +84,7 @@ class EthercatSlave
     void init(std::string slave, ros::NodeHandle &n);
     int get_pdo_out();
     int get_pdo_in();
-    ec_slave_config_t *get_slave_config()
+    ec_slave_config_t *get_slave_config();
 };
 
 #endif /* ETH_SLAVE_LIB_H */

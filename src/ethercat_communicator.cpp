@@ -82,12 +82,14 @@ uint64_t EthercatCommunicator::system_time_ns(void)
 {
     struct timespec time;
     uint64_t time_ns;
-    time_ns = TIMESPEC2NS(clock_gettime(CLOCK_TO_USE, &time));
+    clock_gettime(CLOCK_TO_USE, &time);
+    
+    time_ns = TIMESPEC2NS(time);
 
     if (system_time_base_ > time_ns)
     {
         ROS_ERROR(" system_time_ns error: system_time_base_ greater than"
-                  " system time (system_time_base_: %lld, time: %llu\n",
+                  " system time (system_time_base_: %ld, time: %lu\n",
                   system_time_base_, time_ns);
         return time_ns;
     }
@@ -103,7 +105,7 @@ uint64_t EthercatCommunicator::system_time_ns(void)
  */
 void EthercatCommunicator::sync_distributed_clocks(void)
 {
-#if SYNC_MASTER_TO_REF
+#ifdef SYNC_MASTER_TO_REF
     uint32_t ref_time = 0;
     uint64_t prev_app_time = dc_time_ns_;
 #endif
@@ -113,11 +115,12 @@ void EthercatCommunicator::sync_distributed_clocks(void)
     // set master time in nano-seconds
     ecrt_master_application_time(master, dc_time_ns_);
 
-#if SYNC_MASTER_TO_REF
+#ifdef SYNC_MASTER_TO_REF
     // get reference clock time to synchronize master cycle
     ecrt_master_reference_clock_time(master, &ref_time);
     dc_diff_ns_ = (uint32_t)prev_app_time - ref_time;
-#elif SYNC_REF_TO_MASTER
+#endif
+#ifdef SYNC_REF_TO_MASTER
     // sync reference clock to master
     ecrt_master_sync_reference_clock(master);
 #endif
@@ -135,7 +138,6 @@ void EthercatCommunicator::sync_distributed_clocks(void)
  */
 void EthercatCommunicator::update_master_clock(void)
 {
-#if SYNC_MASTER_TO_REF
     // calc drift (via un-normalised time diff)
     int32_t delta = dc_diff_ns_ - prev_dc_diff_ns_;
     prev_dc_diff_ns_ = dc_diff_ns_;
@@ -194,7 +196,6 @@ void EthercatCommunicator::update_master_clock(void)
             dc_start_time_ns_ = dc_time_ns_;
         }
     }
-#endif
 }
 
 /****************************************************************************/
@@ -464,9 +465,9 @@ void *EthercatCommunicator::run(void *arg)
 
         // send process data
         ecrt_master_send(master);
-
+#ifdef SYNC_MASTER_TO_REF
         EthercatCommunicator::update_master_clock();
-
+#endif
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //set the cancel state to ENABLE
         if (ret != 0)
         {

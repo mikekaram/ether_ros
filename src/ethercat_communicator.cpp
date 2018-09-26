@@ -49,13 +49,16 @@ bool EthercatCommunicator::running_thread_ = false;
 pthread_t EthercatCommunicator::communicator_thread_ = {};
 ros::Publisher EthercatCommunicator::pdo_raw_pub_;
 
-#ifndef SYNC_MASTER_TO_REF
-#ifndef SYNC_REF_TO_MASTER
-
-#define SYNC_MASTER_TO_REF //the default synchronization will be the master to ref
-
-#endif
-#endif
+uint64_t EthercatCommunicator::dc_start_time_ns_ = 0LL;
+uint64_t EthercatCommunicator::dc_time_ns_ = 0;
+int64_t EthercatCommunicator::system_time_base_ = 0LL;
+uint8_t EthercatCommunicator::dc_started_ = 0;
+int32_t EthercatCommunicator::dc_diff_ns_ = 0;
+int32_t EthercatCommunicator::prev_dc_diff_ns_ = 0;
+int64_t EthercatCommunicator::dc_diff_total_ns_ = 0LL;
+int64_t EthercatCommunicator::dc_delta_total_ns_ = 0LL;
+int EthercatCommunicator::dc_filter_idx_ = 0;
+int64_t EthercatCommunicator::dc_adjust_ns_;
 /*****************************************************************************/
 
 #if MEASURE_TIMING == 1
@@ -83,7 +86,7 @@ uint64_t EthercatCommunicator::system_time_ns(void)
     struct timespec time;
     uint64_t time_ns;
     clock_gettime(CLOCK_TO_USE, &time);
-    
+
     time_ns = TIMESPEC2NS(time);
 
     if (system_time_base_ > time_ns)
@@ -276,7 +279,6 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
     if (ret < 0)
     {
         handle_error_en(ret, "Failed to select reference clock. \n");
-        return ret;
     }
 }
 

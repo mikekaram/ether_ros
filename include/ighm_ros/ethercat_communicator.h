@@ -49,7 +49,13 @@
     The class uses the POSIX API for gaining realtime attributes.
 */
 #define DC_FILTER_CNT 1024
+#ifndef SYNC_MASTER_TO_REF
+#ifndef SYNC_REF_TO_MASTER
 
+#define SYNC_MASTER_TO_REF //the default synchronization will be the master to ref
+
+#endif
+#endif
 class EthercatCommunicator
 {
 private:
@@ -61,17 +67,17 @@ private:
   static pthread_t communicator_thread_;
   static ros::Publisher pdo_raw_pub_;
   static bool running_thread_;
-  static uint64_t dc_start_time_ns_ = 0LL;
-  static uint64_t dc_time_ns_ = 0;
-  static int64_t system_time_base_ = 0LL;
+  static uint64_t dc_start_time_ns_;
+  static uint64_t dc_time_ns_;
+  static int64_t system_time_base_;
 
 #ifdef SYNC_MASTER_TO_REF
-  static uint8_t dc_started_ = 0;
-  static int32_t dc_diff_ns_ = 0;
-  static int32_t prev_dc_diff_ns_ = 0;
-  static int64_t dc_diff_total_ns_ = 0LL;
-  static int64_t dc_delta_total_ns_ = 0LL;
-  static int dc_filter_idx_ = 0;
+  static uint8_t dc_started_;
+  static int32_t dc_diff_ns_;
+  static int32_t prev_dc_diff_ns_;
+  static int64_t dc_diff_total_ns_;
+  static int64_t dc_delta_total_ns_;
+  static int dc_filter_idx_;
   static int64_t dc_adjust_ns_;
 #endif
   static void *run(void *arg);

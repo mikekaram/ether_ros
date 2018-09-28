@@ -153,13 +153,13 @@ int main(int argc, char **argv)
         ROS_FATAL("Failed to create domain.\n");
         exit(1);
     }
-    if (n.getParam("/ethercat_slaves/frequency", FREQUENCY))
+    if (n.getParam("/ethercat_slaves/period_ns", PERIOD_NS))
     {
-        ROS_INFO("Got param: /ethercat_slaves/frequency = %d\n", FREQUENCY);
+        ROS_INFO("Got param: /ethercat_slaves/period_ns = %d\n", PERIOD_NS);
     }
     else
     {
-        ROS_FATAL("Failed to get param '/ethercat_slaves/frequency'\n");
+        ROS_FATAL("Failed to get param '/ethercat_slaves/period_ns'\n");
     }
 
     if (n.getParam("/ethercat_slaves/run_time", RUN_TIME))
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
     {
         ROS_FATAL("Failed to get param '/ethercat_slaves/run_time'\n");
     }
-    PERIOD_NS = (NSEC_PER_SEC / FREQUENCY);
+    FREQUENCY = (NSEC_PER_SEC / PERIOD_NS);
 
     ROS_INFO("Number of slaves in bus: %u", master_info.slave_count);
     ethercat_slaves = new slave_struct[master_info.slave_count];

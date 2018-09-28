@@ -52,7 +52,7 @@
 #ifndef SYNC_MASTER_TO_REF
 #ifndef SYNC_REF_TO_MASTER
 
-#define SYNC_MASTER_TO_REF //the default synchronization will be the master to ref
+#define SYNC_REF_TO_MASTER //the default synchronization will be the master to ref
 
 #endif
 #endif

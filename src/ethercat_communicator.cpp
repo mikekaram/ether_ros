@@ -52,6 +52,7 @@ ros::Publisher EthercatCommunicator::pdo_raw_pub_;
 uint64_t EthercatCommunicator::dc_start_time_ns_ = 0LL;
 uint64_t EthercatCommunicator::dc_time_ns_ = 0;
 int64_t EthercatCommunicator::system_time_base_ = 0LL;
+#ifdef SYNC_MASTER_TO_REF
 uint8_t EthercatCommunicator::dc_started_ = 0;
 int32_t EthercatCommunicator::dc_diff_ns_ = 0;
 int32_t EthercatCommunicator::prev_dc_diff_ns_ = 0;
@@ -59,6 +60,7 @@ int64_t EthercatCommunicator::dc_diff_total_ns_ = 0LL;
 int64_t EthercatCommunicator::dc_delta_total_ns_ = 0LL;
 int EthercatCommunicator::dc_filter_idx_ = 0;
 int64_t EthercatCommunicator::dc_adjust_ns_;
+#endif
 /*****************************************************************************/
 
 #if MEASURE_TIMING == 1
@@ -89,16 +91,16 @@ uint64_t EthercatCommunicator::system_time_ns(void)
 
     time_ns = TIMESPEC2NS(time);
 
-    if (system_time_base_ > time_ns)
+    if (system_time_base_ > (int64_t)time_ns)
     {
-        ROS_ERROR(" system_time_ns error: system_time_base_ greater than"
+        ROS_INFO(" system_time_ns error: system_time_base_ greater than"
                   " system time (system_time_base_: %ld, time: %lu\n",
-                  system_time_base_, time_ns);
+                   system_time_base_, (int64_t) time_ns);
         return time_ns;
     }
     else
     {
-        return time_ns - system_time_base_;
+        return time_ns - (uint64_t) system_time_base_;
     }
 }
 
@@ -141,6 +143,7 @@ void EthercatCommunicator::sync_distributed_clocks(void)
  */
 void EthercatCommunicator::update_master_clock(void)
 {
+#ifdef SYNC_MASTER_TO_REF
     // calc drift (via un-normalised time diff)
     int32_t delta = dc_diff_ns_ - prev_dc_diff_ns_;
     prev_dc_diff_ns_ = dc_diff_ns_;
@@ -199,6 +202,7 @@ void EthercatCommunicator::update_master_clock(void)
             dc_start_time_ns_ = dc_time_ns_;
         }
     }
+#endif
 }
 
 /****************************************************************************/
@@ -261,30 +265,32 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
     //Create  ROS publisher for the Ethercat RAW data
     pdo_raw_pub_ = n.advertise<ighm_ros::PDORaw>("pdo_raw", 1000);
 
-    /* Set the initial master time and select a slave to use as the DC
-     * reference clock, otherwise pass NULL to auto select the first capable
-     * slave. Note: This can be used whether the master or the ref slave will
-     * be used as the systems master DC clock.
-     */
-    dc_start_time_ns_ = system_time_ns();
-    dc_time_ns_ = dc_start_time_ns_;
 
-    /* Attention: The initial application time is also used for phase
-     * calculation for the SYNC0/1 interrupts. Please be sure to call it at
-     * the correct phase to the realtime cycle.
-     */
-    ecrt_master_application_time(master, dc_start_time_ns_);
-
-    ret = ecrt_master_select_reference_clock(master, ethercat_slaves[0].slave.get_slave_config());
-    if (ret < 0)
-    {
-        handle_error_en(ret, "Failed to select reference clock. \n");
-    }
 }
 
 void EthercatCommunicator::start()
 {
     int ret;
+#ifdef SYNC_MASTER_TO_REF
+    /* Set the initial master time and select a slave to use as the DC
+     * reference clock, otherwise pass NULL to auto select the first capable
+     * slave. Note: This can be used whether the master or the ref slave will
+     * be used as the systems master DC clock.
+     */
+    // dc_start_time_ns_ = system_time_ns();
+    // dc_time_ns_ = dc_start_time_ns_;
+
+    /* Attention: The initial application time is also used for phase
+     * calculation for the SYNC0/1 interrupts. Please be sure to call it at
+     * the correct phase to the realtime cycle.
+     */
+    // ecrt_master_application_time(master, dc_start_time_ns_);
+#endif
+    ret = ecrt_master_select_reference_clock(master, ethercat_slaves[0].slave.get_slave_config());
+    if (ret < 0)
+    {
+        handle_error_en(ret, "Failed to select reference clock. \n");
+    }
 
     ROS_INFO("Activating master...\n");
     if (ecrt_master_activate(master))
@@ -467,9 +473,8 @@ void *EthercatCommunicator::run(void *arg)
 
         // send process data
         ecrt_master_send(master);
-#ifdef SYNC_MASTER_TO_REF
+
         EthercatCommunicator::update_master_clock();
-#endif
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //set the cancel state to ENABLE
         if (ret != 0)
         {

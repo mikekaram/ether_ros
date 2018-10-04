@@ -22,15 +22,15 @@ echo 1 > /sys/fs/cgroup/cpuset/rt/cpuset.cpu_exclusive
 
 
 # if you don't remember your root password, then run sudo passwd root
-su root
+# su root
 
-# Turn off all CPUs in the real-time partition, as in the following example for CPU3:
-sudo echo 0 > /sys/devices/system/cpu/cpu3/online
-sudo echo 0 > /sys/devices/system/cpu/cpu2/online
+# Turn off all CPUs in the real-time partition:
+# sudo echo 0 > /sys/devices/system/cpu/cpu3/online
+# sudo echo 0 > /sys/devices/system/cpu/cpu2/online
 
 # Then turn them on:
-sudo echo 1 > /sys/devices/system/cpu/cpu3/online
-sudo echo 1 > /sys/devices/system/cpu/cpu2/online
+# sudo echo 1 > /sys/devices/system/cpu/cpu3/online
+# sudo echo 1 > /sys/devices/system/cpu/cpu2/online
 
 
 ## Not NUMA-enabled
@@ -60,9 +60,14 @@ echo 1 > /sys/fs/cgroup/cpuset/nrt/cpuset.sched_load_balance
 
 
 # For each task in the root cpuset, run the following command, where each pid of task should occur on its own line:
-echo pid_of_task > /sys/fs/cgroup/cpuset/nrt/tasks
+IFS=$'\r\n' GLOBIGNORE='*' command eval  'cpuset_pids=($(cat /sys/fs/cgroup/cpuset/tasks))'
+for i in "${cpuset_pids[@]}"; 
+do 
+echo $i; echo $i > /sys/fs/cgroup/cpuset/nrt/tasks; 
+done
+# echo pid_of_task > /sys/fs/cgroup/cpuset/nrt/tasks
 
-
+exit
 ## Move IRQs to the general purpose CPUs
 
 # Some interrupts are not CPU-bound. Unwanted interrupts introduce jitter and can have serious negative impact on real-time performance. They should be handled on the general purpose CPUs whenever possible. The affinity of these interrupts can be controlled using the /proc file system.

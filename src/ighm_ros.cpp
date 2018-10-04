@@ -198,7 +198,7 @@ int main(int argc, char **argv)
     //Initialize the Ethercat Communicator and the Ethercat Data Handlers
     ethercat_comm.init(n);
     pdo_in_publisher.init(n);
-    pdo_out_publisher.init(n);
+    // pdo_out_publisher.init(n);
     modify_pdo_variables_listener.init(n);
     process_data_buffer_publishing_timer.init(n);
     

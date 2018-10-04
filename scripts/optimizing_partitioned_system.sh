@@ -68,4 +68,6 @@ echo -1 > /sys/kernel/debug/sched_tick_max_deferment
 
 # If the application needs the packets to be received only in the nRT partition then the affinity should be set as follows:
 
-echo <NRT cpus mask> > /sys/class/net/<ethernet interface>/queues/<queue>/<x/r>ps_cpus
+# echo <NRT cpus mask> > /sys/class/net/<ethernet interface>/queues/<queue>/<x/r>ps_cpus
+
+##############################DONT FORGET TO KILL IRQ_BALANCE #######################################

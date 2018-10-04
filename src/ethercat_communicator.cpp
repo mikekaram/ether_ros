@@ -333,7 +333,7 @@ void *EthercatCommunicator::run(void *arg)
     int ret;
     int i = 0;
     // struct sched_attr sched_attr_;
-    // cpu_set_t cpuset_;
+    cpu_set_t cpuset_;
 
     // sched_attr_.size = sizeof(struct sched_attr);
     // sched_attr_.sched_policy = SCHED_DEADLINE;
@@ -341,13 +341,14 @@ void *EthercatCommunicator::run(void *arg)
     // sched_attr_.sched_runtime = 30000;
     // sched_attr_.sched_deadline = 100000;
     // sched_attr_.sched_period = PERIOD_NS;
-    // CPU_SET(0, &cpuset_);
+    CPU_SET(3, &cpuset_);
+    // CPU_SET(5, &cpuset_);
 
-    // if (pthread_setaffinity_np(communicator_thread_, sizeof(cpuset_), &cpuset_))
-    // {
-    //     ROS_FATAL("Set pthread affinity, not portable\n");
-    //     exit(1);
-    // }
+    if (pthread_setaffinity_np(communicator_thread_, sizeof(cpuset_), &cpuset_))
+    {
+        ROS_FATAL("Set pthread affinity, not portable\n");
+        exit(1);
+    }
     // ROS_INFO("Size: %d, Policy: %u, Priority: %u, Runtime: %llu, Deadline: %llu, Period: %llu",
     //          sched_attr_.size, sched_attr_.sched_policy,
     //          sched_attr_.sched_priority, sched_attr_.sched_runtime, sched_attr_.sched_deadline, sched_attr_.sched_period);

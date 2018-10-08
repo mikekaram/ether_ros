@@ -61,19 +61,25 @@ echo 1 > /sys/fs/cgroup/cpuset/nrt/cpuset.sched_load_balance
 
 # For each task in the root cpuset, run the following command, where each pid of task should occur on its own line:
 IFS=$'\r\n' GLOBIGNORE='*' command eval  'cpuset_pids=($(cat /sys/fs/cgroup/cpuset/tasks))'
-for i in "${cpuset_pids[@]}"; 
-do 
-echo $i; echo $i > /sys/fs/cgroup/cpuset/nrt/tasks; 
+for i in "${cpuset_pids[@]}";
+do
+echo $i; echo $i > /sys/fs/cgroup/cpuset/nrt/tasks;
 done
 # echo pid_of_task > /sys/fs/cgroup/cpuset/nrt/tasks
 
-exit
 ## Move IRQs to the general purpose CPUs
 
 # Some interrupts are not CPU-bound. Unwanted interrupts introduce jitter and can have serious negative impact on real-time performance. They should be handled on the general purpose CPUs whenever possible. The affinity of these interrupts can be controlled using the /proc file system.
 # First set the default affinity to CPU0 or CPU1 to make sure that new interrupts won’t be handled by the real-time CPUs. The set {CPU0, CPU1} is represented as a bitmask set to 3, (20 + 21)..
 echo 3 > /proc/irq/default_smp_affinity
 
+
+cd /proc/irq
+irq_array=($(ls -d */ | cut -f1 -d'/'))
+for i in "${cpuset_pids[@]}";
+do
+echo $i; echo 3 > /proc/irq/$i/smp_affinity;
+done
 # Move IRQs to the nRT partition
 echo 3 > /proc/irq/<irq>/smp_affinity
 
@@ -85,5 +91,6 @@ echo 3 > /proc/irq/<irq>/smp_affinity
 ## Execute a task in the real-time partition
 
 # Now it is possible to run a real-time task in the real-time partition:
-echo pid_of_task > /sys/fs/cgroup/cpusets/rt/tasks
+# echo pid_of_task > /sys/fs/cgroup/cpusets/rt/tasks
+
 # Since we have an RT partition with more then one CPU we might want to choose a specific CPU to run on. Change the task affinity to only include CPU3 in the real-time partition: $ taskset -p 0x8 pid_of_task

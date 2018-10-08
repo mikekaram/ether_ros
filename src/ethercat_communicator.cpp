@@ -455,8 +455,6 @@ void *EthercatCommunicator::run(void *arg)
         //move the data from process_data_buf to domain1_pd buf carefuly
         utilities::copy_process_data_buffer_to_buf(domain1_pd);
 
-        //send the raw data to the raw data topic
-        EthercatCommunicator::publish_raw_data();
 
         //queue the EtherCAT data to domain buffer
         ecrt_domain_queue(domain1);
@@ -475,6 +473,8 @@ void *EthercatCommunicator::run(void *arg)
         // send process data
         ecrt_master_send(master);
 
+        //send the raw data to the raw data topic
+        EthercatCommunicator::publish_raw_data();
         EthercatCommunicator::update_master_clock();
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //set the cancel state to ENABLE
         if (ret != 0)

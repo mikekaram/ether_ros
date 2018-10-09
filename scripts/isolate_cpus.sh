@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #enable the creation of cpuset folder
 mount -t tmpfs none /sys/fs/cgroup
 #create the cpuset folder and mount the cgroup filesystem
@@ -76,12 +76,12 @@ echo 3 > /proc/irq/default_smp_affinity
 
 cd /proc/irq
 irq_array=($(ls -d */ | cut -f1 -d'/'))
-for i in "${cpuset_pids[@]}";
+for i in "${irq_array[@]}";
 do
 echo $i; echo 3 > /proc/irq/$i/smp_affinity;
 done
 # Move IRQs to the nRT partition
-echo 3 > /proc/irq/<irq>/smp_affinity
+# echo 3 > /proc/irq/<irq>/smp_affinity
 
 # Interrupts that can not be moved will be printed to stderr. When it is known what interrupts can not be moved, consult the hardware and driver documentation to see if this will be an issue. It might be possible to disable the device that causes the interrupt.
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ## tsc boot parameter - x86 only
 
 
@@ -38,8 +38,8 @@ echo -1 > /proc/sys/kernel/sched_rt_runtime_us
 ## Machine check - x86 only
 
 # The x86 architecture has a periodic check for corrected machine check errors (MCE). The periodic machine check requires a timer that causes unwanted jitter. The periodic check can be disabled. Note that this might lead to that silently corrected MCEs goes unlogged. Turn it off on the RT CPUs. For each CPU in the real-time partition, do the following:
-echo 0 >/sys/devices/system/machinecheck/machinecheck2/check_interval
-echo 0 >/sys/devices/system/machinecheck/machinecheck3/check_interval
+echo 0 > /sys/devices/system/machinecheck/machinecheck2/check_interval
+echo 0 > /sys/devices/system/machinecheck/machinecheck3/check_interval
 # It has been observed that it is enough to disable this for CPU0 only; it will then be disabled on all CPUs.
 
 ## Disabling the NMI Watchdog - x86 only
@@ -69,11 +69,11 @@ echo -1 > /sys/kernel/debug/sched_tick_max_deferment
 # If the application needs the packets to be received only in the nRT partition then the affinity should be set as follows:
 
 # echo <NRT cpus mask> > /sys/class/net/<ethernet interface>/queues/<queue>/<x/r>ps_cpus
-echo 8 /sys/class/net/enp5s0/queues/rx-0/rps_cpus
-echo 8 /sys/class/net/enp5s0/queues/tx-0/xps_cpus
+echo 8 > /sys/class/net/enp5s0/queues/rx-0/rps_cpus
+echo 8 > /sys/class/net/enp5s0/queues/tx-0/xps_cpus
 
-echo 3 /sys/class/net/enp6s0/queues/rx-0/rps_cpus
-echo 3 /sys/class/net/enp6s0/queues/tx-0/xps_cpus
+echo 3 > /sys/class/net/enp6s0/queues/rx-0/rps_cpus
+echo 3 > /sys/class/net/enp6s0/queues/tx-0/xps_cpus
 
 ##############################DONT FORGET TO KILL IRQ_BALANCE #######################################
 pkill -9 irqbalance

@@ -49,11 +49,13 @@
     Communicator, to values of variables, and stream them
     to the \a /pdo_in_slave_{slave_id} topic.
 */
-class PDOInPublisher
+// class PDOInPublisher
+// {
+//     private:
+//       ros::Subscriber pdo_raw_sub_;
+namespace PDOInPublisher
 {
-    private:
-      ros::Subscriber pdo_raw_sub_;
-      ros::Publisher * pdo_in_pub_;
+extern ros::Publisher *pdo_in_pub;
 /** \fn void init(ros::NodeHandle &n)
     \brief Initialization Method.
 
@@ -71,9 +73,8 @@ class PDOInPublisher
     into variable values and pipe them into another topic.
     \param pdo_raw A copy of the actual data sent to the topic \a /pdo_raw.
 */
-    public:
-      void init(ros::NodeHandle &n);
-      void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw);
-};
+void init(ros::NodeHandle &n);
+void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw);
+}; // namespace PDOInPublisher
 
 #endif /* PDO_IN_PUB_LIB_H */

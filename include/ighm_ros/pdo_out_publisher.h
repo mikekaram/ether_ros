@@ -49,13 +49,16 @@
     Communicator, to values of variables, and stream them
     to the \a /pdo_out topic.
 */
-class PDOOutPublisher
-{
-  private:
-    ros::Subscriber pdo_raw_sub_;
-    ros::Publisher pdo_out_pub_;
 
-    /** \fn void init(ros::NodeHandle &n)
+// class PDOOutPublisher
+// {
+//   private:
+//     ros::Subscriber pdo_raw_sub_;
+namespace PDOOutPublisher
+{
+extern  ros::Publisher pdo_out_pub;
+
+/** \fn void init(ros::NodeHandle &n)
     \brief Initialization Method.
 
     Used for initializing the PDOOutPublisher object. It's basically
@@ -63,7 +66,7 @@ class PDOOutPublisher
     mentioned topic.
     \param n The ROS Node Handle
 */
-    /** \fn void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
+/** \fn void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
     \brief Process Data Objects Callback
 
     This method, is called when there are data in the \a /pdo_raw topic.
@@ -72,9 +75,9 @@ class PDOOutPublisher
     into variable values and pipe them into another topic.
     \param pdo_raw A copy of the actual data sent to the topic \a /pdo_raw.
 */
-  public:
-    void init(ros::NodeHandle &n);
-    void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw);
-};
+// public:
+void init(ros::NodeHandle &n);
+void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw);
+}; // namespace PDOOutPublisher
 
 #endif /* PDO_OUT_PUB_LIB_H */

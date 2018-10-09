@@ -43,6 +43,8 @@
 #include "ighm_ros.h"
 #include "ighm_ros/PDORaw.h"
 #include "deadline_scheduler.h"
+#include "pdo_in_publisher.h"
+#include "pdo_out_publisher.h"
 
 int EthercatCommunicator::cleanup_pop_arg_ = 0;
 bool EthercatCommunicator::running_thread_ = false;
@@ -263,7 +265,7 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
     ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
 
     //Create  ROS publisher for the Ethercat RAW data
-    pdo_raw_pub_ = n.advertise<ighm_ros::PDORaw>("pdo_raw", 1000);
+    // pdo_raw_pub_ = n.advertise<ighm_ros::PDORaw>("pdo_raw", 1000);
 
 
 }
@@ -575,5 +577,7 @@ void EthercatCommunicator::publish_raw_data()
     ighm_ros::PDORaw raw_data;
     raw_data.pdo_in_raw = input_data_raw;
     raw_data.pdo_out_raw = output_data_raw;
-    pdo_raw_pub_.publish(raw_data);
+    PDOInPublisher::pdo_raw_callback(boost::shared_ptr<ighm_ros::PDORaw> (& raw_data));
+    // PDOOutPublisher::pdo_raw_callback(&raw_data);
+    // pdo_raw_pub_.publish(raw_data);
 }

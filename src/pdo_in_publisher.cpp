@@ -47,8 +47,10 @@
 #include "ighm_ros.h"
 #include <iostream>
 #include <string>
-
-void PDOInPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
+namespace PDOInPublisher
+{
+ros::Publisher *pdo_in_pub;
+void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
 {
     std::vector<uint8_t> pdo_in_raw = pdo_raw->pdo_in_raw;
     uint8_t *data_ptr;
@@ -56,7 +58,7 @@ void PDOInPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
     for (int i = 0; i < master_info.slave_count; i++)
     {
         pos = i * num_process_data_in; //The size of every entry is num_process_data_in
-        data_ptr = (uint8_t * ) & pdo_in_raw[pos];
+        data_ptr = (uint8_t *)&pdo_in_raw[pos];
         ighm_ros::PDOIn pdo_in;
         using namespace utilities;
 
@@ -81,19 +83,21 @@ void PDOInPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
             .....
 
         */
-        pdo_in_pub_[i].publish(pdo_in);
+        using namespace PDOInPublisher;
+        pdo_in_pub[i].publish(pdo_in);
     }
 }
 
-void PDOInPublisher::init(ros::NodeHandle &n)
+void init(ros::NodeHandle &n)
 {
     //Create  ROS subscriber for the Ethercat RAW data
-    pdo_raw_sub_ = n.subscribe("pdo_raw", 1000, &PDOInPublisher::pdo_raw_callback, &pdo_in_publisher);
+    // pdo_raw_sub_ = n.subscribe("pdo_raw", 1000, &PDOInPublisher::pdo_raw_callback, &pdo_in_publisher);
 
     //Create  ROS publishers for the Ethercat formatted data
-    pdo_in_pub_ = new ros::Publisher[master_info.slave_count];
+    ros::Publisher *pdo_in_pub = new ros::Publisher[master_info.slave_count];
     for (int i = 0; i < master_info.slave_count; i++)
     {
-        pdo_in_pub_[i] = n.advertise<ighm_ros::PDOIn>("pdo_in_slave_" + std::to_string(i), 1000);
+        pdo_in_pub[i] = n.advertise<ighm_ros::PDOIn>("pdo_in_slave_" + std::to_string(i), 1000);
     }
 }
+} // namespace PDOInPublisher

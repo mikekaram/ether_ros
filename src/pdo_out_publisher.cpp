@@ -48,8 +48,10 @@
 #include "ighm_ros.h"
 #include <iostream>
 #include <string>
-
-void PDOOutPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
+namespace PDOOutPublisher
+{
+ros::Publisher pdo_out_pub;
+void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
 {
     std::vector<uint8_t> pdo_out_raw = pdo_raw->pdo_out_raw;
     uint8_t *data_ptr;
@@ -98,15 +100,16 @@ void PDOOutPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw
             .....
 
         */
-        pdo_out_pub_.publish(pdo_out);
+        pdo_out_pub.publish(pdo_out);
     }
 }
 
-void PDOOutPublisher::init(ros::NodeHandle &n)
+void init(ros::NodeHandle &n)
 {
     //Create  ROS subscriber for the Ethercat RAW data
-    pdo_raw_sub_ = n.subscribe("pdo_raw", 1000, &PDOOutPublisher::pdo_raw_callback, &pdo_out_publisher);
+    // pdo_raw_sub_ = n.subscribe("pdo_raw", 1000, &PDOOutPublisher::pdo_raw_callback, &pdo_out_publisher);
 
     //Create  ROS publisher for the Ethercat formatted data
-    pdo_out_pub_ = n.advertise<ighm_ros::PDOOut>("pdo_out", 1000);
+    ros::Publisher pdo_out_pub = n.advertise<ighm_ros::PDOOut>("pdo_out", 1000);
 }
+} // namespace PDOOutPublisher

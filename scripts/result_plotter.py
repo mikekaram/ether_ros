@@ -1,36 +1,41 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*
 from __future__ import division
-import plotly.plotly
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 import csv
 import sys
 import math
-csv.field_size_limit(sys.maxsize)
+# csv.field_size_limit(sys.maxsize)
 
-
-def open_csv(file_path):
-    fields = []
-    rows = []
-    with open(file_path, 'rb') as csvfile:
-        csvreader = csv.reader(
-            csvfile, quoting=csv.QUOTE_NONE, delimiter=',')
-        fields = csvreader.next()
-        fields[0] = fields[0].replace('#','')
-        print fields
-        rows = [row for row in csvreader]
-    return rows, fields
+# def open_csv(file_path):
+#     fields = []
+#     rows = []
+#     with open(file_path, 'rb') as csvfile:
+#         csvreader = csv.reader(
+#             csvfile, quoting=csv.QUOTE_NONE, delimiter=',')
+#         fields = csvreader.next()
+#         fields[0] = fields[0].replace('#','')
+#         # print fields
+#         rows = [row for row in csvreader]
+#     return rows, fields
 
 
 if __name__=="__main__":
-    rows, fields = open_csv(sys.argv[1])
-
-    Hip_PWM_Limit = 41.17
+    # rows, fields = open_csv(sys.argv[1])
+    df = pd.read_csv(sys.argv[1])
+    # print df.iloc[:,0].tolist()
+    print df
+    Hip_PWM_Limit = 44.0
     Knee_PWM_Limit = 38.25
 
     Hip_max_velocity = 75.83*2*math.pi/60 #rad/s in 60 V
     Knee_max_velocity = 55.5*2*math.pi/60 #rad/s in 60 V
 
-    i_knee=(8*26)//(343*48)
-    i_hip=(12*26)//(637*48)
+    i_knee=(8*26)/(343*48)
+    i_hip=(12*26)/(637*48)
 
     # # Initializations
     # t=[]
@@ -80,13 +85,29 @@ if __name__=="__main__":
     # FL_Desired_knee_angle=zeros(1,length(A))
     # FL_time=zeros(1,length(A))
     # j=1
-    time_ticks = [int(row[0]) for row in rows]
-    HR_Desired_hip_angle = [-int(row[1])/100 for row in rows]
-    HL_Desired_hip_angle = [int(row[3])/100 for row in rows]
-    FL_Desired_hip_angle = [int(row[5])/100 for row in rows]
-    FR_Desired_hip_angle = [-int(row[7])/100 for row in rows]
-    # print HR_Desired_hip_angle[:10], HL_Desired_hip_angle[:
-                                                        #   10], FL_Desired_hip_angle[:10], FR_Desired_hip_angle[:10]
+    # time_ticks = df['/pdo_in_slave_0/time']
+    df.rename(columns={
+        '/pdo_in_slave_0/time':'Time',
+        '/pdo_in_slave_0/desired_hip_angle':'Desired HR hip angle',
+        '/pdo_in_slave_1/desired_hip_angle':'Desired HL hip angle',
+        '/pdo_in_slave_2/desired_hip_angle':'Desired FL hip angle',
+        '/pdo_in_slave_3/desired_hip_angle':'Desired FR hip angle'
+        },inplace=True)
+    df['Desired HR hip angle'] = -df['Desired HR hip angle']/100
+    df['Desired HL hip angle'] = df['Desired HL hip angle']/100
+    df['Desired FL hip angle'] = df['Desired FL hip angle']/100
+    df['Desired FR hip angle'] = -df['Desired FR hip angle']/100
+    print df 
+    # exit(0)
+    # HR_Desired_hip_angle = -df['/pdo_in_slave_0/desired_hip_angle']/100
+    # HR_Desired_hip_angle.rename(columns={'/pdo_in_slave_0/desired_hip_angle':'Desired HR hip angle'},inplace=True)
+    # HL_Desired_hip_angle = df['/pdo_in_slave_1/desired_hip_angle']/100
+    # HL_Desired_hip_angle.rename(columns={'/pdo_in_slave_1/desired_hip_angle':'Desired HL hip angle'},inplace=True)
+    # FL_Desired_hip_angle = df['/pdo_in_slave_2/desired_hip_angle']/100
+    # FL_Desired_hip_angle.rename(columns={'/pdo_in_slave_2/desired_hip_angle':'Desired FL hip angle'},inplace=True)
+    # FR_Desired_hip_angle = -df['/pdo_in_slave_3/desired_hip_angle']/100
+    # FR_Desired_hip_angle.rename(columns={'/pdo_in_slave_3/desired_hip_angle':'Desired FR hip angle'},inplace=True)
+    # print(HR_Desired_hip_angle[:10], HL_Desired_hip_angle[:10], FL_Desired_hip_angle[:10], FR_Desired_hip_angle[:10])
     # print time_ticks
     # for row in rows:
     #     t.extend=A(1,i)/1000
@@ -143,7 +164,15 @@ if __name__=="__main__":
     #     end
     # end
     # Print the desired hip angles
-    
+
+    # Set context to `"paper"`
+    sns.set_context("paper", font_scale=3, rc={"font.size":8,"axes.labelsize":5})
+    sns.set(style="whitegrid")
+    dataframe = df[["Time","Desired HR hip angle", "Desired HL hip angle"]][:55000]
+    data = dataframe.melt('Time', var_name='Desired Hip Angles', value_name='Angles (deg)')
+    hip_angle_plot = sns.relplot(x="Time", y="Angles (deg)", hue='Desired Hip Angles',kind="line", palette = "muted", data=data)
+    plt.xticks(rotation=30)
+    plt.show()  
     # # End Effector of Laelaps II Legs
     # figure
     # set(gcf, 'Position', [100 50 900 800],'color','w')

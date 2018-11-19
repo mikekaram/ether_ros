@@ -165,13 +165,19 @@ if __name__=="__main__":
     # end
     # Print the desired hip angles
 
-    # Set context to `"paper"`
-    sns.set_context("paper", font_scale=3, rc={"font.size":8,"axes.labelsize":5})
-    sns.set(style="whitegrid")
+    # Set context to `"paper"`, font_scale=1.5, rc={"font.size":5,"axes.labelsize":5}
+    # sns.set_context("notebook")
+    sns.set_style("whitegrid")
     dataframe = df[["Time","Desired HR hip angle", "Desired HL hip angle"]][:55000]
-    data = dataframe.melt('Time', var_name='Desired Hip Angles', value_name='Angles (deg)')
-    hip_angle_plot = sns.relplot(x="Time", y="Angles (deg)", hue='Desired Hip Angles',kind="line", palette = "muted", data=data)
-    plt.xticks(rotation=30)
+    data = dataframe.melt('Time', var_name='Desired Hip Angles', value_name='Angles')
+    g = sns.FacetGrid(data, row="Time", height=1.7, aspect=4,)
+    g.map(sns.relplot, "total_bill", hist=False, rug=True)
+    # hip_angle_plot = sns.relplot(x="Time", y="Angles", hue='Desired Hip Angles',kind="line", palette = "muted", data=data)
+    # plt.xticks(rotation=30)
+    # plt.title('Desired Hip Angles')
+    # plt.xlabel('Time (ticks)')
+    # plt.ylabel('Angles (deg)')
+ 
     plt.show()  
     # # End Effector of Laelaps II Legs
     # figure

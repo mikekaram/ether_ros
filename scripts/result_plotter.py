@@ -97,7 +97,7 @@ if __name__=="__main__":
     df['Desired HL hip angle'] = df['Desired HL hip angle']/100
     df['Desired FL hip angle'] = df['Desired FL hip angle']/100
     df['Desired FR hip angle'] = -df['Desired FR hip angle']/100
-    print df 
+    print df
     # exit(0)
     # HR_Desired_hip_angle = -df['/pdo_in_slave_0/desired_hip_angle']/100
     # HR_Desired_hip_angle.rename(columns={'/pdo_in_slave_0/desired_hip_angle':'Desired HR hip angle'},inplace=True)
@@ -166,19 +166,61 @@ if __name__=="__main__":
     # Print the desired hip angles
 
     # Set context to `"paper"`, font_scale=1.5, rc={"font.size":5,"axes.labelsize":5}
-    # sns.set_context("notebook")
+    sns.set_context("notebook")
     sns.set_style("whitegrid")
-    dataframe = df[["Time","Desired HR hip angle", "Desired HL hip angle"]][:55000]
+    fig = plt.figure()
+
+    ax1 = fig.add_subplot(4, 1, 1)
+    dataframe = df[["Time", "Desired HR hip angle"]][:55000]
+    ax1 = sns.lineplot(
+        x="Time", y="Desired HR hip angle", palette="muted", data=dataframe, ax=ax1)
+    ax1.set_xlabel('')
+    ax1.set_ylabel('Angles (deg)')
+    ax1.set_title('Response of HR Hip Angle', fontsize=13)
+    ax1.set_ylim(0, 40)
+
+    ax2 = fig.add_subplot(4, 1, 2)
+    dataframe = df[["Time", "Desired HL hip angle"]][:55000]
+    ax2 = sns.lineplot(
+        x="Time", y="Desired HL hip angle", palette="muted", data=dataframe, ax=ax2)
+    ax2.set_ylabel('Angles (deg)')
+    ax2.set_xlabel('')
+    ax2.set_title('Response of HL Hip Angle', fontsize=13)
+    ax2.set_ylim(0, 40)
+
+    ax3 = fig.add_subplot(4, 1, 3)
+    dataframe = df[["Time", "Desired FL hip angle"]][:55000]
+    ax3 = sns.lineplot(
+        x="Time", y="Desired FL hip angle", palette="muted", data=dataframe, ax=ax3)
+    ax3.set_ylabel('Angles (deg)')
+    ax3.set_xlabel('')
+    ax3.set_title('Response of FL Hip Angle', fontsize=13)
+    ax3.set_ylim(0, 40)
+
+    ax4 = fig.add_subplot(4, 1, 4)
+    dataframe = df[["Time", "Desired FR hip angle"]][:55000]
+    ax4 = sns.lineplot(
+        x="Time", y="Desired FR hip angle", palette="muted", data=dataframe, ax=ax4)
+    ax4.set_ylabel('Angles (deg)')
+    ax4.set_xlabel('')
+    ax4.set_title('Response of FR Hip Angle', fontsize=13)
+    ax4.set_ylim(0, 40)
+
+    plt.tight_layout()
+    plt.xlabel('Time (ticks)')
+
+    dataframe = df[["Time", "Desired HR hip angle",
+                    "Desired HL hip angle", "Desired FL hip angle", "Desired FR hip angle"]][:55000]
     data = dataframe.melt('Time', var_name='Desired Hip Angles', value_name='Angles')
-    g = sns.FacetGrid(data, row="Time", height=1.7, aspect=4,)
-    g.map(sns.relplot, "total_bill", hist=False, rug=True)
-    # hip_angle_plot = sns.relplot(x="Time", y="Angles", hue='Desired Hip Angles',kind="line", palette = "muted", data=data)
-    # plt.xticks(rotation=30)
-    # plt.title('Desired Hip Angles')
-    # plt.xlabel('Time (ticks)')
-    # plt.ylabel('Angles (deg)')
- 
-    plt.show()  
+    hip_angle_plot = sns.relplot(x="Time", y="Angles", hue='Desired Hip Angles',kind="line", palette = "muted", data=data)
+    plt.xticks(rotation=30)
+    plt.title('Desired Hip Angles')
+    plt.xlabel('Time (ticks)')
+    plt.ylabel('Angles (deg)')
+    plt.ylim(0,40)
+
+    # plt.tight_layout()
+    plt.show()
     # # End Effector of Laelaps II Legs
     # figure
     # set(gcf, 'Position', [100 50 900 800],'color','w')

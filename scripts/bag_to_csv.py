@@ -6,7 +6,7 @@ Accepts a filename as an optional argument. Operates on all bagfiles in current 
 Written by Nick Speal in May 2013 at McGill University's Aerospace Mechatronics Laboratory
 www.speal.ca
 
-Supervised by Professor Inna Sharf, Professor Meyer Nahon 
+Supervised by Professor Inna Sharf, Professor Meyer Nahon
 
 '''
 
@@ -32,7 +32,7 @@ elif (len(sys.argv) == 1):
 	print "reading all " + numberOfFiles + " bagfiles in current directory: \n"
 	for f in listOfBagFiles:
 		print f
-	print "\nPress ctrl+c in the next 10 seconds to cancel \n"
+	print "\n press ctrl+c in the next 10 seconds to cancel \n"
 	time.sleep(10)
 else:
 	print "bad argument(s): " + str(sys.argv)	#shouldnt really come up
@@ -49,7 +49,7 @@ for bagFile in listOfBagFiles:
 
 
 	#create a new directory
-	folder = string.rstrip(bagName, ".bag")
+	folder = bagName.replace(".bag","")
 	try:	#else already exists
 		os.makedirs(folder)
 	except:
@@ -64,12 +64,12 @@ for bagFile in listOfBagFiles:
 			listOfTopics.append(topic)
 
 
-	filename = folder + '.csv'
-	#Create a new CSV file
-	with open(filename, 'w+') as csvfile:
-		filewriter = csv.writer(csvfile, delimiter = ',')
-		allow_header_row = True	#allows header row
-		for topicName in listOfTopics:
+	for topicName in listOfTopics:
+		#Create a new CSV file for each topic
+		filename = folder + '/' + folder + '-' + string.replace(topicName, '/','') + '.csv'
+		with open(filename, 'w+') as csvfile:
+			filewriter = csv.writer(csvfile, delimiter = ',')
+			firstIteration = True	#allows header row
 			for subtopic, msg, t in bag.read_messages(topicName):	# for each instant in time that has data for topicName
 				#parse data from this instant, which is of the form of multiple lines of "Name: value\n"
 				#	- put it in the form of a list of 2-element lists
@@ -82,16 +82,14 @@ for bagFile in listOfBagFiles:
 						splitPair[i] = string.strip(splitPair[i])
 					instantaneousListOfData.append(splitPair)
 				#write the first row from the first element of each pair
-				if  allow_header_row:	# header
-					# headers = ["rosbagTimestamp"]	#first column header
-					headers = []
+				if firstIteration:	# header
+					headers = ["rosbagTimestamp"]	#first column header
 					for pair in instantaneousListOfData:
-						headers.append(topicName + pair[0])
-					filewriter.writerow(headers)
-					allow_header_row = False
+						headers.append(topicName.replace('/','x_') + '_' + pair[0])
+					filewriter.writerow( headers)
+					firstIteration = False
 				# write the value from each pair to the file
-				# values = [str(t)]	#first column will have rosbag timestamp
-				values = []
+				values = [str(t)]	#first column will have rosbag timestamp
 				for pair in instantaneousListOfData:
 					if len(pair) > 1:
 						values.append(pair[1])

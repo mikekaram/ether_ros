@@ -1,10 +1,7 @@
 clc
+close all;
 % clear all
-% fileID = fopen('Laelaps Trajectory Planning - Trotting 11 - Kp45.0Kd0.03Ki0.0Filter20.csv','r');
-% formatSpec = '%f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d %f %d';
-% sizeA = [72 Inf];
-% A = fscanf(fileID,formatSpec,sizeA);
-% fclose(fileID);
+
 filename = '~/catkin_ws/src/ighm_ros/experiments/20Dec2018/ethercat_data_ground_1.orig-pdo_in_slaves.csv';
 A = readtable(filename);
 Hip_PWM_Limit = 41.17;
@@ -16,18 +13,19 @@ Knee_max_velocity = 55.5*2*pi/60; %rad/s in 60 V
 i_knee=(8*26)/(343*48);
 i_hip=(12*26)/(637*48);
 
-indeces2names = ['HR','HL','FL','FR'];
-A.Properties.VariableNames{'x_pdo_in_slave_0_time'} = 'Time';
+indeces2names = {'HR','HL','FL','FR'};
+A.Time = A.x_pdo_in_slave_0_time;
+% A.Properties.VariableNames{'x_pdo_in_slave_0_time'} = 'Time';
 for i=1:4
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_desired_hip_angle']} = [indeces2names(i) '_desired_hip_angle'];
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_desired_knee_angle']} = [indeces2names(i) '_desired_knee_angle'];
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_hip_angle']} = [indeces2names(i) '_hip_angle'];
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_knee_angle']} = [indeces2names(i) '_knee_angle'];
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_PWM10000_knee']} = [indeces2names(i) '_PWM10000_knee'];
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_PWM10000_hip']} = [indeces2names(i) '_PWM10000_hip'];
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_velocity_knee1000']} = [indeces2names(i) '_velocity_knee1000'];
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_velocity_hip1000']} = [indeces2names(i) '_velocity_hip1000'];
-     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) 'time']} = [indeces2names(i) 'time'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_desired_hip_angle']} = [indeces2names{i} '_desired_hip_angle'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_desired_knee_angle']} = [indeces2names{i} '_desired_knee_angle'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_hip_angle']} = [indeces2names{i} '_hip_angle'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_knee_angle']} = [indeces2names{i} '_knee_angle'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_PWM10000_knee']} = [indeces2names{i} '_PWM10000_knee'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_PWM10000_hip']} = [indeces2names{i} '_PWM10000_hip'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_velocity_knee1000']} = [indeces2names{i} '_velocity_knee1000'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_velocity_hip1000']} = [indeces2names{i} '_velocity_hip1000'];
+     A.Properties.VariableNames{['x_pdo_in_slave_' num2str(i-1) '_time']} = [indeces2names{i} '_time'];
 end
 t = A.Time;
 
@@ -71,15 +69,15 @@ FL_velocity_hip = A.FL_velocity_hip1000 * i_hip / 1000;
 FL_velocity_knee = A.FL_velocity_knee1000 * i_knee / 1000;
 FL_time = A.FL_time;
 
-
-[HR_x, HR_y]=ForwardKinematics(HR_hip_angle(30000:35000),HR_knee_angle(30000:35000));
-[HL_x, HL_y]=ForwardKinematics(HL_hip_angle(30000:35000),HL_knee_angle(30000:35000));
-[FR_x, FR_y]=ForwardKinematics(FR_hip_angle(30000:35000),FR_knee_angle(30000:35000));
-[FL_x, FL_y]=ForwardKinematics(FL_hip_angle(30000:35000),FL_knee_angle(30000:35000));
-[HR_x_desired, HR_y_desired]=ForwardKinematics(HR_desired_hip_angle(30000:35000),HR_desired_knee_angle(30000:35000));
-[HL_x_desired, HL_y_desired]=ForwardKinematics(HL_desired_hip_angle(30000:35000),HL_desired_knee_angle(30000:35000));
-[FR_x_desired, FR_y_desired]=ForwardKinematics(FR_desired_hip_angle(30000:35000),FR_desired_knee_angle(30000:35000));
-[FL_x_desired, FL_y_desired]=ForwardKinematics(FL_desired_hip_angle(30000:35000),FL_desired_knee_angle(30000:35000));
+window=60000:65000;
+[HR_x, HR_y]=ForwardKinematics(HR_hip_angle(window),HR_knee_angle(window));
+[HL_x, HL_y]=ForwardKinematics(HL_hip_angle(window),HL_knee_angle(window));
+[FR_x, FR_y]=ForwardKinematics(FR_hip_angle(window),FR_knee_angle(window));
+[FL_x, FL_y]=ForwardKinematics(FL_hip_angle(window),FL_knee_angle(window));
+[HR_x_desired, HR_y_desired]=ForwardKinematics(HR_desired_hip_angle(window),HR_desired_knee_angle(window));
+[HL_x_desired, HL_y_desired]=ForwardKinematics(HL_desired_hip_angle(window),HL_desired_knee_angle(window));
+[FR_x_desired, FR_y_desired]=ForwardKinematics(FR_desired_hip_angle(window),FR_desired_knee_angle(window));
+[FL_x_desired, FL_y_desired]=ForwardKinematics(FL_desired_hip_angle(window),FL_desired_knee_angle(window));
 
 %End Effector of Laelaps II Legs
 figure
@@ -144,22 +142,22 @@ tightfig;
 figure
 set(gcf, 'Position', [100 50 900 800],'color','w');
 subplot(4,1,1)
-plot(t,FR_hip_angle ,'k', FR_desired_hip_angle,'r')
+plot(t,FR_hip_angle ,'k', t, FR_desired_hip_angle,'r')
      grid on
      ylabel('Angle [deg]')
    	 title('Response of FR Hip Angle','fontsize',13)
 subplot(4,1,2)
-plot(t,FL_hip_angle,'k', FL_desired_hip_angle,'r')
+plot(t,FL_hip_angle,'k', t, FL_desired_hip_angle,'r')
      grid on
      ylabel('Angle [deg]')
    	 title('Response of FL Hip Angle','fontsize',13)
 subplot(4,1,3)
-plot(t,HR_hip_angle,'k', HR_desired_hip_angle,'r')
+plot(t,HR_hip_angle,'k', t, HR_desired_hip_angle,'r')
      grid on
      ylabel('Angle [deg]')
    	 title('Response of HR Hip Angle','fontsize',13)
 subplot(4,1,4)
-plot(t,HL_hip_angle,'k', HL_desired_hip_angle,'r') 
+plot(t,HL_hip_angle,'k', t, HL_desired_hip_angle,'r')
      grid on
      ylabel('Angle [deg]')
      xlabel('Time [s]')
@@ -318,7 +316,7 @@ plot(t,HL_velocity_hip,'k')
    	 title('Response of HL Hip Velocity','fontsize',13)
 tightfig;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Commented section by Stamatis%%%%%%%%%%%%%%%%%%%%%%%%%%     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Commented section by Stamatis%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Plot Hind Right Leg's Diagrams
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
@@ -337,8 +335,8 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('Response of HR Hip Angle','fontsize',13)
 % tightfig;
-% 
-% figure  
+%
+% figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
 % subplot(2,1,1)
 % plot(t,HR_uk_knee,'k','LineWidth',0.1)
@@ -360,7 +358,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('PWM command of HR Hip','fontsize',13)
 % tightfig;
-% 
+%
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
 % subplot(2,1,1)
@@ -382,7 +380,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('Response of HR Hip Velocity','fontsize',13)
 % tightfig;
-% 
+%
 % % Plot Hind Left Leg's Diagrams
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
@@ -401,8 +399,8 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('Response of HL Hip Angle','fontsize',13)
 % tightfig;
-% 
-% figure  
+%
+% figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
 % subplot(2,1,1)
 % plot(t,HL_uk_knee,'k','LineWidth',0.1)
@@ -425,7 +423,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('PWM command of HL Hip','fontsize',13)
 % tightfig;
-% 
+%
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
 % subplot(2,1,1)
@@ -447,7 +445,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('Response of HL Hip Velocity','fontsize',13)
 % tightfig;
-% 
+%
 % % Plot Fore Right Leg's Diagrams
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
@@ -467,7 +465,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('Response of FR Hip Angle','fontsize',13)
 % tightfig;
-% 
+%
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
 % subplot(2,1,1)
@@ -491,7 +489,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('PWM Command of FR Hip','fontsize',13)
 %  tightfig;
-%  
+%
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
 % subplot(2,1,1)
@@ -515,7 +513,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('Response of FR Hip Velocity','fontsize',13)
 % tightfig;
-%  
+%
 % % Plot Fore Left Leg's Diagrams
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
@@ -535,7 +533,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('Response of FL Hip Angle','fontsize',13)
 % tightfig;
-% 
+%
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
 % subplot(2,1,1)
@@ -559,7 +557,7 @@ tightfig;
 %      xlabel('Time [s]')
 %    	 title('PWM Command of FL Hip','fontsize',13)
 %  tightfig;
-%  
+%
 % figure
 % set(gcf, 'Position', [100 50 900 800],'color','w');
 % subplot(2,1,1)

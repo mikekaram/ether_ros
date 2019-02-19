@@ -52,7 +52,14 @@
 #ifndef SYNC_MASTER_TO_REF
 #ifndef SYNC_REF_TO_MASTER
 
-#define SYNC_REF_TO_MASTER //the default synchronization will be the master to ref
+#define SYNC_REF_TO_MASTER //the default synchronization will be ref to master
+
+#endif
+#endif
+#ifndef DEADLINE_SCHEDULING
+#ifndef FIFO_SCHEDULING
+
+#define FIFO_SCHEDULING //the default scheduling policy will be FIFO
 
 #endif
 #endif

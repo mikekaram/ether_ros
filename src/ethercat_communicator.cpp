@@ -332,31 +332,36 @@ void *EthercatCommunicator::run(void *arg)
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
     int ret;
     int i = 0;
-    // struct sched_attr sched_attr_;
     cpu_set_t cpuset_;
-
-    // sched_attr_.size = sizeof(struct sched_attr);
-    // sched_attr_.sched_policy = SCHED_DEADLINE;
-    // sched_attr_.sched_priority = 0;
-    // sched_attr_.sched_runtime = 30000;
-    // sched_attr_.sched_deadline = 100000;
-    // sched_attr_.sched_period = PERIOD_NS;
+#ifdef DEADLINE_SCHEDULING
+    struct sched_attr sched_attr_;
+    sched_attr_.size = sizeof(struct sched_attr);
+    sched_attr_.sched_policy = SCHED_DEADLINE;
+    sched_attr_.sched_priority = 0;
+    sched_attr_.sched_runtime = 30000;
+    sched_attr_.sched_deadline = 100000;
+    sched_attr_.sched_period = PERIOD_NS;
+#endif
+#ifdef FIFO_SCHEDULING
     CPU_SET(3, &cpuset_);
-    // CPU_SET(5, &cpuset_);
+
 
     if (pthread_setaffinity_np(communicator_thread_, sizeof(cpuset_), &cpuset_))
     {
         ROS_FATAL("Set pthread affinity, not portable\n");
         exit(1);
     }
-    // ROS_INFO("Size: %d, Policy: %u, Priority: %u, Runtime: %llu, Deadline: %llu, Period: %llu",
-    //          sched_attr_.size, sched_attr_.sched_policy,
-    //          sched_attr_.sched_priority, sched_attr_.sched_runtime, sched_attr_.sched_deadline, sched_attr_.sched_period);
-    // if (sched_setattr(0, &sched_attr_, 0))
-    // {
-    //     ROS_FATAL("Set schedule attributes for DEADLINE scheduling\n");
-    //     exit(1);
-    // }
+#endif
+#ifdef DEADLINE_SCHEDULING
+    ROS_INFO("Size: %d, Policy: %u, Priority: %u, Runtime: %llu, Deadline: %llu, Period: %llu",
+             sched_attr_.size, sched_attr_.sched_policy,
+             sched_attr_.sched_priority, sched_attr_.sched_runtime, sched_attr_.sched_deadline, sched_attr_.sched_period);
+    if (sched_setattr(0, &sched_attr_, 0))
+    {
+        ROS_FATAL("Set schedule attributes for DEADLINE scheduling\n");
+        exit(1);
+    }
+#endif
     // get current time
     clock_gettime(CLOCK_TO_USE, &wakeup_time);
     clock_gettime(CLOCK_TO_USE, &break_time);
@@ -448,9 +453,6 @@ void *EthercatCommunicator::run(void *arg)
             latency_max_ns[i] = 0;
             latency_min_ns[i] = 0xffffffff;
 #endif
-            // blink = !blink;
-
-            // calculate new process data
         }
         //move the data from process_data_buf to domain1_pd buf carefuly
         utilities::copy_process_data_buffer_to_buf(domain1_pd);
@@ -460,16 +462,18 @@ void *EthercatCommunicator::run(void *arg)
         ecrt_domain_queue(domain1);
 
         // sync distributed clock just before master_send to set
-        // most accurate master clock time
+        // most accurate master clock time. The two modes MASTER2REF and REF2MASTER should be supported.
+        // However if the REF2MASTER doesn't work for some reason, comment the following line and comment out the following ones.
         EthercatCommunicator::sync_distributed_clocks();
 
-        // // write application time to master
+        // write application time to master
+#ifdef SYNC_REF_TO_MASTER
         // clock_gettime(CLOCK_TO_USE, &current_time);
         // ecrt_master_application_time(master, TIMESPEC2NS(current_time));
 
         // ecrt_master_sync_reference_clock(master);
         // ecrt_master_sync_slave_clocks(master);
-
+#endif
         // send process data
         ecrt_master_send(master);
 

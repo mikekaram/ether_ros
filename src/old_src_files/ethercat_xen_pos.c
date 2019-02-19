@@ -57,7 +57,7 @@
 // Application parameters
 #define FREQUENCY 5000 //define frequency in Hz
 #define CLOCK_TO_USE CLOCK_MONOTONIC
-#define MEASURE_TIMING
+// #define MEASURE_TIMING OFFLINE
 #define SetBit(A,k)     ( A[(k/8)] |= (1 << (k%8)) )
 #define ClearBit(A,k)   ( A[(k/8)] &= ~(1 << (k%8)) )
 #define RUN_TIME 600 // run time in seconds
@@ -259,7 +259,7 @@ void *ec_thread(void *arg)
     int ret;
     int i = 0;
 
-    
+
     // get current time
     clock_gettime(CLOCK_TO_USE, &wakeupTime);
     // pthread_make_periodic_np(cyclic_thread, &wakeupTime, &cycletime);
@@ -337,7 +337,7 @@ void *ec_thread(void *arg)
             // sprintf(new_string,"%10u , %10u\n",
             //         latency_min_ns, latency_max_ns);
             // strcat(string_file,new_string);
-            
+
             period_max_ns[i] = 0;
             period_min_ns[i] = 0xffffffff;
             exec_max_ns[i] = 0;
@@ -380,10 +380,10 @@ void *ec_thread(void *arg)
         clock_gettime(CLOCK_TO_USE, &currentTime);
         // printf("Current time is: %ld and Break Time is: %ld\n",currentTime.tv_sec, breakTime.tv_sec);
     }
-    
+
     while(DIFF_NS(currentTime,breakTime) > 0);
 
-    // write the statistics to file 
+    // write the statistics to file
     for(i=0;i<RUN_TIME*SAMPLING_FREQ;i++){
         sprintf(new_string,"%10u , %10u ,",
                 period_min_ns[i], period_max_ns[i]);
@@ -393,7 +393,7 @@ void *ec_thread(void *arg)
         strcat(string_file,new_string);
         sprintf(new_string,"%10u , %10u\n",
                 latency_min_ns[i], latency_max_ns[i]);
-        strcat(string_file,new_string);            
+        strcat(string_file,new_string);
     }
     fprintf(file,"%s",string_file);
     fclose(file);

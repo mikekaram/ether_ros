@@ -350,7 +350,7 @@ void cyclic_task()
 
     if (counter) {
         counter--;
-    } 
+    }
     else { // do this at 100 Hz
         counter = FREQUENCY/10;
 

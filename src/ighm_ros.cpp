@@ -201,7 +201,7 @@ int main(int argc, char **argv)
     // pdo_out_publisher.init(n);
     modify_pdo_variables_listener.init(n);
     process_data_buffer_publishing_timer.init(n);
-    
+
 
     /******************************************
     *    Launch the ROS services              *
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
     ros::ServiceServer ethercat_communicatord_service = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
 
-#ifdef MEASURE_TIMING
+#ifdef TIMING_SAMPLING
     /******************************************
     *           Open Log file                 *
     *******************************************/

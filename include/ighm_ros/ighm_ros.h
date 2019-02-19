@@ -54,7 +54,7 @@
     Assumes that the EtherCAT application is the same for every slave.
 */
 /** \var int log_fd
-    \brief File descriptor used for logging, provided that measure_timing is enabled.
+    \brief File descriptor used for logging, provided that TIMING_SAMPLING is enabled.
 
     Could be deprecated in a next version (see kernelshark).
 */
@@ -131,7 +131,7 @@
 /** \def SAMPLING_FREQ 10
     \brief The sampling frequency.
 
-    Used when the \a MEASURE_TIMING is defined.
+    Used when the \a TIMING_SAMPLING is defined.
     It's used as a frequency for sampling measurements.
     The number is in Hz.
 */
@@ -198,9 +198,9 @@
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC
-// #define MEASURE_TIMING 2
+// #define TIMING_SAMPLING 0
 // #define RUN_TIME 60 // run time in seconds
-#if MEASURE_TIMING == 1
+#if TIMING_SAMPLING 
 #define SAMPLING_FREQ 10
 #endif
 /****************************************************************************/

@@ -49,20 +49,17 @@
     The class uses the POSIX API for gaining realtime attributes.
 */
 #define DC_FILTER_CNT 1024
-#ifndef SYNC_MASTER_TO_REF
-#ifndef SYNC_REF_TO_MASTER
+#if !defined(SYNC_MASTER_TO_REF) && !defined(SYNC_REF_TO_MASTER)
 
 #define SYNC_REF_TO_MASTER //the default synchronization will be ref to master
 
 #endif
-#endif
-#ifndef DEADLINE_SCHEDULING
-#ifndef FIFO_SCHEDULING
+#if !defined(FIFO_SCHEDULING) && !defined(DEADLINE_SCHEDULING)
 
 #define FIFO_SCHEDULING //the default scheduling policy will be FIFO
 
 #endif
-#endif
+
 class EthercatCommunicator
 {
 private:

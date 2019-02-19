@@ -63,13 +63,13 @@ int64_t EthercatCommunicator::dc_adjust_ns_;
 #endif
 /*****************************************************************************/
 
-#if MEASURE_TIMING == 1
+#if TIMING_SAMPLING
 
 uint32_t period_ns, exec_ns = 0, latency_ns = 0,
                     latency_min_ns[RUN_TIME * SAMPLING_FREQ] = {0}, latency_max_ns[RUN_TIME * SAMPLING_FREQ] = {0},
                     period_min_ns[RUN_TIME * SAMPLING_FREQ] = {0}, period_max_ns[RUN_TIME * SAMPLING_FREQ] = {0},
                     exec_min_ns[RUN_TIME * SAMPLING_FREQ] = {0}, exec_max_ns[RUN_TIME * SAMPLING_FREQ] = {0};
-#elif MEASURE_TIMING == 2
+#elif TIMING_SAMPLING == 0
 uint32_t latency_ns[RUN_TIME * FREQUENCY] = {0},
                                period_ns[RUN_TIME * FREQUENCY] = {0},
                                exec_ns[RUN_TIME * FREQUENCY] = {0};
@@ -322,7 +322,7 @@ void EthercatCommunicator::cleanup_handler(void *arg)
 void *EthercatCommunicator::run(void *arg)
 {
     pthread_cleanup_push(EthercatCommunicator::cleanup_handler, NULL);
-#ifdef MEASURE_TIMING
+#ifdef TIMING_SAMPLING
     struct timespec start_time, end_time, last_start_time = {};
 #endif
     unsigned int counter = 0;
@@ -378,9 +378,9 @@ void *EthercatCommunicator::run(void *arg)
         }
         wakeup_time = utilities::timespec_add(wakeup_time, cycletime);
         clock_nanosleep(CLOCK_TO_USE, TIMER_ABSTIME, &wakeup_time, NULL);
-#ifdef MEASURE_TIMING
+#ifdef TIMING_SAMPLING
         clock_gettime(CLOCK_TO_USE, &start_time);
-#if MEASURE_TIMING == 1
+#if TIMING_SAMPLING
         latency_ns = DIFF_NS(wakeup_time, start_time);
         period_ns = DIFF_NS(last_start_time, start_time);
         exec_ns = DIFF_NS(last_start_time, end_time);
@@ -409,7 +409,7 @@ void *EthercatCommunicator::run(void *arg)
         {
             exec_min_ns[i] = exec_ns;
         }
-#elif MEASURE_TIMING == 2
+#else
         latency_ns[i] = DIFF_NS(wakeup_time, start_time);
         period_ns[i] = DIFF_NS(last_start_time, start_time);
         exec_ns[i] = DIFF_NS(last_start_time, end_time);
@@ -428,16 +428,16 @@ void *EthercatCommunicator::run(void *arg)
         }
         else
         { // do this at 10 Hz
-#if MEASURE_TIMING == 1
+#if TIMING_SAMPLING
             counter = FREQUENCY / SAMPLING_FREQ;
-#elif MEASURE_TIMING == 2
+#elif TIMING_SAMPLING == 0
             counter = 0;
 #endif
             i++;
             // check for master state (optional)
             utilities::check_master_state();
 
-#if MEASURE_TIMING == 1
+#if TIMING_SAMPLING
             // output timing stats
             // printf("period     %10u ... %10u\n",
             //         period_min_ns, period_max_ns);
@@ -485,15 +485,15 @@ void *EthercatCommunicator::run(void *arg)
         {
             handle_error_en(ret, "pthread_setcancelstate");
         }
-#ifdef MEASURE_TIMING
+#ifdef TIMING_SAMPLING
         clock_gettime(CLOCK_TO_USE, &end_time);
 #endif
         clock_gettime(CLOCK_TO_USE, &current_time);
     } while (DIFF_NS(current_time, break_time) > 0);
 
     // write the statistics to file
-#ifdef MEASURE_TIMING
-#if MEASURE_TIMING == 1
+#ifdef TIMING_SAMPLING
+#if TIMING_SAMPLING
     for (i = 0; i < RUN_TIME * SAMPLING_FREQ; i++)
     {
         snprintf(new_string, 100, "%10u , %10u , 10u , %10u , 10u , %10u\n",
@@ -501,7 +501,7 @@ void *EthercatCommunicator::run(void *arg)
                  latency_min_ns[i], latency_max_ns[i]);
         dprintf(log_fd, "%s", new_string);
     }
-#elif MEASURE_TIMING == 2
+#else
     for (i = 0; i < RUN_TIME * FREQUENCY; i++)
     {
         if (i % 10000 == 0)

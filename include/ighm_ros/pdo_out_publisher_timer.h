@@ -35,46 +35,45 @@
 
 /*****************************************************************************/
 
-#ifndef PDB_PUB_TIMER_LIB_H
-#define PDB_PUB_TIMER_LIB_H
+#ifndef PDO_OUT_PUB_TIMER_LIB_H
+#define PDO_OUT_PUB_TIMER_LIB_H
 
 #include "ros/ros.h"
 
 /** \class PDOOutPublisher
     \brief The Process Data Objects Publisher class.
 
-    Used for trasforming the "raw" indexed data from
-    the \a /pdo_raw topic, sent by the Ethercat
-    Communicator, to values of variables, and stream them
-    to the \a /pdo_out topic.
+    Used for streaming the \a pdo_out data inside the \a process_data_buffer to
+    the \a /pdo_out_timer topic at a certain rate. It's been created for logging and debugging
+    reasons.
 */
-class ProcessDataBufferPublishingTimer
+class PDOOutPublisherTimer
 {
   private:
-    ros::Publisher process_data_buffer_pub_;
+    ros::Publisher pdo_out_pub_;
     uint8_t * data_ptr_;
     ros::Timer pdo_out_timer_;
 
     /** \fn void init(ros::NodeHandle &n)
     \brief Initialization Method.
 
-    Used for initializing the PDOOutPublisher object. It's basically
+    Used for initializing the PDOOutPublisherTimer object. It's basically
     the main method in the class, which initializes the listener to the afore
     mentioned topic.
     \param n The ROS Node Handle
 */
-    /** \fn void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
-    \brief Process Data Objects Callback
+    /** \fn void timer_callback(const ros::TimerEvent &event)
+    \brief Timer Callback
 
-    This method, is called when there are data in the \a /pdo_raw topic.
+    This method, is called when the timer fires.
     Should the EtherCAT application change, this callback must change also.
-    Implements the basic functionality of the class, to transform the "raw" data
-    into variable values and pipe them into another topic.
-    \param pdo_raw A copy of the actual data sent to the topic \a /pdo_raw.
+    Implements the basic functionality of the class, to copy the \a pdo_out data
+    from the \a process_data_buffer and pipe them into another topic.
+    \param event The fired timer event.
 */
   public:
     void init(ros::NodeHandle &n);
     void timer_callback(const ros::TimerEvent &event);
 };
 
-#endif /* PDB_PUB_TIMER_LIB_H */
+#endif /* PDO_OUT_PUB_TIMER_LIB_H */

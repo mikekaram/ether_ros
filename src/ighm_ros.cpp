@@ -107,7 +107,7 @@ EthercatCommunicator ethercat_comm;
 PDOInPublisher pdo_in_publisher;
 PDOOutPublisher pdo_out_publisher;
 ModifyPDOVariablesListener modify_pdo_variables_listener;
-ProcessDataBufferPublishingTimer process_data_buffer_publishing_timer;
+ProcessDataBufferPublishingTimer pdo_out_publisher_timer;
 int FREQUENCY;
 int RUN_TIME;
 int PERIOD_NS;
@@ -200,7 +200,7 @@ int main(int argc, char **argv)
     pdo_in_publisher.init(n);
     // pdo_out_publisher.init(n);
     modify_pdo_variables_listener.init(n);
-    process_data_buffer_publishing_timer.init(n);
+    pdo_out_publisher_timer.init(n);
 
 
     /******************************************

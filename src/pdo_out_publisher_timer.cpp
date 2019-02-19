@@ -32,14 +32,15 @@
    \file pdo_out_publisher.cpp
    \brief Implementation of PDOOutPublisher class.
 
-   Used for handling the "raw" output data, received from EtherCAT Communicator and transforming them into
-   useful, human-readable format, consisted of the EtherCAT variables used by our
-   application. Transforms the indeces to variables.
+    Used for streaming the "raw" \a pdo_out data inside the \a process_data_buffer to
+    the \a /pdo_out_timer topic and transforming them into useful, human-readable format,
+    consisted of the EtherCAT output variables used by our application, at a certain rate.
+    It's been created for logging and debugging reasons.
 */
 
 /*****************************************************************************/
 
-#include "process_data_buffer_publishing_timer.h"
+#include "pdo_out_publisher_timer.h"
 #include "ighm_ros/PDOOut.h"
 #include "ethercat_slave.h"
 #include "utilities.h"
@@ -48,13 +49,13 @@
 #include <iostream>
 #include <string>
 
-void ProcessDataBufferPublishingTimer::timer_callback(const ros::TimerEvent &event)
+void PDOOutPublisherTimer::timer_callback(const ros::TimerEvent &event)
 {
     size_t pos;
     uint8_t *data_ptr;
     using namespace utilities;
     copy_process_data_buffer_to_buf(data_ptr_);
-    
+
     for (int i = 0; i < master_info.slave_count; i++)
     {
         pos = i * (num_process_data_out + num_process_data_in); //The size of every entry is num_process_data_out
@@ -98,19 +99,19 @@ void ProcessDataBufferPublishingTimer::timer_callback(const ros::TimerEvent &eve
             .....
 
         */
-        process_data_buffer_pub_.publish(pdo_out);
+        pdo_out_pub_.publish(pdo_out);
     }
 }
 
-void ProcessDataBufferPublishingTimer::init(ros::NodeHandle &n)
+void PDOOutPublisherTimer::init(ros::NodeHandle &n)
 {
     data_ptr_ = (uint8_t *)malloc(total_process_data * sizeof(uint8_t));
     memset(data_ptr_, 0, total_process_data); // fill the buffer with zeros
 
     //Create  ROS publisher for the Ethercat formatted data
-    process_data_buffer_pub_ = n.advertise<ighm_ros::PDOOut>("pdo_out_timer", 1000);
+    pdo_out_pub_ = n.advertise<ighm_ros::PDOOut>("pdo_out_timer", 1000);
 
-    if (!process_data_buffer_pub_)
+    if (!pdo_out_pub_)
     {
         ROS_FATAL("Unable to start publisher in ProcessDataTimer\n");
         exit(1);
@@ -119,10 +120,10 @@ void ProcessDataBufferPublishingTimer::init(ros::NodeHandle &n)
     {
         ROS_INFO("Started ProcessDataTimer publisher\n");
     }
-    pdo_out_timer_ = n.createTimer(ros::Duration(5), &ProcessDataBufferPublishingTimer::timer_callback, &process_data_buffer_publishing_timer);
+    pdo_out_timer_ = n.createTimer(ros::Duration(5), &PDOOutPublisherTimer::timer_callback, &pdo_out_publisher_timer);
     //Create  ROS timer
     //first parameter is in seconds...
-    
+
     if (!pdo_out_timer_)
     {
         ROS_FATAL("Unable to start ProcessDataTimer\n");

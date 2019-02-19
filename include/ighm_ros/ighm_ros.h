@@ -194,13 +194,13 @@
 #include "pdo_in_publisher.h"
 #include "pdo_out_publisher.h"
 #include "modify_pdo_variables_listener.h"
-#include "process_data_buffer_publishing_timer.h"
+#include "pdo_out_publisher_timer.h"
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC
 // #define TIMING_SAMPLING 0
 // #define RUN_TIME 60 // run time in seconds
-#if TIMING_SAMPLING 
+#if TIMING_SAMPLING
 #define SAMPLING_FREQ 10
 #endif
 /****************************************************************************/
@@ -256,7 +256,7 @@ extern EthercatCommunicator ethercat_comm;
 extern PDOInPublisher pdo_in_publisher;
 extern PDOOutPublisher pdo_out_publisher;
 extern ModifyPDOVariablesListener modify_pdo_variables_listener;
-extern ProcessDataBufferPublishingTimer process_data_buffer_publishing_timer;
+extern PDOOutPublisherTimer pdo_out_publisher_timer;
 extern int PERIOD_NS;
 extern int FREQUENCY;
 extern int RUN_TIME;

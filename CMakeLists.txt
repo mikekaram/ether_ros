@@ -131,7 +131,7 @@ set(SOURCES
     src/pdo_in_publisher.cpp
     src/pdo_out_publisher.cpp
     src/modify_pdo_variables_listener.cpp
-    src/process_data_buffer_publishing_timer.cpp
+    src/pdo_out_publisher_timer.cpp
     )
 
 ## Specify additional locations of header files

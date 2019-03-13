@@ -41,7 +41,7 @@
 #include <string.h>
 #include "ecrt.h"
 #include "utilities.h"
-#include "ighm_ros.h"
+#include "ether_ros.h"
 
 namespace utilities
 {
@@ -246,9 +246,18 @@ void copy_process_data_buffer_to_buf(uint8_t * buffer)
     for (int i = 0; i < master_info.slave_count; i++)
     {
         memcpy((buffer + ethercat_slaves[i].slave.get_pdo_out()),
-               (process_data_buf + ethercat_slaves[i].slave.get_pdo_out()),
-               (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out()));
+                (process_data_buf + ethercat_slaves[i].slave.get_pdo_out()),
+                (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out())
+            );
     }
+    /*
+    buffer + ethercat_slaves[i].slave.get_pdo_out()) ----> the starting address of the slave's output pdos in the buffer
+
+    process_data_buf + ethercat_slaves[i].slave.get_pdo_out()) ----> the starting address of the slave's output pdos in the process_data_buf
+
+    (size_t)(ethercat_slaves[i].slave.get_pdo_in() - ethercat_slaves[i].slave.get_pdo_out() ----> size of output pdos of the slave
+
+    */
     pthread_spin_unlock(&lock);
 }
 } // namespace utilities

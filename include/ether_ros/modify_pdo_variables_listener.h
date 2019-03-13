@@ -1,3 +1,4 @@
+
 /******************************************************************************
  *
  *  $Id$
@@ -29,19 +30,20 @@
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
 /**
-   \file pdo_in_publisher.h
-   \brief Header file for the PDOInPublisher class.
+   \file modify_pdo_variables_listener.h
+   \brief Header file for the ModifyPDOVariablesListener class.
 */
 
 /*****************************************************************************/
 
-#ifndef PDO_IN_PUB_LIB_H
-#define PDO_IN_PUB_LIB_H
+#ifndef MOD_PDO_VAR_LIS_LIB_H
+#define MOD_PDO_VAR_LIS_LIB_H
 
 #include "ros/ros.h"
-#include "ighm_ros/PDORaw.h"
+#include "ether_ros/ModifyPDOVariables.h"
+#include <map>
 
-/** \class PDOInPublisher
+/** \class ModifyPDOVariablesListener
     \brief The Ethercat Input Data Handler class.
 
     Used for trasforming the "raw" indexed data from
@@ -49,12 +51,22 @@
     Communicator, to values of variables, and stream them
     to the \a /pdo_in_slave_{slave_id} topic.
 */
-class PDOInPublisher
+class ModifyPDOVariablesListener
 {
-    private:
-      ros::Subscriber pdo_raw_sub_;
-      ros::Publisher * pdo_in_pub_;
-/** \fn void init(ros::NodeHandle &n)
+  private:
+    ros::Subscriber modify_pdo_variables_listener_;
+    std::map<std::string, int> int_type_map_ = {
+        {"bool", 0},
+        {"uint8", 1},
+        {"int8", 2},
+        {"uint16", 3},
+        {"int16", 4},
+        {"uint32", 5},
+        {"int32", 6},
+        {"uint64", 7},
+        {"int64", 8}
+    };
+    /** \fn void init(ros::NodeHandle &n)
     \brief Initialization Method.
 
     Used for initializing the PDOInPublisher object. It's basically
@@ -62,18 +74,27 @@ class PDOInPublisher
     mentioned topic.
     \param n The ROS Node Handle
 */
-/** \fn void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
-    \brief Raw Data Callback
+    /** \fn void modify_pdo_variables_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var);
 
-    This method, is called when there are data in the \a /pdo_raw topic.
+    This method, is called when there are data in the \a /modify_pdo_var topic.
     Should the EtherCAT application change, this callback must change also.
     Implements the basic functionality of the class, to transform the "raw" data
     into variable values and pipe them into another topic.
     \param pdo_raw A copy of the actual data sent to the topic \a /pdo_raw.
 */
-    public:
-      void init(ros::NodeHandle &n);
-      void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw);
+    /** \fn void modify_pdo_variable(int slave_id, const ether_ros::ModifyPDOVariables::ConstPtr &new_var)
+    \brief Actual implementation of modifying a pdo variable in a single slave's PDOs
+
+    This method, is called when there are data in the \a /modify_pdo_var topic.
+    Should the EtherCAT application change, this callback must change also.
+    Implements the basic functionality of the class, to transform the "raw" data
+    into variable values and pipe them into another topic.
+    \param pdo_raw A copy of the actual data sent to the topic \a /pdo_raw.
+*/
+    public : void init(ros::NodeHandle & n);
+    void modify_pdo_variables_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var);
+    void modify_pdo_variable(int slave_id, const ether_ros::ModifyPDOVariables::ConstPtr &new_var);
 };
 
-#endif /* PDO_IN_PUB_LIB_H */
+#endif /* MOD_PDO_VAR_LIS_LIB_H */
+

@@ -40,27 +40,16 @@
 /*****************************************************************************/
 
 #include "modify_pdo_variables_listener.h"
-#include "ighm_ros/ModifyPDOVariables.h"
+#include "ether_ros/ModifyPDOVariables.h"
 // #include "ethercat_slave.h"
 #include "utilities.h"
 #include "vector"
 #include <pthread.h>
-#include "ighm_ros.h"
+#include "ether_ros.h"
 #include <iostream>
 #include <string>
 
-// bool modify_output_sint32(ighm_ros::ModifyOutputSInt32::Request &req,
-//                           ighm_ros::ModifyOutputSInt32::Response &res)
-// {
-//     uint8_t *data_ptr = process_data_buf;
-//     int32_t *new_data_ptr = (int32_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-//     pthread_spin_lock(&lock);
-//     EC_WRITE_S32(new_data_ptr, req.value);
-//     pthread_spin_unlock(&lock);
-//     res.success = "true";
-//     return true;
-// }
-void ModifyPDOVariablesListener::modify_pdo_variables_callback(const ighm_ros::ModifyPDOVariables::ConstPtr &new_var)
+void ModifyPDOVariablesListener::modify_pdo_variables_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var)
 {
     pthread_spin_lock(&lock);
     uint8_t slave_id = new_var->slave_id;
@@ -79,7 +68,7 @@ void ModifyPDOVariablesListener::modify_pdo_variables_callback(const ighm_ros::M
     }
     pthread_spin_unlock(&lock);
 }
-void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ighm_ros::ModifyPDOVariables::ConstPtr &new_var)
+void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ether_ros::ModifyPDOVariables::ConstPtr &new_var)
 {
     std::string type = new_var->type;
 

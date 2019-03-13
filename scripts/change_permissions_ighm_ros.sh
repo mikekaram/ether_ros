@@ -1,4 +1,4 @@
-cd ~/catkin_ws/devel/lib/ighm_ros
-chown root:root ighm_ros
-chmod a+rx ighm_ros
-chmod u+s ighm_ros
+cd ~/catkin_ws/devel/lib/ether_ros
+chown root:root ether_ros
+chmod a+rx ether_ros
+chmod u+s ether_ros

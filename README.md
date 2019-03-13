@@ -41,7 +41,7 @@ The author has used only the first configuration parameter and has seen great bo
 
 2. Aside from the enhancements proposed by the manual, we should also change the throttling of our network driver to 0. This is done in the script also in the *testbench* directory. It is based on my e1000e driver, so use it as a sample script. Documentation for the insertion of the module of the e1000e network driver can be found [here](https://downloadmirror.intel.com/15817/eng/readme.txt).
 
-3. Run the script for changing the permissions of ighm_ros. We set the suid of ighm_ros to be root, so that the ighm_ros can be launched without *sudo*. This will be useful **after** you *catkin_make* the project.
+3. Run the script for changing the permissions of ether_ros. We set the suid of ether_ros to be root, so that the ether_ros can be launched without *sudo*. This will be useful **after** you *catkin_make* the project.
 
 ## Example usage
 
@@ -60,13 +60,13 @@ $ tail -f /var/log/kern.log
 2. After you *catkin_make* the project, in one terminal run:
 
 ```bash
-$ roslaunch ighm_ros ighm_ros.launch
+$ roslaunch ether_ros ether_ros.launch
 ```
 
 3. After that, and while the process is running, you run in another terminal:
 
 ```bash
-$ rosrun ighm_ros ethercat_keyboard_controller.py
+$ rosrun ether_ros ethercat_keyboard_controller.py
 ```
 
 4. Now you can give orders to the EtherCAT Communicator via a custom terminal. Have fun!

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(ighm_ros)
+project(ether_ros)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -113,7 +113,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ighm_ros
+#  LIBRARIES ether_ros
  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
@@ -144,7 +144,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ighm_ros.cpp
+#   src/${PROJECT_NAME}/ether_ros.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -217,7 +217,7 @@ target_link_libraries(${PROJECT_NAME}
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ighm_ros.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_ether_ros.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

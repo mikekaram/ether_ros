@@ -5,8 +5,8 @@ import subprocess
 import time
 
 import rospy
-from ighm_ros.srv import EthercatCommd
-from ighm_ros.msg import ModifyPDOVariables
+from ether_ros.srv import EthercatCommd
+from ether_ros.msg import ModifyPDOVariables
 import std_msgs
 
 
@@ -119,9 +119,9 @@ class ethercat_controller(Cmd):
             elif(var_type == "int32"):
                 new_msg.int32_value = value
             elif(var_type == "uint64"):
-                new_msg.uint64_value = value  
+                new_msg.uint64_value = value
             elif(var_type == "int64"):
-                new_msg.int64_value = value                                                                                                
+                new_msg.int64_value = value
             modify_pdo_pub.publish(new_msg)
 
 
@@ -273,7 +273,7 @@ class ethercat_controller(Cmd):
             else:
                 arguments[1] = arguments[1].replace("/","")
                 arguments[1].strip()
-                p = subprocess.Popen('~/catkin_ws/src/ighm_ros/scripts/'+arguments[1], shell=True)
+                p = subprocess.Popen('~/catkin_ws/src/ether_ros/scripts/'+arguments[1], shell=True)
                 p.wait()
         elif "help" in arguments:
             print(help_message)
@@ -331,7 +331,7 @@ if __name__ == '__main__':
     !variable [slave_id | 'all'] [variable_name] [value] :
     change the value of a variable in the ethercat output data
     !run [script_to_run] : run the script specified,
-    inside the ighm_ros/scripts directory
+    inside the ether_ros/scripts directory
     !help : shows this help message
     !q : exit the terminal
 

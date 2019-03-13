@@ -40,7 +40,7 @@
 /*****************************************************************************/
 #include <iostream>
 #include "ethercat_slave.h"
-#include "ighm_ros.h"
+#include "ether_ros.h"
 
 void EthercatSlave::init(std::string slave, ros::NodeHandle &n)
 {

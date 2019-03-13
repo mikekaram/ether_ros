@@ -39,7 +39,7 @@
 #define PDO_OUT_PUB_LIB_H
 
 #include "ros/ros.h"
-#include "ighm_ros/PDORaw.h"
+#include "ether_ros/PDORaw.h"
 
 /** \class PDOOutPublisher
     \brief The Process Data Objects Publisher class.
@@ -63,7 +63,7 @@ class PDOOutPublisher
     mentioned topic.
     \param n The ROS Node Handle
 */
-    /** \fn void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
+    /** \fn void pdo_raw_callback(const ether_ros::PDORaw::ConstPtr &pdo_raw)
     \brief Process Data Objects Callback
 
     This method, is called when there are data in the \a /pdo_raw topic.
@@ -74,7 +74,7 @@ class PDOOutPublisher
 */
   public:
     void init(ros::NodeHandle &n);
-    void pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw);
+    void pdo_raw_callback(const ether_ros::PDORaw::ConstPtr &pdo_raw);
 };
 
 #endif /* PDO_OUT_PUB_LIB_H */

@@ -42,73 +42,12 @@
 #include "services.h"
 #include "ecrt.h"
 #include "ethercat_communicator.h"
-#include "ighm_ros.h"
+#include "ether_ros.h"
 #include "utilities.h"
 
 
-// bool modify_output_bit(ighm_ros::ModifyOutputBit::Request &req,
-//                        ighm_ros::ModifyOutputBit::Response &res)
-// {
-//     uint8_t *data_ptr = process_data_buf;
-//     uint8_t *new_data_ptr = (data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-//     pthread_spin_lock(&lock);
-//     EC_WRITE_BIT(new_data_ptr, req.subindex, req.value);
-//     pthread_spin_unlock(&lock);
-//     res.success = "true";
-//     return true;
-// }
-
-// bool modify_output_sbyte(ighm_ros::ModifyOutputBit::Request &req,
-//                        ighm_ros::ModifyOutputBit::Response &res)
-// {
-//     uint8_t *data_ptr = process_data_buf;
-//     int8_t *new_data_ptr = (int8_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-//     pthread_spin_lock(&lock);
-//     EC_WRITE_S8(new_data_ptr, req.value);
-//     pthread_spin_unlock(&lock);
-//     res.success = "true";
-//     return true;
-// }
-
-// bool modify_output_uint16(ighm_ros::ModifyOutputUInt16::Request &req,
-//                           ighm_ros::ModifyOutputUInt16::Response &res)
-// {
-//     uint8_t *data_ptr = process_data_buf;
-//     uint16_t *new_data_ptr = (uint16_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-//     pthread_spin_lock(&lock);
-//     EC_WRITE_U16(new_data_ptr, req.value);
-//     pthread_spin_unlock(&lock);
-//     res.success = "true";
-//     return true;
-// }
-
-// bool modify_output_sint16(ighm_ros::ModifyOutputSInt16::Request &req,
-//                           ighm_ros::ModifyOutputSInt16::Response &res)
-// {
-//     uint8_t *data_ptr = process_data_buf;
-//     int16_t *new_data_ptr = (int16_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-//     pthread_spin_lock(&lock);
-//     EC_WRITE_S16(new_data_ptr, req.value);
-//     pthread_spin_unlock(&lock);
-//     res.success = "true";
-//     return true;
-// }
-
-// bool modify_output_sint32(ighm_ros::ModifyOutputSInt32::Request &req,
-//                           ighm_ros::ModifyOutputSInt32::Response &res)
-// {
-//     uint8_t *data_ptr = process_data_buf;
-//     int32_t *new_data_ptr = (int32_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-//     pthread_spin_lock(&lock);
-//     EC_WRITE_S32(new_data_ptr, req.value);
-//     pthread_spin_unlock(&lock);
-//     res.success = "true";
-//     return true;
-// }
-
-
-bool ethercat_communicatord(ighm_ros::EthercatCommd::Request &req,
-                            ighm_ros::EthercatCommd::Response &res)
+bool ethercat_communicatord(ether_ros::EthercatCommd::Request &req,
+                            ether_ros::EthercatCommd::Response &res)
 {
     bool s;
     req.mode = utilities::trim(req.mode);

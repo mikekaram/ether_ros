@@ -40,8 +40,8 @@
 #include "ethercat_communicator.h"
 #include "utilities.h"
 #include "ethercat_slave.h"
-#include "ighm_ros.h"
-#include "ighm_ros/PDORaw.h"
+#include "ether_ros.h"
+#include "ether_ros/PDORaw.h"
 #include "deadline_scheduler.h"
 
 int EthercatCommunicator::cleanup_pop_arg_ = 0;
@@ -61,7 +61,7 @@ int64_t EthercatCommunicator::dc_delta_total_ns_ = 0LL;
 int EthercatCommunicator::dc_filter_idx_ = 0;
 int64_t EthercatCommunicator::dc_adjust_ns_;
 #endif
-/*****************************************************************************/
+//--------------------------------------------------------------------------//
 
 #if TIMING_SAMPLING
 
@@ -74,7 +74,7 @@ uint32_t latency_ns[RUN_TIME * FREQUENCY] = {0},
                                period_ns[RUN_TIME * FREQUENCY] = {0},
                                exec_ns[RUN_TIME * FREQUENCY] = {0};
 #endif
-/*****************************************************************************/
+//--------------------------------------------------------------------------//
 
 /** Get the time in ns for the current cpu, adjusted by system_time_base_.
  *
@@ -104,7 +104,7 @@ uint64_t EthercatCommunicator::system_time_ns(void)
     }
 }
 
-/****************************************************************************/
+//--------------------------------------------------------------------------//
 
 /** Synchronise the distributed clocks
  */
@@ -134,7 +134,7 @@ void EthercatCommunicator::sync_distributed_clocks(void)
     ecrt_master_sync_slave_clocks(master);
 }
 
-/*****************************************************************************/
+//--------------------------------------------------------------------------//
 
 /** Update the master time based on ref slaves time diff
  *
@@ -205,13 +205,13 @@ void EthercatCommunicator::update_master_clock(void)
 #endif
 }
 
-/****************************************************************************/
+//--------------------------------------------------------------------------//
 
 bool EthercatCommunicator::has_running_thread()
 {
     return running_thread_;
 }
-
+//--------------------------------------------------------------------------//
 void EthercatCommunicator::init(ros::NodeHandle &n)
 {
 
@@ -263,11 +263,11 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
     ROS_WARN("Actual pthread attribute values are: %d , %d\n", act_policy, act_param.sched_priority);
 
     //Create  ROS publisher for the Ethercat RAW data
-    pdo_raw_pub_ = n.advertise<ighm_ros::PDORaw>("pdo_raw", 1000);
+    pdo_raw_pub_ = n.advertise<ether_ros::PDORaw>("pdo_raw", 1000);
 
 
 }
-
+//--------------------------------------------------------------------------//
 void EthercatCommunicator::start()
 {
     int ret;
@@ -313,12 +313,111 @@ void EthercatCommunicator::start()
     }
     ROS_INFO("Starting cyclic thread.\n");
 }
-
+//--------------------------------------------------------------------------//
 void EthercatCommunicator::cleanup_handler(void *arg)
 {
     ROS_INFO("Called clean-up handler\n");
 }
+//--------------------------------------------------------------------------//
+void EthercatCommunicator::log_statistics_to_file()
+{
+#if TIMING_SAMPLING
+    for (i = 0; i < RUN_TIME * SAMPLING_FREQ; i++)
+    {
+        snprintf(log_string, 100, "%10u , %10u , 10u , %10u , 10u , %10u\n",
+                 period_min_ns[i], period_max_ns[i], exec_min_ns[i], exec_max_ns[i],
+                 latency_min_ns[i], latency_max_ns[i]);
+        dprintf(log_fd, "%s", log_string);
+    }
+#else
+    for (i = 0; i < RUN_TIME * FREQUENCY; i++)
+    {
+        if (i % 10000 == 0)
+            ROS_INFO("Current line written is: %d\n", i);
+        snprintf(log_string, sizeof(log_string), "%10u , %10u , %10u\n",
+                 period_ns[i], exec_ns[i], latency_ns[i]);
+        if ((uint32_t)insist_write(log_fd, log_string, strlen(log_string)) != strlen(log_string))
+        {
+            ROS_FATAL("ec_thread: insist_write");
+            exit(1);
+        }
+    }
+#endif
 
+    if (close(log_fd))
+    {
+        ROS_ERROR("ec_thread: close log fd");
+        exit(1);
+    }
+}
+//--------------------------------------------------------------------------//
+void EthercatCommunicator::create_statistics(timespec *wakeup_time, timespec *wakeup_time, timespec *wakeup_time)
+{
+#if TIMING_SAMPLING
+    latency_ns = DIFF_NS(wakeup_time, start_time);
+    period_ns = DIFF_NS(last_start_time, start_time);
+    exec_ns = DIFF_NS(last_start_time, end_time);
+
+    if (latency_ns > latency_max_ns[i])
+    {
+        latency_max_ns[i] = latency_ns;
+    }
+    if (latency_ns < latency_min_ns[i])
+    {
+        latency_min_ns[i] = latency_ns;
+    }
+    if (period_ns > period_max_ns[i])
+    {
+        period_max_ns[i] = period_ns;
+    }
+    if (period_ns < period_min_ns[i])
+    {
+        period_min_ns[i] = period_ns;
+    }
+    if (exec_ns > exec_max_ns[i])
+    {
+        exec_max_ns[i] = exec_ns;
+    }
+    if (exec_ns < exec_min_ns[i])
+    {
+        exec_min_ns[i] = exec_ns;
+    }
+#else
+    latency_ns[i] = DIFF_NS(wakeup_time, start_time);
+    period_ns[i] = DIFF_NS(last_start_time, start_time);
+    exec_ns[i] = DIFF_NS(last_start_time, end_time);
+#endif
+}
+//--------------------------------------------------------------------------//
+void EthercatCommunicator::initialize_statistics_metrics()
+{
+#if TIMING_SAMPLING
+    counter = FREQUENCY / SAMPLING_FREQ;
+#elif TIMING_SAMPLING == 0
+    counter = 0;
+#endif
+    i++;
+
+
+#if TIMING_SAMPLING
+    // output timing stats
+    // printf("period     %10u ... %10u\n",
+    //         period_min_ns, period_max_ns);
+    // printf("exec       %10u ... %10u\n",
+    //         exec_min_ns, exec_max_ns);
+    // printf("latency    %10u ... %10u\n",
+    //         latency_min_ns, latency_max_ns);
+
+    period_max_ns[i] = 0;
+    period_min_ns[i] = 0xffffffff;
+    exec_max_ns[i] = 0;
+    exec_min_ns[i] = 0xffffffff;
+    latency_max_ns[i] = 0;
+    latency_min_ns[i] = 0xffffffff;
+#endif
+}
+
+//--------------------------------------------------------------------------//
 void *EthercatCommunicator::run(void *arg)
 {
     pthread_cleanup_push(EthercatCommunicator::cleanup_handler, NULL);
@@ -328,7 +427,7 @@ void *EthercatCommunicator::run(void *arg)
     unsigned int counter = 0;
     unsigned int sync_ref_counter = 0;
     const struct timespec cycletime = {0, PERIOD_NS};
-    char new_string[100];
+    char log_string[100];
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
     int ret;
     int i = 0;
@@ -380,80 +479,27 @@ void *EthercatCommunicator::run(void *arg)
         clock_nanosleep(CLOCK_TO_USE, TIMER_ABSTIME, &wakeup_time, NULL);
 #ifdef TIMING_SAMPLING
         clock_gettime(CLOCK_TO_USE, &start_time);
-#if TIMING_SAMPLING
-        latency_ns = DIFF_NS(wakeup_time, start_time);
-        period_ns = DIFF_NS(last_start_time, start_time);
-        exec_ns = DIFF_NS(last_start_time, end_time);
-
-        if (latency_ns > latency_max_ns[i])
-        {
-            latency_max_ns[i] = latency_ns;
-        }
-        if (latency_ns < latency_min_ns[i])
-        {
-            latency_min_ns[i] = latency_ns;
-        }
-        if (period_ns > period_max_ns[i])
-        {
-            period_max_ns[i] = period_ns;
-        }
-        if (period_ns < period_min_ns[i])
-        {
-            period_min_ns[i] = period_ns;
-        }
-        if (exec_ns > exec_max_ns[i])
-        {
-            exec_max_ns[i] = exec_ns;
-        }
-        if (exec_ns < exec_min_ns[i])
-        {
-            exec_min_ns[i] = exec_ns;
-        }
-#else
-        latency_ns[i] = DIFF_NS(wakeup_time, start_time);
-        period_ns[i] = DIFF_NS(last_start_time, start_time);
-        exec_ns[i] = DIFF_NS(last_start_time, end_time);
-#endif
+        create_statistics(&start_time);
         last_start_time = start_time;
 #endif
 
-        // receive process data
+        // receive EtherCAT frame
         ecrt_master_receive(master);
+        // receive process data
         ecrt_domain_process(domain1);
+        // check the state of the domain
         utilities::check_domain1_state();
 
-        if (counter)
+        // get statistics if the flags are enabled
+        if (!counter) //if counter is 0
         {
-            counter--;
-        }
-        else
-        { // do this at 10 Hz
-#if TIMING_SAMPLING
-            counter = FREQUENCY / SAMPLING_FREQ;
-#elif TIMING_SAMPLING == 0
-            counter = 0;
-#endif
-            i++;
+            // do this at 10 Hz
+            initialize_statistics_metrics();
             // check for master state (optional)
             utilities::check_master_state();
-
-#if TIMING_SAMPLING
-            // output timing stats
-            // printf("period     %10u ... %10u\n",
-            //         period_min_ns, period_max_ns);
-            // printf("exec       %10u ... %10u\n",
-            //         exec_min_ns, exec_max_ns);
-            // printf("latency    %10u ... %10u\n",
-            //         latency_min_ns, latency_max_ns);
-
-            period_max_ns[i] = 0;
-            period_min_ns[i] = 0xffffffff;
-            exec_max_ns[i] = 0;
-            exec_min_ns[i] = 0xffffffff;
-            latency_max_ns[i] = 0;
-            latency_min_ns[i] = 0xffffffff;
-#endif
         }
+        else counter--;
+
         //move the data from process_data_buf to domain1_pd buf carefuly
         utilities::copy_process_data_buffer_to_buf(domain1_pd);
 
@@ -463,7 +509,8 @@ void *EthercatCommunicator::run(void *arg)
 
         // sync distributed clock just before master_send to set
         // most accurate master clock time. The two modes MASTER2REF and REF2MASTER should be supported.
-        // However if the REF2MASTER doesn't work for some reason, comment the following line and comment out the following ones.
+        // However if the REF2MASTER doesn't work for some reason, comment the following line and comment out the
+        // following ones.
         EthercatCommunicator::sync_distributed_clocks();
 
         // write application time to master
@@ -474,7 +521,7 @@ void *EthercatCommunicator::run(void *arg)
         // ecrt_master_sync_reference_clock(master);
         // ecrt_master_sync_slave_clocks(master);
 #endif
-        // send process data
+        // send EtherCAT frame
         ecrt_master_send(master);
 
         //send the raw data to the raw data topic
@@ -491,42 +538,15 @@ void *EthercatCommunicator::run(void *arg)
         clock_gettime(CLOCK_TO_USE, &current_time);
     } while (DIFF_NS(current_time, break_time) > 0);
 
-    // write the statistics to file
 #ifdef TIMING_SAMPLING
-#if TIMING_SAMPLING
-    for (i = 0; i < RUN_TIME * SAMPLING_FREQ; i++)
-    {
-        snprintf(new_string, 100, "%10u , %10u , 10u , %10u , 10u , %10u\n",
-                 period_min_ns[i], period_max_ns[i], exec_min_ns[i], exec_max_ns[i],
-                 latency_min_ns[i], latency_max_ns[i]);
-        dprintf(log_fd, "%s", new_string);
-    }
-#else
-    for (i = 0; i < RUN_TIME * FREQUENCY; i++)
-    {
-        if (i % 10000 == 0)
-            ROS_INFO("Current line written is: %d\n", i);
-        snprintf(new_string, sizeof(new_string), "%10u , %10u , %10u\n",
-                 period_ns[i], exec_ns[i], latency_ns[i]);
-        if ((uint32_t)insist_write(log_fd, new_string, strlen(new_string)) != strlen(new_string))
-        {
-            ROS_FATAL("ec_thread: insist_write");
-            exit(1);
-        }
-    }
-#endif
-
-    if (close(log_fd))
-    {
-        ROS_ERROR("ec_thread: close log fd");
-        exit(1);
-    }
+    // write the statistics to file
+    log_statistics_to_file();
 #endif
     pthread_cleanup_pop(cleanup_pop_arg_);
     running_thread_ = false;
     exit(0);
 }
-
+//--------------------------------------------------------------------------//
 void EthercatCommunicator::stop()
 {
 
@@ -555,7 +575,7 @@ void EthercatCommunicator::stop()
     else
         ROS_INFO("stop(): communicator thread wasn't canceled (shouldn't happen!)\n");
 }
-
+//--------------------------------------------------------------------------//
 void EthercatCommunicator::publish_raw_data()
 {
     std::vector<uint8_t> input_data_raw, output_data_raw;
@@ -576,7 +596,7 @@ void EthercatCommunicator::publish_raw_data()
     }
     output_data_raw.insert(std::end(output_data_raw), std::begin(output_vec), std::end(output_vec));
     //Send both strings to the topic
-    ighm_ros::PDORaw raw_data;
+    ether_ros::PDORaw raw_data;
     raw_data.pdo_in_raw = input_data_raw;
     raw_data.pdo_out_raw = output_data_raw;
     pdo_raw_pub_.publish(raw_data);

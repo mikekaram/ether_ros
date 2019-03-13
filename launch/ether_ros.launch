@@ -1,0 +1,5 @@
+<launch>
+<rosparam file="$(find ether_ros)/config/ethercat_slaves.yaml" command="load"/>
+<node pkg="ether_ros" type="ether_ros" name="ighm_comm" output="screen">
+ </node>
+</launch>

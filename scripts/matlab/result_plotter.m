@@ -2,7 +2,7 @@ clc
 close all;
 % clear all
 
-filename = '~/catkin_ws/src/ighm_ros/experiments/20Dec2018/ethercat_data_ground_1.orig-pdo_in_slaves.csv';
+filename = '~/catkin_ws/src/ether_ros/experiments/20Dec2018/ethercat_data_ground_1.orig-pdo_in_slaves.csv';
 A = readtable(filename);
 Hip_PWM_Limit = 41.17;
 Knee_PWM_Limit = 38.25;

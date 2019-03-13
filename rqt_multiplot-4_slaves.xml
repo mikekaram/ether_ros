@@ -36,7 +36,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_0</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>hip_angle</field>
@@ -49,7 +49,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_0</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -87,7 +87,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_0</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_hip_angle</field>
@@ -100,7 +100,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_0</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -138,7 +138,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatInputData</type>
+                                    <type>ether_ros/EthercatInputData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_hip_angle</field>
@@ -151,7 +151,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatInputData</type>
+                                    <type>ether_ros/EthercatInputData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -189,7 +189,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatInputData</type>
+                                    <type>ether_ros/EthercatInputData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_hip_angle</field>
@@ -202,7 +202,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatInputData</type>
+                                    <type>ether_ros/EthercatInputData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -240,7 +240,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatInputData</type>
+                                    <type>ether_ros/EthercatInputData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_hip_angle</field>
@@ -253,7 +253,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatInputData</type>
+                                    <type>ether_ros/EthercatInputData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -314,7 +314,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_0</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>knee_angle</field>
@@ -327,7 +327,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_0</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -365,7 +365,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_0</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_knee_angle</field>
@@ -378,7 +378,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_0</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -441,7 +441,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>hip_angle</field>
@@ -454,7 +454,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -492,7 +492,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_hip_angle</field>
@@ -505,7 +505,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -566,7 +566,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>knee_angle</field>
@@ -579,7 +579,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -617,7 +617,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_knee_angle</field>
@@ -630,7 +630,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_1</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -693,7 +693,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>hip_angle</field>
@@ -706,7 +706,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -744,7 +744,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_hip_angle</field>
@@ -757,7 +757,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -818,7 +818,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>knee_angle</field>
@@ -831,7 +831,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -869,7 +869,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_knee_angle</field>
@@ -882,7 +882,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_2</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -945,7 +945,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>hip_angle</field>
@@ -958,7 +958,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -996,7 +996,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_hip_angle</field>
@@ -1009,7 +1009,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -1070,7 +1070,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>knee_angle</field>
@@ -1083,7 +1083,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -1121,7 +1121,7 @@
                                         <type>0</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </x_axis>
                                 <y_axis>
                                     <field>desired_knee_angle</field>
@@ -1134,7 +1134,7 @@
                                         <type>2</type>
                                     </scale>
                                     <topic>/ethercat_data_slave_3</topic>
-                                    <type>ighm_ros/EthercatData</type>
+                                    <type>ether_ros/EthercatData</type>
                                 </y_axis>
                             </axes>
                             <color>

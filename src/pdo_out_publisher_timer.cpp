@@ -41,11 +41,11 @@
 /*****************************************************************************/
 
 #include "pdo_out_publisher_timer.h"
-#include "ighm_ros/PDOOut.h"
+#include "ether_ros/PDOOut.h"
 #include "ethercat_slave.h"
 #include "utilities.h"
 #include "vector"
-#include "ighm_ros.h"
+#include "ether_ros.h"
 #include <iostream>
 #include <string>
 
@@ -60,7 +60,7 @@ void PDOOutPublisherTimer::timer_callback(const ros::TimerEvent &event)
     {
         pos = i * (num_process_data_out + num_process_data_in); //The size of every entry is num_process_data_out
         data_ptr = (uint8_t *)(data_ptr_ + pos);
-        ighm_ros::PDOOut pdo_out;
+        ether_ros::PDOOut pdo_out;
         pdo_out.slave_id = i;
 
         // change the following code to match your needs
@@ -109,7 +109,7 @@ void PDOOutPublisherTimer::init(ros::NodeHandle &n)
     memset(data_ptr_, 0, total_process_data); // fill the buffer with zeros
 
     //Create  ROS publisher for the Ethercat formatted data
-    pdo_out_pub_ = n.advertise<ighm_ros::PDOOut>("pdo_out_timer", 1000);
+    pdo_out_pub_ = n.advertise<ether_ros::PDOOut>("pdo_out_timer", 1000);
 
     if (!pdo_out_pub_)
     {

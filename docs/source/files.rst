@@ -31,7 +31,7 @@ EtherCAT Slave header file
 Main header file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfile:: ighm_ros.h
+.. doxygenfile:: ether_ros.h
    :project: IgHMUR
 
 Services header file
@@ -82,7 +82,7 @@ EtherCAT Slave source file
 Main source file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfile:: ighm_ros.cpp
+.. doxygenfile:: ether_ros.cpp
    :project: IgHMUR
 
 Services source file

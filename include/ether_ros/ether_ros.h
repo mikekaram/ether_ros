@@ -29,7 +29,7 @@
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
 /**
-   \file ighm_ros.h
+   \file ether_ros.h
    \brief Main header file.
 */
 
@@ -173,8 +173,8 @@
 
 */
 
-#ifndef IGHM_ROS_LIB_H
-#define IGHM_ROS_LIB_H
+#ifndef ether_ros_LIB_H
+#define ether_ros_LIB_H
 
 #include "ros/ros.h"
 // #include <errno.h>
@@ -260,4 +260,4 @@ extern PDOOutPublisherTimer pdo_out_publisher_timer;
 extern int PERIOD_NS;
 extern int FREQUENCY;
 extern int RUN_TIME;
-#endif /* IGHM_ROS_LIB_H */
+#endif /* ether_ros_LIB_H */

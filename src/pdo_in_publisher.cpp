@@ -39,16 +39,16 @@
 
 /*****************************************************************************/
 #include "pdo_in_publisher.h"
-#include "ighm_ros/PDOIn.h"
-#include "ighm_ros/PDORaw.h"
+#include "ether_ros/PDOIn.h"
+#include "ether_ros/PDORaw.h"
 #include "ethercat_slave.h"
 #include "utilities.h"
 #include "vector"
-#include "ighm_ros.h"
+#include "ether_ros.h"
 #include <iostream>
 #include <string>
 
-void PDOInPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
+void PDOInPublisher::pdo_raw_callback(const ether_ros::PDORaw::ConstPtr &pdo_raw)
 {
     std::vector<uint8_t> pdo_in_raw = pdo_raw->pdo_in_raw;
     uint8_t *data_ptr;
@@ -57,7 +57,7 @@ void PDOInPublisher::pdo_raw_callback(const ighm_ros::PDORaw::ConstPtr &pdo_raw)
     {
         pos = i * num_process_data_in; //The size of every entry is num_process_data_in
         data_ptr = (uint8_t * ) & pdo_in_raw[pos];
-        ighm_ros::PDOIn pdo_in;
+        ether_ros::PDOIn pdo_in;
         using namespace utilities;
 
         // change the following code to match your needs
@@ -94,6 +94,6 @@ void PDOInPublisher::init(ros::NodeHandle &n)
     pdo_in_pub_ = new ros::Publisher[master_info.slave_count];
     for (int i = 0; i < master_info.slave_count; i++)
     {
-        pdo_in_pub_[i] = n.advertise<ighm_ros::PDOIn>("pdo_in_slave_" + std::to_string(i), 1000);
+        pdo_in_pub_[i] = n.advertise<ether_ros::PDOIn>("pdo_in_slave_" + std::to_string(i), 1000);
     }
 }

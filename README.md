@@ -1,4 +1,4 @@
-# Welcome to the IgH Master Userspace Real-time program tutorial by Mike Karamousadakis
+# Welcome to the EtherROS program tutorial by Mike Karamousadakis
 
 For any questions, send email to: mkaramousadakis @ zoho.eu
 
@@ -12,7 +12,7 @@ In the tutorial we assume that an Ubuntu flavor 16.04 is used.
 
 ### 0. Preempt_RT Patch
 
-First step to utilize the repository given, is to install the preempt_rt patch in the kernel. Note that in order to install the IgHM, the kernel should be up to 4.9. A proper guide for the installation procedure can be found in the following [link](https://ubuntuforums.org/showthread.php?t=2273355). After you patch the kernel (say 4.9), you will want to use some other configuration parameters in the build of the kernel. Therefore after step 3 and in the line of *make menuconfig* of the previous link,
+First step to utilize the repository given, is to install the preempt_rt patch in the kernel. Note that in order to install EtherLab, the kernel should be up to 4.9. A proper guide for the installation procedure can be found in the following [link](https://ubuntuforums.org/showthread.php?t=2273355). After you patch the kernel (say 4.9), you will want to use some other configuration parameters in the build of the kernel. Therefore after step 3 and in the line of *make menuconfig* of the previous link,
 you will want to specify some extra configuration parameters, derived from the chapter 3 of the manual mentioned in the beginning, namely:
 
 - CONFIG_PREEMPT_RT_FULL
@@ -29,7 +29,7 @@ The author has used only the first configuration parameter and has seen great bo
 
 #### Tip: While you are in the menuconfig, type "/" and you can type to find the place of a configuration parameter. Exit with ESC
 
-### 1. Installation of IgHM
+### 1. Installation of EtherLab
 
 1. cd into the etherlab-mercurial folder
 2. Run *make ethercatMasterInstallWithAutoStart*. Note that root access is needed. If you use another native driver from e1000e, open the Makefile and change the configure option with your driver version. You can find [here](http://www.etherlab.org/en/ethercat/hardware.php) and [here](http://www.etherlab.org/download/ethercat/ethercat-1.5.2.pdf) (Chapter 9), the supported hardware and the options the command *configure* takes, respectively. If your hardware is not supported or if you don't want the native driver support fuzz, then you should change the *configure* command to enable generic driver support (although I think it defaults to that).
@@ -45,13 +45,13 @@ The author has used only the first configuration parameter and has seen great bo
 
 ## Example usage
 
-1. Before running the program, you could restart the ethercat service (the IgHM). To do that, run the following command:
+1. Before running the program, you could restart the ethercat service (the EtherLab Master). To do that, run the following command:
 
 ```bash
 $ sudo /etc/init.d/ethercat restart
 ```
 
-The kernel logs can be very useful, because they show what is happening to the IgHM every time, how many packets he has skipped etc. To see the kernel logs, run the command:
+The kernel logs can be very useful, because they show what is happening to EtherLab every time, how many packets he has skipped etc. To see the kernel logs, run the command:
 
 ```bash
 $ tail -f /var/log/kern.log

@@ -193,7 +193,7 @@
 #include "ethercat_communicator.h"
 #include "pdo_in_publisher.h"
 #include "pdo_out_publisher.h"
-#include "modify_pdo_variables_listener.h"
+#include "pdo_out_listener.h"
 #include "pdo_out_publisher_timer.h"
 
 // Application parameters
@@ -255,7 +255,7 @@ extern pthread_spinlock_t lock;
 extern EthercatCommunicator ethercat_comm;
 extern PDOInPublisher pdo_in_publisher;
 extern PDOOutPublisher pdo_out_publisher;
-extern ModifyPDOVariablesListener modify_pdo_variables_listener;
+extern PDOOutListener pdo_out_listener;
 extern PDOOutPublisherTimer pdo_out_publisher_timer;
 extern int PERIOD_NS;
 extern int FREQUENCY;

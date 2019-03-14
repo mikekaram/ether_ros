@@ -30,8 +30,8 @@
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
 /**
-   \file modify_pdo_variables_listener.h
-   \brief Header file for the ModifyPDOVariablesListener class.
+   \file pdo_out_listener.h
+   \brief Header file for the PDOOutListener class.
 */
 
 /*****************************************************************************/
@@ -43,7 +43,7 @@
 #include "ether_ros/ModifyPDOVariables.h"
 #include <map>
 
-/** \class ModifyPDOVariablesListener
+/** \class PDOOutListener
     \brief The Ethercat Input Data Handler class.
 
     Used for trasforming the "raw" indexed data from
@@ -51,10 +51,10 @@
     Communicator, to values of variables, and stream them
     to the \a /pdo_in_slave_{slave_id} topic.
 */
-class ModifyPDOVariablesListener
+class PDOOutListener
 {
   private:
-    ros::Subscriber modify_pdo_variables_listener_;
+    ros::Subscriber pdo_out_listener_;
     std::map<std::string, int> int_type_map_ = {
         {"bool", 0},
         {"uint8", 1},
@@ -74,7 +74,7 @@ class ModifyPDOVariablesListener
     mentioned topic.
     \param n The ROS Node Handle
 */
-    /** \fn void modify_pdo_variables_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var);
+    /** \fn void pdo_out_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var);
 
     This method, is called when there are data in the \a /modify_pdo_var topic.
     Should the EtherCAT application change, this callback must change also.
@@ -92,7 +92,7 @@ class ModifyPDOVariablesListener
     \param pdo_raw A copy of the actual data sent to the topic \a /pdo_raw.
 */
     public : void init(ros::NodeHandle & n);
-    void modify_pdo_variables_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var);
+    void pdo_out_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var);
     void modify_pdo_variable(int slave_id, const ether_ros::ModifyPDOVariables::ConstPtr &new_var);
 };
 

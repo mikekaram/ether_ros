@@ -130,7 +130,7 @@ set(SOURCES
     src/ethercat_slave.cpp
     src/pdo_in_publisher.cpp
     src/pdo_out_publisher.cpp
-    src/modify_pdo_variables_listener.cpp
+    src/pdo_out_listener.cpp
     src/pdo_out_publisher_timer.cpp
     )
 

@@ -29,7 +29,7 @@
  *  Contact information: mkaramousadakis@zoho.eu
  *****************************************************************************/
 
-//\defgroup IgHEMM_ROS EtherCAT module main
+//\defgroup EtherROS EtherCAT module main
 
 /** \file ether_ros.cpp
  *
@@ -106,7 +106,7 @@ pthread_spinlock_t lock;
 EthercatCommunicator ethercat_comm;
 PDOInPublisher pdo_in_publisher;
 PDOOutPublisher pdo_out_publisher;
-ModifyPDOVariablesListener modify_pdo_variables_listener;
+PDOOutListener pdo_out_listener;
 PDOOutPublisherTimer pdo_out_publisher_timer;
 int FREQUENCY;
 int RUN_TIME;
@@ -199,7 +199,7 @@ int main(int argc, char **argv)
     ethercat_comm.init(n);
     pdo_in_publisher.init(n);
     // pdo_out_publisher.init(n);
-    modify_pdo_variables_listener.init(n);
+    pdo_out_listener.init(n);
     pdo_out_publisher_timer.init(n);
 
 

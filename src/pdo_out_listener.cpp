@@ -39,7 +39,7 @@
 
 /*****************************************************************************/
 
-#include "modify_pdo_variables_listener.h"
+#include "pdo_out_listener.h"
 #include "ether_ros/ModifyPDOVariables.h"
 // #include "ethercat_slave.h"
 #include "utilities.h"
@@ -49,7 +49,7 @@
 #include <iostream>
 #include <string>
 
-void ModifyPDOVariablesListener::modify_pdo_variables_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var)
+void PDOOutListener::pdo_out_callback(const ether_ros::ModifyPDOVariables::ConstPtr &new_var)
 {
     pthread_spin_lock(&lock);
     uint8_t slave_id = new_var->slave_id;
@@ -68,7 +68,7 @@ void ModifyPDOVariablesListener::modify_pdo_variables_callback(const ether_ros::
     }
     pthread_spin_unlock(&lock);
 }
-void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ether_ros::ModifyPDOVariables::ConstPtr &new_var)
+void PDOOutListener::modify_pdo_variable(int slave_id, const ether_ros::ModifyPDOVariables::ConstPtr &new_var)
 {
     std::string type = new_var->type;
 
@@ -168,8 +168,8 @@ void ModifyPDOVariablesListener::modify_pdo_variable(int slave_id, const ether_r
         break;
     }
 }
-void ModifyPDOVariablesListener::init(ros::NodeHandle &n)
+void PDOOutListener::init(ros::NodeHandle &n)
 {
     //Create  ROS subscriber for the Ethercat RAW data
-    modify_pdo_variables_listener_ = n.subscribe("pdo_listener", 1000, &ModifyPDOVariablesListener::modify_pdo_variables_callback, &modify_pdo_variables_listener);
+    pdo_out_listener_ = n.subscribe("pdo_listener", 1000, &PDOOutListener::pdo_out_callback, &pdo_out_listener);
 }

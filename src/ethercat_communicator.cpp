@@ -444,7 +444,7 @@ void *EthercatCommunicator::run(void *arg)
 #ifdef FIFO_SCHEDULING
     CPU_SET(3, &cpuset_);
 
-
+    // set pthread affinity to CPU 3
     if (pthread_setaffinity_np(communicator_thread_, sizeof(cpuset_), &cpuset_))
     {
         ROS_FATAL("Set pthread affinity, not portable\n");
@@ -469,8 +469,10 @@ void *EthercatCommunicator::run(void *arg)
 
     do
     {
-        pthread_testcancel();                                       // check if there is a request for cancel
-        ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); //set the cancel state to DISABLE
+        // check if there is a request for cancel
+        pthread_testcancel();
+        //set the cancel state to DISABLE
+        ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
         if (ret != 0)
         {
             handle_error_en(ret, "pthread_setcancelstate");
@@ -500,11 +502,11 @@ void *EthercatCommunicator::run(void *arg)
         }
         else counter--;
 
-        //move the data from process_data_buf to domain1_pd buf carefuly
+        // move the data from process_data_buf to domain1_pd buf carefuly
         utilities::copy_process_data_buffer_to_buf(domain1_pd);
 
 
-        //queue the EtherCAT data to domain buffer
+        // queue the EtherCAT data to domain buffer
         ecrt_domain_queue(domain1);
 
         // sync distributed clock just before master_send to set
@@ -524,8 +526,9 @@ void *EthercatCommunicator::run(void *arg)
         // send EtherCAT frame
         ecrt_master_send(master);
 
-        //send the raw data to the raw data topic
+        // send the raw data to the raw data topic
         EthercatCommunicator::publish_raw_data();
+        // update the master clock with the drift, if SYNC_MASTER_TO_REF defined
         EthercatCommunicator::update_master_clock();
         int ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //set the cancel state to ENABLE
         if (ret != 0)

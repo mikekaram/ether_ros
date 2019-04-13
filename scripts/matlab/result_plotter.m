@@ -2,7 +2,8 @@ clc
 close all;
 % clear all
 
-filename = '~/catkin_ws/src/ether_ros/experiments/20Dec2018/ethercat_data_ground_1.orig-pdo_in_slaves.csv';
+filename = '~/catkin_ws/src/ether_ros/experiments/20Dec2018/ethercat_data_ground_1.orig/ethercat_data_ground_1.orig-pdo_in_slaves.csv';
+results_directory='~/catkin_ws/src/ether_ros/experiments/20Dec2018/ethercat_data_ground_1.orig';
 A = readtable(filename);
 Hip_PWM_Limit = 41.17;
 Knee_PWM_Limit = 38.25;
@@ -80,6 +81,7 @@ window=60000:65000;
 [FL_x_desired, FL_y_desired]=ForwardKinematics(FL_desired_hip_angle(window),FL_desired_knee_angle(window));
 
 %End Effector of Laelaps II Legs
+
 figure
 set(gcf, 'Position', [100 50 900 800],'color','w');
 subplot(2,2,1)
@@ -111,7 +113,7 @@ plot(HL_x,HL_y,'k',HL_x_desired,HL_y_desired,'r')
      title('HL End Effector in Steady State','fontsize',14)
      set(gca,'Ydir','reverse')
 tightfig;
-
+saveas(gcf,fullfile(results_directory,'end_effector_laelaps.png'));
 %Responce of knee angles
 figure
 set(gcf, 'Position', [100 50 900 800],'color','w');
@@ -137,7 +139,7 @@ plot(t,HL_knee_angle,'k',t,HL_desired_knee_angle,'r')
      xlabel('Time [s]')
    	 title('Response of HL Knee Angle','fontsize',13)
 tightfig;
-
+saveas(gcf,fullfile(results_directory,'response_knee_angles.png'));
 %Responce of hip angles
 figure
 set(gcf, 'Position', [100 50 900 800],'color','w');
@@ -163,6 +165,7 @@ plot(t,HL_hip_angle,'k', t, HL_desired_hip_angle,'r')
      xlabel('Time [s]')
    	 title('Response of HL Hip Angle','fontsize',13)
 tightfig;
+saveas(gcf,fullfile(results_directory,'response_hip_angles.png'));
 
 %PWM Commands of Knee motors
 figure
@@ -201,6 +204,7 @@ plot(t,-Knee_PWM_Limit*ones(length(t),1),'r','LineWidth',0.1);
      xlabel('Time [s]')
    	 title('PWM Command of HL Knee','fontsize',13)
 tightfig;
+saveas(gcf,fullfile(results_directory,'pwm_commands_knee.png'));
 
 %PWM Commands of Hip motors
 figure
@@ -239,6 +243,7 @@ plot(t,-Hip_PWM_Limit*ones(length(t),1),'r','LineWidth',0.1);
      xlabel('Time [s]')
    	 title('PWM Command of HL Hip','fontsize',13)
 tightfig;
+saveas(gcf,fullfile(results_directory,'pwm_commands_hip.png'));
 
 %Velocity of Knee motors
 figure
@@ -277,6 +282,7 @@ plot(t,HL_velocity_knee,'k')
      xlabel('Time [s]')
    	 title('Response of HL Knee Velocity','fontsize',13)
 tightfig;
+saveas(gcf,fullfile(results_directory,'response_knee_velocity.png'));
 
 %Velocity of Hip motors
 figure
@@ -315,6 +321,7 @@ plot(t,HL_velocity_hip,'k')
      xlabel('Time [s]')
    	 title('Response of HL Hip Velocity','fontsize',13)
 tightfig;
+saveas(gcf,fullfile(results_directory,'response_hip_velocity.png'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Commented section by Stamatis%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Plot Hind Right Leg's Diagrams

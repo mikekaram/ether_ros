@@ -33,7 +33,7 @@ class ethercat_controller(Cmd):
         "red_led": [[0, 5], "bool"],
         "button_1": [[0, 6], "bool"],
         "button_2": [[0, 7], "bool"],
-        "sync": [[1, 0], "int8"],
+        "transition_time": [[1, 0], "int8"],
         "desired_x_value": [[2, 0], "int32"],
         "filter_bandwidth": [[6, 0], "uint16"],
         "desired_y_value": [[8, 0], "int32"],
@@ -230,8 +230,8 @@ class ethercat_controller(Cmd):
                 'ethercat_communicatord', EthercatCommd)
             response = ethercat_communicator(mode)
             return response.success
-        except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
+        except rospy.ServiceException as e:
+            print ("Service call failed: %s") % e
 
     ## \fn do_shell(self, args)
     # \brief Main method of ethercat_controller class.
@@ -245,22 +245,22 @@ class ethercat_controller(Cmd):
         arguments = args.split(" ")
         if "start" in arguments:
             if len(arguments) != 1:
-                print "Usage: !start"
+                print("Usage: !start")
             else:
                 self.ethercat_communicator_client("start")
         elif "stop" in arguments:
             if len(arguments) != 1:
-                print "Usage: !stop"
+                print("Usage: !stop")
             else:
                 self.ethercat_communicator_client("stop")
         elif "restart" in arguments:
             if len(arguments) != 1:
-                print "Usage: !restart"
+                print("Usage: !restart")
             else:
                 self.ethercat_communicator_client("restart")
         elif "variable" in arguments:
             if len(arguments) != 4:
-                print "Usage: !variable [slave_id | 'all'] [variable_name] [value]"
+                print("Usage: !variable [slave_id | 'all'] [variable_name] [value]")
             else:
                 if(arguments[1] == "all"):
                     self.call_modify_publisher(255, arguments[2], arguments[3])
@@ -269,7 +269,7 @@ class ethercat_controller(Cmd):
                         int(arguments[1]), arguments[2],  arguments[3])
         elif "run" in arguments:
             if len(arguments) != 2:
-                print "Usage: !run [script_to_run]"
+                print("Usage: !run [script_to_run]")
             else:
                 arguments[1] = arguments[1].replace("/","")
                 arguments[1].strip()

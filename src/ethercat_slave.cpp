@@ -107,13 +107,13 @@ void EthercatSlave::init(std::string slave, ros::NodeHandle &n)
     {
         ROS_FATAL("Failed to get param 'slave_root_loc + output_port'\n");
     }
-    ighm_slave_ = ecrt_master_slave_config(master, alias_, position_, vendor_id_, product_code_);
-    if (!ighm_slave_)
+    ethercat_slave_ = ecrt_master_slave_config(master, alias_, position_, vendor_id_, product_code_);
+    if (!ethercat_slave_)
     {
         ROS_FATAL("Failed to get slave configuration.\n");
         exit(1);
     }
-    pdo_out_ = ecrt_slave_config_reg_pdo_entry(ighm_slave_, output_port_, 1, domain1, NULL);
+    pdo_out_ = ecrt_slave_config_reg_pdo_entry(ethercat_slave_, output_port_, 1, domain1, NULL);
     if (pdo_out_ < 0)
     {
         ROS_FATAL("Failed to configure pdo out.\n");
@@ -121,7 +121,7 @@ void EthercatSlave::init(std::string slave, ros::NodeHandle &n)
     }
     ROS_INFO("Offset pdo out is: %d\n", pdo_out_);
 
-    pdo_in_ = ecrt_slave_config_reg_pdo_entry(ighm_slave_, input_port_, 1, domain1, NULL);
+    pdo_in_ = ecrt_slave_config_reg_pdo_entry(ethercat_slave_, input_port_, 1, domain1, NULL);
     if (pdo_in_ < 0)
     {
         ROS_FATAL("Failed to configure pdo in.\n");
@@ -141,7 +141,7 @@ void EthercatSlave::init(std::string slave, ros::NodeHandle &n)
     //For XMC use: 0x0300
     //For Beckhoff FB1111 use: 0x0700
     //Use PERIOD_NS as the period, and 50 μs shift time
-    ecrt_slave_config_dc(ighm_slave_, assign_activate_, PERIOD_NS, sync0_shift_, 0, 0);
+    ecrt_slave_config_dc(ethercat_slave_, assign_activate_, PERIOD_NS, sync0_shift_, 0, 0);
 }
 
 int EthercatSlave::get_pdo_in()
@@ -155,5 +155,5 @@ int EthercatSlave::get_pdo_out()
 }
 ec_slave_config_t *EthercatSlave::get_slave_config()
 {
-    return ighm_slave_;
+    return ethercat_slave_;
 }

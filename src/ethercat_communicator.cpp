@@ -64,15 +64,29 @@ int64_t EthercatCommunicator::dc_adjust_ns_;
 //--------------------------------------------------------------------------//
 
 #if TIMING_SAMPLING
-
-uint32_t period_ns, exec_ns = 0, latency_ns = 0,
-                    latency_min_ns[RUN_TIME * SAMPLING_FREQ] = {0}, latency_max_ns[RUN_TIME * SAMPLING_FREQ] = {0},
-                    period_min_ns[RUN_TIME * SAMPLING_FREQ] = {0}, period_max_ns[RUN_TIME * SAMPLING_FREQ] = {0},
-                    exec_min_ns[RUN_TIME * SAMPLING_FREQ] = {0}, exec_max_ns[RUN_TIME * SAMPLING_FREQ] = {0};
+typedef struct statistics_struct{
+    uint32_t period_ns;
+    uint32_t exec_ns;
+    uint32_t latency_ns;
+    uint32_t latency_min_ns[RUN_TIME * SAMPLING_FREQ]; 
+    uint32_t latency_max_ns[RUN_TIME * SAMPLING_FREQ];
+    uint32_t period_min_ns[RUN_TIME * SAMPLING_FREQ]; 
+    uint32_t period_max_ns[RUN_TIME * SAMPLING_FREQ];
+    uint32_t exec_min_ns[RUN_TIME * SAMPLING_FREQ]; 
+    uint32_t exec_max_ns[RUN_TIME * SAMPLING_FREQ];
+} statistics_struct;
+statistics_struct stat_struct = { 0,0,0, {0}, {0}, {0}, {0}, {0}, {0}};
 #elif TIMING_SAMPLING == 0
-uint32_t latency_ns[RUN_TIME * FREQUENCY] = {0},
-                               period_ns[RUN_TIME * FREQUENCY] = {0},
-                               exec_ns[RUN_TIME * FREQUENCY] = {0};
+
+typedef struct statistics_struct{
+    uint32_t period_ns[RUN_TIME * FREQUENCY];
+    uint32_t exec_ns[RUN_TIME * FREQUENCY];
+    uint32_t latency_ns[RUN_TIME * FREQUENCY];
+} statistics_struct;
+statistics_struct stat_struct = {{0}, {0}, {0}};
+// uint32_t latency_ns[RUN_TIME * FREQUENCY] = {0},
+//                                period_ns[RUN_TIME * FREQUENCY] = {0},
+//                                exec_ns[RUN_TIME * FREQUENCY] = {0};
 #endif
 //--------------------------------------------------------------------------//
 

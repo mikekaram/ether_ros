@@ -59,7 +59,7 @@ class EthercatSlave
     int alias_;
     int input_port_;
     int output_port_;
-    ec_slave_config_t *ighm_slave_; //pointer to the basic slave struct in ighm
+    ec_slave_config_t *ethercat_slave_; //pointer to the basic slave struct in ighm
     int pdo_in_;
     int pdo_out_;
     int32_t sync0_shift_;

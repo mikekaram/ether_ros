@@ -59,7 +59,38 @@
 #define FIFO_SCHEDULING //the default scheduling policy will be FIFO
 
 #endif
+#if TIMING_SAMPLING
 
+typedef struct statistics_struct
+{
+  int statistics_id;
+  uint32_t period_ns;
+  uint32_t exec_ns;
+  uint32_t latency_ns;
+  uint32_t * latency_min_ns;
+  uint32_t * latency_max_ns;
+  uint32_t * period_min_ns;
+  uint32_t * period_max_ns;
+  uint32_t * exec_min_ns;
+  uint32_t * exec_max_ns;
+  struct timespec start_time;
+  struct timespec end_time;
+  struct timespec last_start_time;
+} statistics_struct;
+
+#elif TIMING_SAMPLING == 0
+
+typedef struct statistics_struct
+{
+  int statistics_id;
+  uint32_t * period_ns;
+  uint32_t * exec_ns;
+  uint32_t * latency_ns;
+  struct timespec start_time;
+  struct timespec end_time;
+  struct timespec last_start_time;
+} statistics_struct;
+#endif
 class EthercatCommunicator
 {
 private:
@@ -91,6 +122,9 @@ private:
   static void sync_distributed_clocks(void);
   static void update_master_clock(void);
   static uint64_t system_time_ns(void);
+  static void create_new_statistics_sample(statistics_struct *ss, unsigned int * sampling_counter);
+  static void create_statistics(statistics_struct * ss, struct timespec * wakeup_time_p);
+  static void log_statistics_to_file(statistics_struct *ss);
 
 public:
 /** \fn static bool has_running_thread()

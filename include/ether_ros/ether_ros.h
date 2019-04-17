@@ -260,4 +260,5 @@ extern PDOOutPublisherTimer pdo_out_publisher_timer;
 extern int PERIOD_NS;
 extern int FREQUENCY;
 extern int RUN_TIME;
+extern statistics_struct stat_struct;
 #endif /* ether_ros_LIB_H */

@@ -191,9 +191,29 @@ int main(int argc, char **argv)
     ROS_INFO("Number of process data input bytes for every slave: %lu\n", num_process_data_in);
     num_process_data_out = ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_in() - ethercat_slaves[master_info.slave_count - 1].slave.get_pdo_out();
     ROS_INFO("Number of process data output bytes for every slave: %lu\n", num_process_data_out);
+
     process_data_buf = (uint8_t *)malloc(total_process_data * sizeof(uint8_t));
     memset(process_data_buf, 0, total_process_data); // fill the buffer with zeros
-    n.setParam("/ethercat_slaves/slaves_count", (int)master_info.slave_count);
+
+    /******************************************
+     * Initialize the timing sampling buffers.
+    *******************************************/
+#if TIMING_SAMPLING
+    statistics_struct stat_struct = {0, 0, 0, 0};
+    stat_struct.latency_min_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.latency_max_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.period_min_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.period_max_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.exec_min_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.exec_max_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+#elif TIMING_SAMPLING == 0
+    statistics_struct stat_struct = {0};
+    stat_struct.latency_ns = (uint32_t *)malloc(RUN_TIME * FREQUENCY * (sizeof(uint32_t)));
+    stat_struct.period_ns = (uint32_t *)malloc(RUN_TIME * FREQUENCY * (sizeof(uint32_t)));
+    stat_struct.exec_ns = (uint32_t *)malloc(RUN_TIME * FREQUENCY * (sizeof(uint32_t)));
+#endif
+
+    n.setParam("/ethercat_slaves/slaves_count", (int)master_info.slave_count); // set the slaves_count to the actual slaves found and configured
 
     //Initialize the Ethercat Communicator and the Ethercat Data Handlers
     ethercat_comm.init(n);

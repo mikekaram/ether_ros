@@ -53,41 +53,15 @@ uint64_t EthercatCommunicator::dc_start_time_ns_ = 0LL;
 uint64_t EthercatCommunicator::dc_time_ns_ = 0;
 int64_t EthercatCommunicator::system_time_base_ = 0LL;
 #ifdef SYNC_MASTER_TO_REF
-uint8_t EthercatCommunicator::dc_started_ = 0;
-int32_t EthercatCommunicator::dc_diff_ns_ = 0;
-int32_t EthercatCommunicator::prev_dc_diff_ns_ = 0;
-int64_t EthercatCommunicator::dc_diff_total_ns_ = 0LL;
-int64_t EthercatCommunicator::dc_delta_total_ns_ = 0LL;
-int EthercatCommunicator::dc_filter_idx_ = 0;
-int64_t EthercatCommunicator::dc_adjust_ns_;
+    uint8_t EthercatCommunicator::dc_started_ = 0;
+    int32_t EthercatCommunicator::dc_diff_ns_ = 0;
+    int32_t EthercatCommunicator::prev_dc_diff_ns_ = 0;
+    int64_t EthercatCommunicator::dc_diff_total_ns_ = 0LL;
+    int64_t EthercatCommunicator::dc_delta_total_ns_ = 0LL;
+    int EthercatCommunicator::dc_filter_idx_ = 0;
+    int64_t EthercatCommunicator::dc_adjust_ns_;
 #endif
-//--------------------------------------------------------------------------//
-
-#if TIMING_SAMPLING
-typedef struct statistics_struct{
-    uint32_t period_ns;
-    uint32_t exec_ns;
-    uint32_t latency_ns;
-    uint32_t latency_min_ns[RUN_TIME * SAMPLING_FREQ]; 
-    uint32_t latency_max_ns[RUN_TIME * SAMPLING_FREQ];
-    uint32_t period_min_ns[RUN_TIME * SAMPLING_FREQ]; 
-    uint32_t period_max_ns[RUN_TIME * SAMPLING_FREQ];
-    uint32_t exec_min_ns[RUN_TIME * SAMPLING_FREQ]; 
-    uint32_t exec_max_ns[RUN_TIME * SAMPLING_FREQ];
-} statistics_struct;
-statistics_struct stat_struct = { 0,0,0, {0}, {0}, {0}, {0}, {0}, {0}};
-#elif TIMING_SAMPLING == 0
-
-typedef struct statistics_struct{
-    uint32_t period_ns[RUN_TIME * FREQUENCY];
-    uint32_t exec_ns[RUN_TIME * FREQUENCY];
-    uint32_t latency_ns[RUN_TIME * FREQUENCY];
-} statistics_struct;
-statistics_struct stat_struct = {{0}, {0}, {0}};
-// uint32_t latency_ns[RUN_TIME * FREQUENCY] = {0},
-//                                period_ns[RUN_TIME * FREQUENCY] = {0},
-//                                exec_ns[RUN_TIME * FREQUENCY] = {0};
-#endif
+statistics_struct stat_struct;
 //--------------------------------------------------------------------------//
 
 /** Get the time in ns for the current cpu, adjusted by system_time_base_.
@@ -333,14 +307,16 @@ void EthercatCommunicator::cleanup_handler(void *arg)
     ROS_INFO("Called clean-up handler\n");
 }
 //--------------------------------------------------------------------------//
-void EthercatCommunicator::log_statistics_to_file()
+void EthercatCommunicator::log_statistics_to_file(statistics_struct *ss)
 {
+    int i;
+    char log_string[100];
 #if TIMING_SAMPLING
     for (i = 0; i < RUN_TIME * SAMPLING_FREQ; i++)
     {
         snprintf(log_string, 100, "%10u , %10u , 10u , %10u , 10u , %10u\n",
-                 period_min_ns[i], period_max_ns[i], exec_min_ns[i], exec_max_ns[i],
-                 latency_min_ns[i], latency_max_ns[i]);
+                 ss->period_min_ns[i], ss->period_max_ns[i], ss->exec_min_ns[i], ss->exec_max_ns[i],
+                 ss->latency_min_ns[i], ss->latency_max_ns[i]);
         dprintf(log_fd, "%s", log_string);
     }
 #else
@@ -349,8 +325,8 @@ void EthercatCommunicator::log_statistics_to_file()
         if (i % 10000 == 0)
             ROS_INFO("Current line written is: %d\n", i);
         snprintf(log_string, sizeof(log_string), "%10u , %10u , %10u\n",
-                 period_ns[i], exec_ns[i], latency_ns[i]);
-        if ((uint32_t)insist_write(log_fd, log_string, strlen(log_string)) != strlen(log_string))
+                 ss->period_ns[i], ss->exec_ns[i], ss->latency_ns[i]);
+        if ((uint32_t)utilities::insist_write(log_fd, log_string, strlen(log_string)) != strlen(log_string))
         {
             ROS_FATAL("ec_thread: insist_write");
             exit(1);
@@ -365,52 +341,52 @@ void EthercatCommunicator::log_statistics_to_file()
     }
 }
 //--------------------------------------------------------------------------//
-void EthercatCommunicator::create_statistics(timespec *wakeup_time, timespec *wakeup_time, timespec *wakeup_time)
+void EthercatCommunicator::create_statistics(statistics_struct * ss, struct timespec * wakeup_time_p)
 {
 #if TIMING_SAMPLING
-    latency_ns = DIFF_NS(wakeup_time, start_time);
-    period_ns = DIFF_NS(last_start_time, start_time);
-    exec_ns = DIFF_NS(last_start_time, end_time);
+    ss->latency_ns = DIFF_NS(*wakeup_time_p, ss->start_time);
+    ss->period_ns = DIFF_NS(ss->last_start_time, ss->start_time);
+    ss->exec_ns = DIFF_NS(ss->last_start_time, ss->end_time);
 
-    if (latency_ns > latency_max_ns[i])
+    if (ss->latency_ns > ss->latency_max_ns[ss->statistics_id])
     {
-        latency_max_ns[i] = latency_ns;
+        ss->latency_max_ns[ss->statistics_id] = ss->latency_ns;
     }
-    if (latency_ns < latency_min_ns[i])
+    if (ss->latency_ns < ss->latency_min_ns[ss->statistics_id])
     {
-        latency_min_ns[i] = latency_ns;
+        ss->latency_min_ns[ss->statistics_id] = ss->latency_ns;
     }
-    if (period_ns > period_max_ns[i])
+    if (ss->period_ns > ss->period_max_ns[ss->statistics_id])
     {
-        period_max_ns[i] = period_ns;
+        ss->period_max_ns[ss->statistics_id] = ss->period_ns;
     }
-    if (period_ns < period_min_ns[i])
+    if (ss->period_ns < ss->period_min_ns[ss->statistics_id])
     {
-        period_min_ns[i] = period_ns;
+        ss->period_min_ns[ss->statistics_id] = ss->period_ns;
     }
-    if (exec_ns > exec_max_ns[i])
+    if (ss->exec_ns > ss->exec_max_ns[ss->statistics_id])
     {
-        exec_max_ns[i] = exec_ns;
+        ss->exec_max_ns[ss->statistics_id] = ss->exec_ns;
     }
-    if (exec_ns < exec_min_ns[i])
+    if (ss->exec_ns < ss->exec_min_ns[ss->statistics_id])
     {
-        exec_min_ns[i] = exec_ns;
+        ss->exec_min_ns[ss->statistics_id] = ss->exec_ns;
     }
 #else
-    latency_ns[i] = DIFF_NS(wakeup_time, start_time);
-    period_ns[i] = DIFF_NS(last_start_time, start_time);
-    exec_ns[i] = DIFF_NS(last_start_time, end_time);
+    ss->latency_ns[ss->statistics_id] = DIFF_NS(*wakeup_time_p, ss->start_time);
+    ss->period_ns[ss->statistics_id] = DIFF_NS(ss->last_start_time, ss->start_time);
+    ss->exec_ns[ss->statistics_id] = DIFF_NS(ss->last_start_time, ss->end_time);
 #endif
 }
 //--------------------------------------------------------------------------//
-void EthercatCommunicator::initialize_statistics_metrics()
+void EthercatCommunicator::create_new_statistics_sample(statistics_struct *ss, unsigned int * sampling_counter)
 {
 #if TIMING_SAMPLING
-    counter = FREQUENCY / SAMPLING_FREQ;
+    *sampling_counter = FREQUENCY / SAMPLING_FREQ;
 #elif TIMING_SAMPLING == 0
-    counter = 0;
+    *sampling_counter = 0;
 #endif
-    i++;
+    ss->statistics_id++;
 
 
 #if TIMING_SAMPLING
@@ -422,12 +398,12 @@ void EthercatCommunicator::initialize_statistics_metrics()
     // printf("latency    %10u ... %10u\n",
     //         latency_min_ns, latency_max_ns);
 
-    period_max_ns[i] = 0;
-    period_min_ns[i] = 0xffffffff;
-    exec_max_ns[i] = 0;
-    exec_min_ns[i] = 0xffffffff;
-    latency_max_ns[i] = 0;
-    latency_min_ns[i] = 0xffffffff;
+    period_max_ns[ss->statistics_id] = 0;
+    period_min_ns[ss->statistics_id] = 0xffffffff;
+    exec_max_ns[ss->statistics_id] = 0;
+    exec_min_ns[ss->statistics_id] = 0xffffffff;
+    latency_max_ns[ss->statistics_id] = 0;
+    latency_min_ns[ss->statistics_id] = 0xffffffff;
 #endif
 }
 
@@ -435,16 +411,15 @@ void EthercatCommunicator::initialize_statistics_metrics()
 void *EthercatCommunicator::run(void *arg)
 {
     pthread_cleanup_push(EthercatCommunicator::cleanup_handler, NULL);
-#ifdef TIMING_SAMPLING
-    struct timespec start_time, end_time, last_start_time = {};
-#endif
-    unsigned int counter = 0;
+// #ifdef TIMING_SAMPLING
+//     struct timespec start_time, end_time, last_start_time = {};
+// #endif
+    unsigned int sampling_counter = 0;
     unsigned int sync_ref_counter = 0;
     const struct timespec cycletime = {0, PERIOD_NS};
-    char log_string[100];
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
     int ret;
-    int i = 0;
+    // int i = 0;
     cpu_set_t cpuset_;
 #ifdef DEADLINE_SCHEDULING
     struct sched_attr sched_attr_;
@@ -494,9 +469,9 @@ void *EthercatCommunicator::run(void *arg)
         wakeup_time = utilities::timespec_add(wakeup_time, cycletime);
         clock_nanosleep(CLOCK_TO_USE, TIMER_ABSTIME, &wakeup_time, NULL);
 #ifdef TIMING_SAMPLING
-        clock_gettime(CLOCK_TO_USE, &start_time);
-        create_statistics(&start_time);
-        last_start_time = start_time;
+        clock_gettime(CLOCK_TO_USE, & stat_struct.start_time);
+        create_statistics(&stat_struct, &wakeup_time);
+        stat_struct.last_start_time = stat_struct.start_time;
 #endif
 
         // receive EtherCAT frame
@@ -507,14 +482,14 @@ void *EthercatCommunicator::run(void *arg)
         utilities::check_domain1_state();
 
         // get statistics if the flags are enabled
-        if (!counter) //if counter is 0
+        if (!sampling_counter) //if sampling_counter is 0
         {
             // do this at 10 Hz
-            initialize_statistics_metrics();
+            create_new_statistics_sample(&stat_struct, &sampling_counter);
             // check for master state (optional)
             utilities::check_master_state();
         }
-        else counter--;
+        else sampling_counter--;
 
         // move the data from process_data_buf to domain1_pd buf carefuly
         utilities::copy_process_data_buffer_to_buf(domain1_pd);
@@ -550,7 +525,7 @@ void *EthercatCommunicator::run(void *arg)
             handle_error_en(ret, "pthread_setcancelstate");
         }
 #ifdef TIMING_SAMPLING
-        clock_gettime(CLOCK_TO_USE, &end_time);
+        clock_gettime(CLOCK_TO_USE, & stat_struct.end_time);
 #endif
         clock_gettime(CLOCK_TO_USE, &current_time);
     } while (DIFF_NS(current_time, break_time) > 0);

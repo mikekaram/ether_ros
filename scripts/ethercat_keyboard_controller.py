@@ -278,6 +278,9 @@ class ethercat_controller(Cmd):
         elif "help" in arguments:
             print(help_message)
         elif "q" in arguments:
+            print("Stopping the EtherCAT Communicator...\n")
+            self.ethercat_communicator_client("stop")
+            print("Exiting...Bye!\n")
             exit(0)
         else:
             self.default(args)

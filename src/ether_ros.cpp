@@ -226,7 +226,6 @@ int main(int argc, char **argv)
     /******************************************
     *    Launch the ROS services              *
     *******************************************/
-
     ros::ServiceServer ethercat_communicatord_service = n.advertiseService("ethercat_communicatord", ethercat_communicatord);
     ROS_INFO("Ready to communicate via EtherCAT.");
 

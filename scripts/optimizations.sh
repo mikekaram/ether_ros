@@ -59,8 +59,6 @@ echo 0 > /sys/fs/cgroup/cpuset/rt/cpuset.sched_load_balance
 # Finally enable load balancing in the nRT cpuset:
 echo 1 > /sys/fs/cgroup/cpuset/nrt/cpuset.sched_load_balance
 
-# Also kill the irq_balance process of Linux
-pkill -9 irqbalance
 
 
 ## Move general purpose tasks to the general GP partition
@@ -73,10 +71,14 @@ do
 echo $i; echo $i > /sys/fs/cgroup/cpuset/nrt/tasks;
 done
 
-enp5s0_irq_pid=$(ps -e | grep "enp5s0" | grep -o -E '[0-9]+' | head -n 1)
-echo $enp5s0_irq_pid; echo $enp5s0_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
-etherlab_pid=$(ps -e | grep "ETHERCAT-IDLE" | grep -o -E '[0-9]+' | head -n 1)
-echo $etherlab_pid; echo $etherlab_pid > /sys/fs/cgroup/cpuset/rt/tasks;
+# enp5s0_irq_pid=$(ps -e | grep "enp5s0$" | grep -o -E '[0-9]+' | head -n 1)
+# echo $enp5s0_irq_pid; echo $enp5s0_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
+# enp5s0_r_irq_pid=$(ps -e | grep "enp5s0-r" | grep -o -E '[0-9]+' | head -n 1)
+# echo $enp5s0_r_irq_pid; echo $enp5s0_r_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
+# enp5s0_t_irq_pid=$(ps -e | grep "enp5s0-t" | grep -o -E '[0-9]+' | head -n 1)
+# echo $enp5s0_t_irq_pid; echo $enp5s0_t_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
+# etherlab_pid=$(ps -e | grep "EtherCAT-IDLE" | grep -o -E '[0-9]+' | head -n 1)
+# echo $etherlab_pid; echo $etherlab_pid > /sys/fs/cgroup/cpuset/rt/tasks;
 
 ## Move IRQs to the general purpose CPUs
 
@@ -98,8 +100,12 @@ for i in "${irq_array[@]}";
 do
 echo $i; echo 3 > /proc/irq/$i/smp_affinity;
 done
-enp5s0_irq_num=$(ps -e | grep "enp5s0" | grep -o -E '[0-9]+' | head -n 5 | tail -1)
+enp5s0_irq_num=$(ps -e | grep "enp5s0$" | grep -o -E '[0-9]+' | head -n 5 | tail -1)
+enp5s0_r_irq_num=$(ps -e | grep "enp5s0-r" | grep -o -E '[0-9]+' | head -n 5 | tail -1)
+enp5s0_t_irq_num=$(ps -e | grep "enp5s0-t" | grep -o -E '[0-9]+' | head -n 5 | tail -1)
 echo 8 > /proc/irq/$enp5s0_irq_num/smp_affinity
+echo 8 > /proc/irq/$enp5s0_r_irq_num/smp_affinity
+echo 8 > /proc/irq/$enp5s0_t_irq_num/smp_affinity
 
 ## Network queues affinity
 
@@ -187,9 +193,16 @@ echo 2 > /proc/sys/vm/overcommit_memory
 
 ## Change the real-time priority of: EtherCAT IRQs, ksoftirqd thread for CPU3 and maybe Ethercat-IDLE.
 
-enp5s0_pid=$(ps -e | grep "enp5s0" | grep -o -E '[0-9]+' | head -n 1)
+enp5s0_pid=$(ps -e | grep "enp5s0$" | grep -o -E '[0-9]+' | head -n 1)
 sudo chrt -f -p 82 $enp5s0_pid
+enp5s0_r_pid=$(ps -e | grep "enp5s0-r" | grep -o -E '[0-9]+' | head -n 1)
+sudo chrt -f -p 82 $enp5s0_r_pid
+enp5s0_t_pid=$(ps -e | grep "enp5s0-t" | grep -o -E '[0-9]+' | head -n 1)
+sudo chrt -f -p 82 $enp5s0_t_pid
 ksoftirqd_pid=$(ps -e | grep "ksoftirqd/3" | grep -o -E '[0-9]+' | head -n 1)
 sudo chrt -f -p 60 $ksoftirqd_pid
-etherlab_pid=$(ps -e | grep "ETHERCAT-IDLE" | grep -o -E '[0-9]+' | head -n 1)
-sudo chrt -f -p 81 $etherlab_pid
+etherlab_pid=$(ps -e | grep "EtherCAT-IDLE" | grep -o -E '[0-9]+' | head -n 1)
+# sudo chrt -f -p 81 $etherlab_pid
+
+# Finally kill the irq_balance process of Linux
+pkill -9 irqbalance

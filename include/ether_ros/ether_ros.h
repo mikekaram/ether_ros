@@ -54,7 +54,7 @@
     Assumes that the EtherCAT application is the same for every slave.
 */
 /** \var int log_fd
-    \brief File descriptor used for logging, provided that TIMING_SAMPLING is enabled.
+    \brief File descriptor used for logging, provided that LOGGING and one of LOGGING_SAMPLING or LOGGING_NO_SAMPLING is enabled.
 
     Could be deprecated in a next version (see kernelshark).
 */
@@ -131,7 +131,7 @@
 /** \def SAMPLING_FREQ 10
     \brief The sampling frequency.
 
-    Used when the \a TIMING_SAMPLING is defined.
+    Used when the \a LOGGING_SAMPLING is defined.
     It's used as a frequency for sampling measurements.
     The number is in Hz.
 */
@@ -198,9 +198,9 @@
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC
-// #define TIMING_SAMPLING 0
+// #define LOGGING_SAMPLING
 // #define RUN_TIME 60 // run time in seconds
-#if TIMING_SAMPLING
+#if defined(LOGGING) && defined(LOGGING_SAMPLING)
 #define SAMPLING_FREQ 10
 #endif
 /****************************************************************************/
@@ -260,5 +260,7 @@ extern PDOOutPublisherTimer pdo_out_publisher_timer;
 extern int PERIOD_NS;
 extern int FREQUENCY;
 extern int RUN_TIME;
+#ifdef LOGGING
 extern statistics_struct stat_struct;
+#endif
 #endif /* ether_ros_LIB_H */

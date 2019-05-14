@@ -33,6 +33,6 @@ ethercat_slaves :
         assign_activate: 0x0700
         input_port: 0x6010
         output_port: 0x7000
-    period_ns: 400000
+    period_ns: 1000000
     run_time: 360000
     sync0_shift: 55000

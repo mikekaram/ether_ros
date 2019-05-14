@@ -59,7 +59,8 @@
 #define FIFO_SCHEDULING //the default scheduling policy will be FIFO
 
 #endif
-#if TIMING_SAMPLING
+#ifdef LOGGING
+#ifdef LOGGING_SAMPLING
 
 typedef struct statistics_struct
 {
@@ -77,8 +78,8 @@ typedef struct statistics_struct
   struct timespec end_time;
   struct timespec last_start_time;
 } statistics_struct;
-
-#elif TIMING_SAMPLING == 0
+#endif
+#ifdef LOGGING_NO_SAMPLING
 
 typedef struct statistics_struct
 {
@@ -90,6 +91,7 @@ typedef struct statistics_struct
   struct timespec end_time;
   struct timespec last_start_time;
 } statistics_struct;
+#endif
 #endif
 class EthercatCommunicator
 {
@@ -122,10 +124,11 @@ private:
   static void sync_distributed_clocks(void);
   static void update_master_clock(void);
   static uint64_t system_time_ns(void);
+#ifdef LOGGING
   static void create_new_statistics_sample(statistics_struct *ss, unsigned int * sampling_counter);
   static void create_statistics(statistics_struct * ss, struct timespec * wakeup_time_p);
   static void log_statistics_to_file(statistics_struct *ss);
-
+#endif
 public:
 /** \fn static bool has_running_thread()
     \brief A getter for knowing if there is a running thread.

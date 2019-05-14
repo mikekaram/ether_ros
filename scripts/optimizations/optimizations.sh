@@ -71,12 +71,12 @@ do
 echo $i; echo $i > /sys/fs/cgroup/cpuset/nrt/tasks;
 done
 
-# enp5s0_irq_pid=$(ps -e | grep "enp5s0$" | grep -o -E '[0-9]+' | head -n 1)
-# echo $enp5s0_irq_pid; echo $enp5s0_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
-# enp5s0_r_irq_pid=$(ps -e | grep "enp5s0-r" | grep -o -E '[0-9]+' | head -n 1)
-# echo $enp5s0_r_irq_pid; echo $enp5s0_r_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
-# enp5s0_t_irq_pid=$(ps -e | grep "enp5s0-t" | grep -o -E '[0-9]+' | head -n 1)
-# echo $enp5s0_t_irq_pid; echo $enp5s0_t_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
+enp5s0_irq_pid=$(ps -e | grep "enp5s0$" | grep -o -E '[0-9]+' | head -n 1)
+echo $enp5s0_irq_pid; echo $enp5s0_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
+enp5s0_r_irq_pid=$(ps -e | grep "enp5s0-r" | grep -o -E '[0-9]+' | head -n 1)
+echo $enp5s0_r_irq_pid; echo $enp5s0_r_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
+enp5s0_t_irq_pid=$(ps -e | grep "enp5s0-t" | grep -o -E '[0-9]+' | head -n 1)
+echo $enp5s0_t_irq_pid; echo $enp5s0_t_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
 # etherlab_pid=$(ps -e | grep "EtherCAT-IDLE" | grep -o -E '[0-9]+' | head -n 1)
 # echo $etherlab_pid; echo $etherlab_pid > /sys/fs/cgroup/cpuset/rt/tasks;
 

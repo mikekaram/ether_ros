@@ -61,7 +61,9 @@ int64_t EthercatCommunicator::system_time_base_ = 0LL;
     int EthercatCommunicator::dc_filter_idx_ = 0;
     int64_t EthercatCommunicator::dc_adjust_ns_;
 #endif
-statistics_struct stat_struct;
+#ifdef LOGGING
+    statistics_struct stat_struct;
+#endif
 //--------------------------------------------------------------------------//
 
 /** Get the time in ns for the current cpu, adjusted by system_time_base_.
@@ -208,6 +210,27 @@ void EthercatCommunicator::init(ros::NodeHandle &n)
     int act_policy;
     int ret;
 
+    /******************************************
+     * Initialize the timing sampling buffers.
+    *******************************************/
+#ifdef LOGGING
+#ifdef LOGGING_SAMPLING
+    statistics_struct stat_struct = {0, 0, 0, 0};
+    stat_struct.latency_min_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.latency_max_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.period_min_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.period_max_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.exec_min_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+    stat_struct.exec_max_ns = (uint32_t *)malloc(RUN_TIME * SAMPLING_FREQ * (sizeof(uint32_t)));
+#endif
+#ifdef LOGGING_NO_SAMPLING
+    statistics_struct stat_struct = {0};
+    stat_struct.latency_ns = (uint32_t *)malloc(RUN_TIME * FREQUENCY * (sizeof(uint32_t)));
+    stat_struct.period_ns = (uint32_t *)malloc(RUN_TIME * FREQUENCY * (sizeof(uint32_t)));
+    stat_struct.exec_ns = (uint32_t *)malloc(RUN_TIME * FREQUENCY * (sizeof(uint32_t)));
+#endif
+#endif
+
     if (pthread_attr_init(&current_thattr_))
     {
         ROS_FATAL("Attribute init\n");
@@ -307,11 +330,12 @@ void EthercatCommunicator::cleanup_handler(void *arg)
     ROS_INFO("Called clean-up handler\n");
 }
 //--------------------------------------------------------------------------//
+#ifdef LOGGING
 void EthercatCommunicator::log_statistics_to_file(statistics_struct *ss)
 {
     int i;
     char log_string[100];
-#if TIMING_SAMPLING
+#ifdef LOGGING_SAMPLING
     for (i = 0; i < RUN_TIME * SAMPLING_FREQ; i++)
     {
         snprintf(log_string, 100, "%10u , %10u , 10u , %10u , 10u , %10u\n",
@@ -319,7 +343,8 @@ void EthercatCommunicator::log_statistics_to_file(statistics_struct *ss)
                  ss->latency_min_ns[i], ss->latency_max_ns[i]);
         dprintf(log_fd, "%s", log_string);
     }
-#else
+#endif
+#ifdef LOGGING_NO_SAMPLING
     for (i = 0; i < RUN_TIME * FREQUENCY; i++)
     {
         if (i % 10000 == 0)
@@ -340,10 +365,12 @@ void EthercatCommunicator::log_statistics_to_file(statistics_struct *ss)
         exit(1);
     }
 }
+#endif
 //--------------------------------------------------------------------------//
+#ifdef LOGGING
 void EthercatCommunicator::create_statistics(statistics_struct * ss, struct timespec * wakeup_time_p)
 {
-#if TIMING_SAMPLING
+#ifdef LOGGING_SAMPLING
     ss->latency_ns = DIFF_NS(*wakeup_time_p, ss->start_time);
     ss->period_ns = DIFF_NS(ss->last_start_time, ss->start_time);
     ss->exec_ns = DIFF_NS(ss->last_start_time, ss->end_time);
@@ -372,24 +399,29 @@ void EthercatCommunicator::create_statistics(statistics_struct * ss, struct time
     {
         ss->exec_min_ns[ss->statistics_id] = ss->exec_ns;
     }
-#else
+#ifdef LOGGING_NO_SAMPLING
     ss->latency_ns[ss->statistics_id] = DIFF_NS(*wakeup_time_p, ss->start_time);
     ss->period_ns[ss->statistics_id] = DIFF_NS(ss->last_start_time, ss->start_time);
     ss->exec_ns[ss->statistics_id] = DIFF_NS(ss->last_start_time, ss->end_time);
 #endif
+#endif
 }
+#endif
 //--------------------------------------------------------------------------//
+#ifdef LOGGING
 void EthercatCommunicator::create_new_statistics_sample(statistics_struct *ss, unsigned int * sampling_counter)
 {
-#if TIMING_SAMPLING
+
+#ifdef LOGGING_SAMPLING
     *sampling_counter = FREQUENCY / SAMPLING_FREQ;
-#elif TIMING_SAMPLING == 0
+#endif
+#ifdef LOGGING_NO_SAMPLING
     *sampling_counter = 0;
 #endif
     ss->statistics_id++;
 
 
-#if TIMING_SAMPLING
+#if defined(LOGGING) && defined(LOGGING_SAMPLING)
     // output timing stats
     // printf("period     %10u ... %10u\n",
     //         period_min_ns, period_max_ns);
@@ -406,20 +438,18 @@ void EthercatCommunicator::create_new_statistics_sample(statistics_struct *ss, u
     latency_min_ns[ss->statistics_id] = 0xffffffff;
 #endif
 }
+#endif
 
 //--------------------------------------------------------------------------//
 void *EthercatCommunicator::run(void *arg)
 {
     pthread_cleanup_push(EthercatCommunicator::cleanup_handler, NULL);
-// #ifdef TIMING_SAMPLING
-//     struct timespec start_time, end_time, last_start_time = {};
-// #endif
+
     unsigned int sampling_counter = 0;
     unsigned int sync_ref_counter = 0;
     const struct timespec cycletime = {0, PERIOD_NS};
     struct timespec break_time, current_time, offset_time = {RUN_TIME, 0}, wakeup_time;
     int ret;
-    // int i = 0;
     cpu_set_t cpuset_;
 #ifdef DEADLINE_SCHEDULING
     struct sched_attr sched_attr_;
@@ -468,7 +498,7 @@ void *EthercatCommunicator::run(void *arg)
         }
         wakeup_time = utilities::timespec_add(wakeup_time, cycletime);
         clock_nanosleep(CLOCK_TO_USE, TIMER_ABSTIME, &wakeup_time, NULL);
-#ifdef TIMING_SAMPLING
+#ifdef LOGGING
         clock_gettime(CLOCK_TO_USE, & stat_struct.start_time);
         create_statistics(&stat_struct, &wakeup_time);
         stat_struct.last_start_time = stat_struct.start_time;
@@ -485,7 +515,9 @@ void *EthercatCommunicator::run(void *arg)
         if (!sampling_counter) //if sampling_counter is 0
         {
             // do this at 10 Hz
+        #ifdef LOGGING
             create_new_statistics_sample(&stat_struct, &sampling_counter);
+        #endif
             // check for master state (optional)
             utilities::check_master_state();
         }
@@ -524,13 +556,13 @@ void *EthercatCommunicator::run(void *arg)
         {
             handle_error_en(ret, "pthread_setcancelstate");
         }
-#ifdef TIMING_SAMPLING
+#ifdef LOGGING
         clock_gettime(CLOCK_TO_USE, & stat_struct.end_time);
 #endif
         clock_gettime(CLOCK_TO_USE, &current_time);
     } while (DIFF_NS(current_time, break_time) > 0);
 
-#ifdef TIMING_SAMPLING
+#ifdef LOGGING
     // write the statistics to file
     log_statistics_to_file();
 #endif

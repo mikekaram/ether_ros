@@ -77,8 +77,6 @@ enp5s0_r_irq_pid=$(ps -e | grep "enp5s0-r" | grep -o -E '[0-9]+' | head -n 1)
 echo $enp5s0_r_irq_pid; echo $enp5s0_r_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
 enp5s0_t_irq_pid=$(ps -e | grep "enp5s0-t" | grep -o -E '[0-9]+' | head -n 1)
 echo $enp5s0_t_irq_pid; echo $enp5s0_t_irq_pid > /sys/fs/cgroup/cpuset/rt/tasks;
-# etherlab_pid=$(ps -e | grep "EtherCAT-IDLE" | grep -o -E '[0-9]+' | head -n 1)
-# echo $etherlab_pid; echo $etherlab_pid > /sys/fs/cgroup/cpuset/rt/tasks;
 
 ## Move IRQs to the general purpose CPUs
 
@@ -201,8 +199,6 @@ enp5s0_t_pid=$(ps -e | grep "enp5s0-t" | grep -o -E '[0-9]+' | head -n 1)
 sudo chrt -f -p 82 $enp5s0_t_pid
 ksoftirqd_pid=$(ps -e | grep "ksoftirqd/3" | grep -o -E '[0-9]+' | head -n 1)
 sudo chrt -f -p 60 $ksoftirqd_pid
-etherlab_pid=$(ps -e | grep "EtherCAT-IDLE" | grep -o -E '[0-9]+' | head -n 1)
-# sudo chrt -f -p 81 $etherlab_pid
 
 # Finally kill the irq_balance process of Linux
 pkill -9 irqbalance

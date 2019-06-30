@@ -12,7 +12,11 @@ In the tutorial we assume that an Ubuntu flavor 16.04 is used.
 
 ### 0. Preempt_RT Patch
 
-First step to utilize the repository given, is to install the preempt_rt patch in the kernel. Note that in order to install EtherLab, the kernel should be up to 4.9. A proper guide for the installation procedure can be found in the following [link](https://ubuntuforums.org/showthread.php?t=2273355). After you patch the kernel (say 4.9), you will want to use some other configuration parameters in the build of the kernel. Therefore after step 3 and in the line of *make menuconfig* of the previous link,
+First step to utilize the repository given, is to install the preempt_rt patch in the kernel. Note that in order to install EtherLab, the kernel should be up to 4.9. A proper guide for the installation procedure can be found in the following [link](https://ubuntuforums.org/showthread.php?t=2273355).
+
+#### Note: If there is a problem in the compilation of the kernel, these extra packages may come in handy: libssl-dev build-essential git flex bison
+
+After you patch the kernel (say 4.9), you will want to use some other configuration parameters in the build of the kernel. Therefore after step 3 and in the line of *make menuconfig* of the previous link,
 you will want to specify some extra configuration parameters, derived from the chapter 3 of the manual mentioned in the beginning, namely:
 
 - CONFIG_PREEMPT_RT_FULL

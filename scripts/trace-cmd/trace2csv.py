@@ -3,7 +3,7 @@
 import sys
 import pandas as pd
 import os
-trace_file_path = "/home/mike/catkin_ws/src/ether_ros/experiments/17May2019/"
+trace_file_path = "/home/mikekaram/catkin_ws/src/ether_ros/experiments/17May2019/"
 trace_file_name = sys.argv[1]
 csv_file_name = sys.argv[1].replace(".txt",".csv")
 print("Name of the output csv file: " + csv_file_name)
@@ -41,6 +41,16 @@ for line in lines:
                     output_csv_list[funcgraph_entry][5] = line_list[5]
                 else:
                     output_csv_list[funcgraph_entry][5] = line_list[4]
+        if("sched" in line_list[3]):
+            if(line_list[3] == "sched_wakeup:"):
+                line_list[3] = "schedwakeup"
+                line_list[0] = line_list[4]
+                line_list[4] = "-"
+                line_list[5] = "-"
+                output_csv_list.append(line_list[0:6])
+            else:
+                print("Unsupported event:{}".format(line_list))
+
 print(output_csv_list[:10])
 columns = ["Process","CPU","Time", "TypeOfTrace", "Function", "Duration"]
 df = pd.DataFrame(output_csv_list,columns=columns)

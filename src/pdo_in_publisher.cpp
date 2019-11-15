@@ -43,13 +43,8 @@
 #include "ether_ros/PDORaw.h"
 #include "ethercat_slave.h"
 #include "utilities.h"
-<<<<<<< HEAD:src/ethercat_input_data_handler.cpp
-#include <vector>
-#include "ighm_ros.h"
-=======
 #include "vector"
 #include "ether_ros.h"
->>>>>>> devel:src/pdo_in_publisher.cpp
 #include <iostream>
 #include <string>
 

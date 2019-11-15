@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ighm_ros</name>
+  <name>ether_ros</name>
   <version>0.1.0</version>
-  <description>The ighm_ros package</description>
+  <description>The ether_ros package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/ighm_ros</url> -->
+  <!-- <url type="website">http://wiki.ros.org/ether_ros</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->

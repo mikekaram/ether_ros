@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(ighm_ros)
+project(ether_ros)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -52,19 +52,20 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  EthercatInputData.msg
-  EthercatOutputData.msg
-  EthercatRawData.msg
+  PDOIn.msg
+  PDOOut.msg
+  PDORaw.msg
+  ModifyPDOVariables.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  ModifyOutputBit.srv
-  ModifyOutputSInt16.srv
-  ModifyOutputUInt16.srv
-  ModifyOutputSInt32.srv
-  ModifyOutputSByte.srv
+  # ModifyOutputBit.srv
+  # ModifyOutputSInt16.srv
+  # ModifyOutputUInt16.srv
+  # ModifyOutputSInt32.srv
+  # ModifyOutputSByte.srv
   EthercatCommd.srv
 )
 
@@ -112,7 +113,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ighm_ros
+#  LIBRARIES ether_ros
  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
@@ -122,7 +123,16 @@ catkin_package(
 ###########
 set(etherlab_include /opt/etherlab/include)
 set(etherlab_lib /opt/etherlab/lib/libethercat.so)
-set(SOURCES src/utilities.cpp src/ethercat_communicator.cpp src/services.cpp src/ethercat_slave.cpp src/ethercat_input_data_handler.cpp src/ethercat_output_data_handler.cpp)
+set(SOURCES
+    src/utilities.cpp
+    src/ethercat_communicator.cpp
+    src/services.cpp
+    src/ethercat_slave.cpp
+    src/pdo_in_publisher.cpp
+    src/pdo_out_publisher.cpp
+    src/pdo_out_listener.cpp
+    src/pdo_out_publisher_timer.cpp
+    )
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -134,7 +144,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ighm_ros.cpp
+#   src/${PROJECT_NAME}/ether_ros.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -207,7 +217,7 @@ target_link_libraries(${PROJECT_NAME}
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ighm_ros.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_ether_ros.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

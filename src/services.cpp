@@ -31,7 +31,7 @@
 /**
    \file services.cpp
    \brief Implements the services used.
-   
+
    Provides services for:
    - Interacting with the EtherCAT Communicator
    - Changing the EtherCAT output PDOs
@@ -42,117 +42,15 @@
 #include "services.h"
 #include "ecrt.h"
 #include "ethercat_communicator.h"
-#include "ighm_ros.h"
+#include "ether_ros.h"
+#include "utilities.h"
 
-/** \fn std::string &ltrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
-    \brief Left trims a string.
 
-    This function trims any character specified in \a chars, which is left of the input
-    \a str.
-
-    \param str The input untrimmed string.
-    \param chars The characters to trim.
-*/
-/** \fn std::string &rtrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
-    \brief Right trims a string.
-
-    This function trims any character specified in \a chars, which is right of the input
-    \a str.
-
-    \param str The input untrimmed string.
-    \param chars The characters to trim.
-*/
-/** \fn std::string &trim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
-    \brief Trims a string from the left and right.
-
-    This function trims any character specified in \a chars, which is right  or left 
-    of the input \a str. Calls internally the \a ltrim and \a rtrim functions.
-    See more at: http://www.martinbroadhurst.com/how-to-trim-a-stdstring.html
-    \see ltrim
-    \see rtrim
-*/
-// trim string from start
-std::string &ltrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
-{
-    str.erase(0, str.find_first_not_of(chars));
-    return str;
-}
-
-std::string &rtrim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
-{
-    str.erase(str.find_last_not_of(chars) + 1);
-    return str;
-}
-
-std::string &trim(std::string &str, const std::string &chars = "\t\n\v\f\r ")
-{
-    return ltrim(rtrim(str, chars), chars);
-}
-
-bool modify_output_bit(ighm_ros::ModifyOutputBit::Request &req,
-                       ighm_ros::ModifyOutputBit::Response &res)
-{
-    uint8_t *data_ptr = process_data_buf;
-    uint8_t *new_data_ptr = (data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-    pthread_spin_lock(&lock);
-    EC_WRITE_BIT(new_data_ptr, req.subindex, req.value);
-    pthread_spin_unlock(&lock);
-    res.success = "true";
-    return true;
-}
-
-bool modify_output_sbyte(ighm_ros::ModifyOutputBit::Request &req,
-                       ighm_ros::ModifyOutputBit::Response &res)
-{
-    uint8_t *data_ptr = process_data_buf;
-    int8_t *new_data_ptr = (int8_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-    pthread_spin_lock(&lock);
-    EC_WRITE_S8(new_data_ptr, req.value);
-    pthread_spin_unlock(&lock);
-    res.success = "true";
-    return true;
-}
-
-bool modify_output_uint16(ighm_ros::ModifyOutputUInt16::Request &req,
-                          ighm_ros::ModifyOutputUInt16::Response &res)
-{
-    uint8_t *data_ptr = process_data_buf;
-    uint16_t *new_data_ptr = (uint16_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-    pthread_spin_lock(&lock);
-    EC_WRITE_U16(new_data_ptr, req.value);
-    pthread_spin_unlock(&lock);
-    res.success = "true";
-    return true;
-}
-
-bool modify_output_sint16(ighm_ros::ModifyOutputSInt16::Request &req,
-                          ighm_ros::ModifyOutputSInt16::Response &res)
-{
-    uint8_t *data_ptr = process_data_buf;
-    int16_t *new_data_ptr = (int16_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-    pthread_spin_lock(&lock);
-    EC_WRITE_S16(new_data_ptr, req.value);
-    pthread_spin_unlock(&lock);
-    res.success = "true";
-    return true;
-}
-
-bool modify_output_sint32(ighm_ros::ModifyOutputSInt32::Request &req,
-                          ighm_ros::ModifyOutputSInt32::Response &res)
-{
-    uint8_t *data_ptr = process_data_buf;
-    int32_t *new_data_ptr = (int32_t *)(data_ptr + req.slave * (num_process_data_out + num_process_data_in) + req.index);
-    pthread_spin_lock(&lock);
-    EC_WRITE_S32(new_data_ptr, req.value);
-    pthread_spin_unlock(&lock);
-    res.success = "true";
-    return true;
-}
-bool ethercat_communicatord(ighm_ros::EthercatCommd::Request &req,
-                            ighm_ros::EthercatCommd::Response &res)
+bool ethercat_communicatord(ether_ros::EthercatCommd::Request &req,
+                            ether_ros::EthercatCommd::Response &res)
 {
     bool s;
-    req.mode = trim(req.mode);
+    req.mode = utilities::trim(req.mode);
 
     if (req.mode == "start")
     {

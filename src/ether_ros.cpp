@@ -66,13 +66,8 @@
  *   Service API for Input PDO handling and topic streaming: /ethercat_data_slave_{slave_id}
  *
  * - Added synchronization primitives (spinlocks) for the concurrent threads accessing the EtherCAT buffer.
-<<<<<<< HEAD:src/ighm_ros.cpp
- * - Added more source files, ethercat communicator, ethercat_slave, ethercat_input_data_handler and
- * ethercat_output_data_handler. Created external objects to use the appropriate classes and functions.
-=======
  * - Added more source files, ethercat communicator, ethercat_slave, pdo_in_publisher and
  * pdo_out_publisher. Created external objects to use the appropriate classes and functions.
->>>>>>> devel:src/ether_ros.cpp
  *
  *
  * Version 0.1:
@@ -109,15 +104,10 @@ ec_domain_state_t domain1_state;
 slave_struct *ethercat_slaves;
 pthread_spinlock_t lock;
 EthercatCommunicator ethercat_comm;
-<<<<<<< HEAD:src/ighm_ros.cpp
-EthercatInputDataHandler ethercat_input_data_handler;
-EthercatOutputDataHandler ethercat_output_data_handler;
-=======
 PDOInPublisher pdo_in_publisher;
 PDOOutPublisher pdo_out_publisher;
 PDOOutListener pdo_out_listener;
 PDOOutPublisherTimer pdo_out_publisher_timer;
->>>>>>> devel:src/ether_ros.cpp
 int FREQUENCY;
 int RUN_TIME;
 int PERIOD_NS;

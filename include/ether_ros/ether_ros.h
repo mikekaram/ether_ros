@@ -4,20 +4,24 @@
  *
  *  Copyright (C) 2018 Mike Karamousadakis, NTUA CSL
  *
- *  This file is part of the IgH EtherCAT master userspace program in the ROS environment.
+ *  This file is part of the IgH EtherCAT master userspace program in the ROS
+ *environment.
  *
- *  The IgH EtherCAT master userspace program in the ROS environment is free software; you can
+ *  The IgH EtherCAT master userspace program in the ROS environment is free
+ *software; you can
  *  redistribute it and/or modify it under the terms of the GNU General
  *  Public License as published by the Free Software Foundation; version 2
  *  of the License.
  *
- *  The IgH EtherCAT master userspace program in the ROS environment is distributed in the hope that
+ *  The IgH EtherCAT master userspace program in the ROS environment is
+ *distributed in the hope that
  *  it will be useful, but WITHOUT ANY WARRANTY; without even the implied
  *  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with the IgH EtherCAT master userspace program in the ROS environment. If not, see
+ *  along with the IgH EtherCAT master userspace program in the ROS environment.
+ *If not, see
  *  <http://www.gnu.org/licenses/>.
  *
  *  ---
@@ -35,10 +39,12 @@
 
 /*****************************************************************************/
 /** \var uint8_t *domain1_pd
-    \brief Global buffer for the actual communication with the IgH Master Module.
+    \brief Global buffer for the actual communication with the IgH Master
+   Module.
 */
 /** \var uint8_t *process_data_buf
-    \brief Global buffer for safe concurrent accesses from the output PDOs services and the EtherCAT Communicator. \see ethercat_comm
+    \brief Global buffer for safe concurrent accesses from the output PDOs
+   services and the EtherCAT Communicator. \see ethercat_comm
 */
 /** \var size_t total_process_data
     \brief Total number of process data (PD) (bytes).
@@ -54,7 +60,8 @@
     Assumes that the EtherCAT application is the same for every slave.
 */
 /** \var int log_fd
-    \brief File descriptor used for logging, provided that LOGGING and one of LOGGING_SAMPLING or LOGGING_NO_SAMPLING is enabled.
+    \brief File descriptor used for logging, provided that LOGGING and one of
+   LOGGING_SAMPLING or LOGGING_NO_SAMPLING is enabled.
 
     Could be deprecated in a next version (see kernelshark).
 */
@@ -81,7 +88,8 @@
 /** \var ec_domain_state_t domain1_state
     \brief The domain state struct.
 
-    Used to examine the current state (Working counter, DL states) of the domain. \see ethercat_comm
+    Used to examine the current state (Working counter, DL states) of the
+   domain. \see ethercat_comm
 */
 /** \var slave_struct *ethercat_slaves
     \brief The main slave struct.
@@ -91,29 +99,31 @@
 /** \var pthread_spinlock_t lock
     \brief The shared spinlock.
 
-    Used by every thread whick modifies the process_data_buf. \see process_data_buf
+    Used by every thread whick modifies the process_data_buf. \see
+   process_data_buf
 */
 /** \var EthercatCommunicator ethercat_comm
     \brief The barebone object of our application.
 
     Used for realtime communication (Tx/Rx) with the EtherCAT slaves.
     Doesn't change the output PDOs. Basic state machine:
-    -  Receive the new PDOs in domain1_pd from the IgH Master Module (and then to EtherCAT slaves)
+    -  Receive the new PDOs in domain1_pd from the IgH Master Module (and then
+   to EtherCAT slaves)
     - Move to the domain_pd the output data of process_data_buf, safely
-    - Publish the "raw" data (not linked to EtherCAT variables) in PDOs from the domain1_pd
-    - Send the new PDOs from domain1_pd to the IgH Master Module (and then to EtherCAT slaves)
+    - Publish the "raw" data (not linked to EtherCAT variables) in PDOs from the
+   domain1_pd
+    - Send the new PDOs from domain1_pd to the IgH Master Module (and then to
+   EtherCAT slaves)
 */
-<<<<<<< HEAD:include/ighm_ros/ighm_ros.h
-/** \var EthercatInputDataHandler ethercat_input_data_handler
-=======
 /** \var EthercatInputDataHandler pdo_in_publisher
->>>>>>> devel:include/ether_ros/ether_ros.h
-    \brief Main object for publishing to the /ethercat_data_slave_x the values of the EtherCAT input variables.
+    \brief Main object for publishing to the /ethercat_data_slave_x the values
+of the EtherCAT input variables.
 
     Maps indeces to variables.
 */
 /** \var EthercatOutputDataHandler pdo_out_publisher
-    \brief Main object for publishing to the /ethercat_data_out the values of the EtherCAT output variables.
+    \brief Main object for publishing to the /ethercat_data_out the values of
+   the EtherCAT output variables.
 
     Maps indeces to variables.
 */
@@ -144,7 +154,8 @@
 
     Used to get the \a PERIOD_NS from \a FREQUENCY.
 */
-/** \def DIFF_NS(A, B) (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + (B).tv_nsec - (A).tv_nsec)
+/** \def DIFF_NS(A, B) (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + (B).tv_nsec -
+   (A).tv_nsec)
     \brief A difference in nanoseconds macro.
 
     Used in the realtime \a while loop.
@@ -169,11 +180,13 @@
 /** \struct slave_struct
     \brief The basic slave struct.
     \var slave_struct::slave_name
-    \brief The slave's name (for convienience, the names are the positions of the legs)
+    \brief The slave's name (for convienience, the names are the positions of
+   the legs)
     \var slave_struct::id
     \brief The slave's id (in a four legged robot, that will be from 0 to 3)
     \var slave_struct::slave
-    \brief The EthercatSlave object, used to store every other useful information.
+    \brief The EthercatSlave object, used to store every other useful
+   information.
 
 */
 
@@ -190,20 +203,15 @@
 // #include <fcntl.h>
 #include <unistd.h>
 // #include <time.h>
-#include <sys/mman.h>
 #include <stddef.h>
+#include <sys/mman.h>
 #include "ecrt.h"
-#include "ethercat_slave.h"
 #include "ethercat_communicator.h"
-<<<<<<< HEAD:include/ighm_ros/ighm_ros.h
-#include "ethercat_input_data_handler.h"
-#include "ethercat_output_data_handler.h"
-=======
+#include "ethercat_slave.h"
 #include "pdo_in_publisher.h"
-#include "pdo_out_publisher.h"
 #include "pdo_out_listener.h"
+#include "pdo_out_publisher.h"
 #include "pdo_out_publisher_timer.h"
->>>>>>> devel:include/ether_ros/ether_ros.h
 
 // Application parameters
 #define CLOCK_TO_USE CLOCK_MONOTONIC
@@ -216,8 +224,8 @@
 
 #define NSEC_PER_SEC (1000000000L)
 // #define PERIOD_NS (NSEC_PER_SEC / FREQUENCY)
-#define DIFF_NS(A, B) (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + \
-                       (B).tv_nsec - (A).tv_nsec)
+#define DIFF_NS(A, B) \
+  (((B).tv_sec - (A).tv_sec) * NSEC_PER_SEC + (B).tv_nsec - (A).tv_nsec)
 
 #define TIMESPEC2NS(T) ((uint64_t)(T).tv_sec * NSEC_PER_SEC + (T).tv_nsec)
 
@@ -227,30 +235,30 @@
  *
  * \retval the sign of the value
  */
-#define sign(val) \
-    ({ typeof (val) _val = (val); \
-    ((_val > 0) - (_val < 0)); })
+#define sign(val)              \
+  ({                           \
+    typeof(val) _val = (val);  \
+    ((_val > 0) - (_val < 0)); \
+  })
 
 #define handle_error_en(en, msg) \
-    do                           \
-    {                            \
-        errno = en;              \
-        ROS_FATAL(msg);          \
-        exit(EXIT_FAILURE);      \
-    } while (0)
+  do {                           \
+    errno = en;                  \
+    ROS_FATAL(msg);              \
+    exit(EXIT_FAILURE);          \
+  } while (0)
 
 /****************************************************************************/
 
-typedef struct slave_struct
-{
-    std::string slave_name;
-    int id;
-    EthercatSlave slave;
+typedef struct slave_struct {
+  std::string slave_name;
+  int id;
+  EthercatSlave slave;
 } slave_struct;
 
-extern slave_struct * ethercat_slaves;
+extern slave_struct *ethercat_slaves;
 extern uint8_t *domain1_pd;
-extern uint8_t * process_data_buf;
+extern uint8_t *process_data_buf;
 extern size_t total_process_data;
 extern size_t num_process_data_in;
 extern size_t num_process_data_out;
